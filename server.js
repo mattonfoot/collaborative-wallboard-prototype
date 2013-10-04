@@ -1,5 +1,8 @@
 var fortune = require('fortune')
     connect = require('connect');
+    
+    
+var port = process.env.PORT || 5000;
 
 var config = {
   db: 'vuu.se',
@@ -39,4 +42,4 @@ app.resource('pocketData', {
   pocket: ['pocket']
 });
 
-app.listen( 80 );
+app.listen( port );
