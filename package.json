@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "fortune": "0.1.x",
-    "connect" : "2.9.x"
+    "connect" : "2.9.x",
+    "express" : "3.1.x"
   }
 }
