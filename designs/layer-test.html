@@ -1,0 +1,56 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>VUU.SE UI Prototype</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Bootstrap -->
+    <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <div id="container" style="text-align:center;margin: 10px;"></div>
+    
+    <script src="./lib/vendor/kinetic-v4.6.0.min.js"></script>
+    
+    <script src="./lib/vuu.se.eventqueue.js"></script>
+    <script src="./lib/vuu.se.card.js"></script>
+    
+    <script defer="defer">
+    
+// event queue setup
+
+var queue = new EventQueue();
+
+// stage setup
+
+var stage = new Kinetic.Stage({
+  container: 'container',
+  width: 800,
+  height: 600
+});
+
+// visual chrome
+
+var Layer1 = new Kinetic.Layer();
+
+var Layer2 = new Kinetic.Layer();
+
+var Layer3 = new Kinetic.Layer();
+
+var Rect1 = new Kinetic.Rect({ x: 10, y:10, width:10, height:10, fill:'red' });
+
+var Rect2 = new Kinetic.Rect({ x: 30, y:30, width:10, height:10, fill:'blue' });
+
+var Rect3 = new Kinetic.Rect({ x: 50, y:50, width:10, height:10, fill:'green' });
+
+
+Layer1.add( Layer2 );
+
+stage.add( Layer1 );
+
+
+    </script>
+  </body>
+</html>

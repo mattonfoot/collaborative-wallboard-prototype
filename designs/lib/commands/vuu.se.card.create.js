@@ -1,56 +1,54 @@
-
 var CardFactory = (function() {
 
 // constructor
 
-function CardFactory( eq, options ) {
-  this.options = options || { enabled: true };
-  this.eq = eq;
+function CardFactory( queue, socket, board ) {
+  var factory = this;
   
-  this.counter = 0;
+  // private methods
+
+  function __buildCard( type, data ) {
+    var config = {    
+      title: data.title,
+      pocketid: data.pocketid,
+      x: data.x || 0,
+      y: data.y || 0
+    };
+    
+    if ( data.cardid ) {
+      config.cardid = data.cardid;
+    }
+    
+    config.shape = new CanvasCard( config );
+    var card = new Card( queue, socket, config );
+    
+    config.cardid = card.id;
+    
+    queue.trigger( card, 'card'+ type +':start', config );
+    
+    board.addCard( card );
+    
+    queue.trigger( card, 'card'+ type +':end', config );
+  };
   
-  __watch.call( this );
+  // triggers
+
+  ['pocketcreate:end', 'pocketclone:end'].forEach(function( createOn ) {
+    queue.on( factory, createOn, function( data ) {
+      __buildCard.call( factory, 'create', data );
+    });
+  });
+  
+  socket.on( 'card:create', function( data ) {
+    __buildCard.call( factory, 'clone', data );
+  });
+  
+  // instance
+  
+  return factory;
 }
 
-// private functions
-
-function __watch() {
-  var cf = this;
-  var options = cf.options;
-
-  var stage = 0;
-  var coords = { x: 0, y: 0, w: 100, h: 65 };
-  var card = null;
-
-  this.eq.on( 'board:dbltap', function( data,  board ) {
-    if ( options.enabled ) {
-      var x = coords.x = data.x;
-      var y = coords.y = data.y;
-      var w = coords.w;
-      var h = coords.h;
-      
-      coords.cardid = ++cf.counter;
-      coords.title = prompt('Please enter a title fo rthe card', 'Sample card');
-    
-      card = new Card( 'card' + coords.cardid, cf.eq, coords );
-    
-      this.eq.trigger( card, 'cardcreate:start', coords );
-      this.eq.trigger( card, 'cardcreate:end', coords );
-      
-      card = null;
-    }
-  }); 
-};
-
-// public functions
-
-CardFactory.prototype.enable = function() {
-  this.options.enabled = true;
-};
-
-CardFactory.prototype.disable = function() {
-  this.options.enabled = false;
-};
+// exports
 
 return CardFactory;
 

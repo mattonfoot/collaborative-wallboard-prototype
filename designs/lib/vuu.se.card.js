@@ -1,150 +1,145 @@
-
 var Card = (function() {
 
-function Card( name, eq, config ) {
-  this.eq = eq;
-  this.id = config.cardid;
-  this.title = config.title;
-      
-  var shape = this.shape = new Kinetic.Group({
-    x: config.x,
-    y: config.y,
-    draggable: true
-  });
+// defaults
+var counter = 0;
 
-  var cardback = new Kinetic.Rect({
-    name: name,
-    x: 0,
-    y: 0,
-    width: config.w,
-    height: config.h,
-    fill: '#f6f6f6',
-    stroke: '#e5e5e5',
-    strokeWidth: 1,
-    shadowColor: 'black',
-    shadowBlur: 3,
-    shadowOffset: 2,
-    shadowOpacity: 0.1,
-    cornerRadius: 5
-  });
+// constructor
+
+function Card( queue, socket, config ) {
+  var card = this;
   
-  shape.add( cardback );
-      
-  var idText = new Kinetic.Text({
-    x: 5,
-    y: 2,
-    text: '#' + this.id,
-    fontSize: 15,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-    
-  shape.add( idText );
+  card.id = config.cardid || 'card_' + (++counter);
+  card.pocketid = config.pocketid;
+  card.title = config.title;  
+  card.shape = config.shape;
+  card.color;
   
-  var titleText = new Kinetic.Text({
-    x: 5,
-    y: 22,
-    width: 85,
-    height: 36,
-    text: this.title,
-    fontSize: 11,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-    
-  shape.add( titleText );
+  __watch.call( card, queue, socket, card.shape );
   
-  this.tag = createTag.call();
-  shape.add( this.tag );  
+  // public methods
   
-  var self = this;
+  card.moveTo = function( x, y ) {
+    return __moveTo.call( card, queue, socket, card.shape, x, y, true );
+  };
   
-  this.shape
-    .on('mousedown touchstart', function() {
-      cardback.setStroke('#666' );
-      cardback.setShadowBlur( 9 );
-      cardback.setShadowOffset( 6 );
-      
-      self.eq.trigger( self, 'card:active' );
-      self.eq.trigger( self, 'card:updated' );    
-    })
-    .on('mouseup touchend', function() {
-      cardback.setStroke( '#aaa' );
-      cardback.setShadowBlur( 3 );
-      cardback.setShadowOffset( 2 );
-      
-      self.eq.trigger( self, 'card:inactive' );
-      self.eq.trigger( self, 'card:updated' );
-    })
-    .on('dragstart', function() {      
-      self.eq.trigger( self, 'card:movestart', __getCoordinates.call( self ) );
-    })
-    /*
-    .on('dragmove', function() {
-      self.eq.trigger( self, 'card:move', __getCoordinates.call( self ) );
-    })
-    */
-    .on('dragend', function() {      
-      self.eq.trigger( self, 'card:moveend', __getCoordinates.call( self ) );
-      self.eq.trigger( self, 'card:updated', __getCoordinates.call( self ) );
-    });
+  card.addTag = function( color ) {
+    return __addTag.call( card, queue, socket, card.shape, color, true );
+  };
   
+  card.removeTag = function() {
+    return __removeTag.call( card, queue, socket, card.shape, true );
+  };
+  
+  return card;
 }
 
 // private methods
 
 function __getCoordinates() {
   return { 
+    cardid: this.id,
+    pocketid: this.pocketid,
+    color: this.color,
     x: this.shape.getX(), 
     y: this.shape.getY()
   }
 }
 
-function createTag() {
-  return new Kinetic.Rect({
-    name: 'tag' + ( this.id ),
-    x: 95,
-    y: 5,
-    width: 10,
-    height: 10,
-    fill: '#eee',
-    stroke: '#666',
-    strokeWidth: 1,
-    cornerRadius: 2,
-    opacity: 0
-  });
+function __watch( queue, socket, shape ) {
+  var card = this;
+
+  shape
+    .on('mousedown touchstart', function() {
+      if (card.active) {
+        this.displayActiveState();
+        
+        __broadcastEvent.call( card, queue, 'active', socket, 'active' );
+      }
+    })
+    .on('mouseup touchend', function() {
+      if (card.active) {
+        this.displayInactiveState();
+        
+        __broadcastEvent.call( card, queue, 'inactive', socket, 'inactive' );
+      }
+    })
+    .on('dragstart', function() {
+      __broadcastEvent.call( card, queue, 'movestart', socket, 'movestart' );
+    })
+    .on('dragend', function() {
+      __broadcastEvent.call( card, queue, 'moveend', socket, 'update', true );
+    });
+    
+  socket
+    .on('card:update', function( data ) {
+      if ( card.id === data.cardid ) {
+        __moveTo.call( card, queue, socket, shape, data.x, data.y );
+      }
+    })
+    .on('card:tagged', function( data ) {
+      if ( card.id === data.cardid ) {
+        __addTag.call( card, queue, socket, shape, data.color );
+      }
+    })
+    .on('card:untagged', function( data ) {
+      if ( card.id === data.cardid ) {
+        __removeTag.call( card, queue, socket, shape );
+      }
+    });
+};
+
+function __broadcastEvent( queue, client, socket, server, remote ) {  
+  var data = __getCoordinates.call( this );
+  
+  queue.trigger( this, 'card:' + client, data );
+  
+  if ( remote ) {
+    socket.emit( 'card:' + server, data );
+  }
 }
+
+function __moveTo( queue, socket, shape, x, y, islocal ) {
+  __broadcastEvent.call( this, queue, 'movestart', socket, 'movestart' );
+  
+  shape.moveTo( x, y );
+  
+  __broadcastEvent.call( this, queue, 'moveend', socket, 'update', islocal );
+  
+  return this;
+};
+
+function __addTag( queue, socket, shape, color, islocal ) {
+  this.color = color;
+  
+  shape.tag( this.color );
+  
+  __broadcastEvent.call( this, queue, 'tagged', socket, 'tagged', islocal );
+  
+  return this;
+};
+
+function __removeTag( queue, socket, shape, islocal ) {
+  shape.untag();
+  
+  __broadcastEvent.call( this, queue, 'untagged', socket, 'untagged', islocal );
+  
+  return this;
+};
 
 // public methods
 
 Card.prototype.allowDrag = function() {
   this.shape.setDraggable( true );
+  this.active = true;
+  
+  return this;
 };
 
 Card.prototype.disallowDrag = function() {
   this.shape.setDraggable( false );
-};
-
-Card.prototype.move = function( x, y ) {
-  this.eq.trigger( this, 'card:movestart', __getCoordinates.call( this ) );
+  this.active = false;
   
-  this.shape.setX( x );
-  this.shape.setY( y );
-  
-  this.eq.trigger( this, 'card:move', __getCoordinates.call( this ) );
-  this.eq.trigger( this, 'card:moveend', __getCoordinates.call( this ) );
-  this.eq.trigger( this, 'card:updated', __getCoordinates.call( this ) );
-};
-
-Card.prototype.addTag = function( color ) {  
-  this.tag.setFill( color );
-  this.tag.setOpacity( 1 );
-  
-  this.eq.trigger( this, 'card:updated', { color: color } );
-};
-
-Card.prototype.removeTag = function() {
-  this.tag.setOpacity( 0 );
+  return this;
 };
 
 return Card;

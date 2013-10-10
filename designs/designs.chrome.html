@@ -6,99 +6,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Bootstrap -->
-    <link href="../css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="../css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
   </head>
   <body>
     <div id="container" style="text-align:center;margin: 10px;"></div>
     
-    <script src="../lib/vendor/kinetic-v4.6.0.min.js"></script>
-    <script src="../lib/vendor/gator.js"></script>
-    <script src="../lib/vendor/store+json2.min.js"></script>
+    <script src="./lib/vendor/kinetic-v4.6.0.min.js"></script>
     
-    <script src="../lib/vuu.se.eventqueue.js"></script>
-    <script src="../lib/vuu.se.card.js"></script>
-    <script src="../lib/vuu.se.board.js"></script>
+    <script src="./lib/vuu.se.eventqueue.js"></script>
+    <script src="./lib/vuu.se.card.js"></script>
     
     <script defer="defer">
     
-    // event queue setup
-      
-      var queue = new EventQueue();
-      
-    // stage setup
-      
-      var stage = new Kinetic.Stage({
-        container: 'container',
-        width: 800,
-        height: 600
-      });
-      
-    // visual chrome
-      
-      var chromeLayer = new Kinetic.Layer();
+// event queue setup
 
-      var cardMenuChrome = new Kinetic.Rect({
-        name: 'cardMenuChrome',
-        id: 'cardMenuChrome',
-        x: 1,
-        y: 500,
-        width: 798,
-        height: 99,
-        stroke: 'black',
-        strokeWidth: 1
-      });
+var queue = new EventQueue();
 
-      var boardMenuChrome = new Kinetic.Rect({
-        name: 'boardMenuChrome',
-        id: 'boardMenuChrome',
-        x: 1,
-        y: 1,
-        width: 798,
-        height: 50,
-        stroke: 'black',
-        strokeWidth: 1
-      });
-      
-      chromeLayer.add( boardMenuChrome ).add( cardMenuChrome );
-      
-    // card menu
+// stage setup
 
-      var cardMenuLayer = new Kinetic.Layer({
-        x: 101,
-        y: 500,
-        clip: [0, 0, 697, 100]
-      });
+var stage = new Kinetic.Stage({
+  container: 'container',
+  width: 800,
+  height: 600
+});
+
+// visual chrome
+
+var chromeLayer = new Kinetic.Layer();
+
+chromeLayer.add(
+  new Kinetic.Rect({
+    name: 'cardMenuChrome',
+    id: 'cardMenuChrome',
+    x: 1,
+    y: 500,
+    width: 798,
+    height: 99,
+    stroke: 'black',
+    strokeWidth: 1
+  })
+);
+
+chromeLayer.add(
+  new Kinetic.Rect({
+    name: 'boardMenuChrome',
+    id: 'boardMenuChrome',
+    x: 1,
+    y: 1,
+    width: 798,
+    height: 50,
+    stroke: 'black',
+    strokeWidth: 1
+  })
+);
+
+stage.add( chromeLayer );
+
       
-      var cardMenu = new Kinetic.Group({
-        draggable: true,
-        dragBoundFunc: function(pos) {
-          return {
-            x: pos.x,
-            y: this.getAbsolutePosition().y
-          }
-        }
-      });
-      
-      for (var i = 1; i <= 10; i++) {
-      
-        var card = new Card('card' + i, queue, {
-          cardid: 'card' + i,
-          title: 'Card [' + i + '] added by vuu.se',
-          x: (i * 120) - 100,
-          y: 17,
-          w: 100,
-          h: 65
-        });
-        
-        card.disallowDrag();
-        
-        // add the shape to the layer
-        cardMenu.add( card.shape );
-        
-      }
-      
-      cardMenuLayer.add( cardMenu );
       
     // board menu
 
@@ -171,32 +136,8 @@
       boardLayer.add( boards );
       boardMenuLayer.add( boardMenu );
       
-    // add card control
-
-      var addCardMenuLayer = new Kinetic.Layer({
-        x: 1,
-        y: 501,
-      });
-      
-      var addCardCardMenuButton = new Kinetic.Text({
-        x: 0,
-        y: 0,
-        text: 'Add Card',
-        fontSize: 30,
-        fontFamily: 'Calibri',
-        fill: 'grey',
-        width: 100,
-        padding: 20,
-        align: 'center'
-      });
-      
-      addCardMenuLayer.add( addCardCardMenuButton );
-    
-
-    // add everything to the stage
-    
-      stage.add( chromeLayer ).add( cardMenuLayer ).add( boardMenuLayer ).add( boardLayer ).add( addCardMenuLayer );
-      
+      stage.add( boardMenuLayer );
+      stage.add( boardLayer );
     </script>
   </body>
 </html>

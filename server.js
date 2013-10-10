@@ -1,45 +1,49 @@
 var fortune = require('fortune')
-    connect = require('connect');
-    
-    
+    connect = require('connect'),
+    socketio = require('socket.io'),
+    http = require('http');
+     
+     
 var port = process.env.PORT || 5000;
-
+ 
 var config = {
   db: 'vuu.se',
   namespace: 'api/head',
   cors: true,
   production: false
 };
-
+ 
 var app = fortune( config );
 
+var httpServer = require('http').createServer( app.router );
+
+var io = socketio.listen( httpServer );
+ 
 app.use( connect.static(__dirname + '/designs') );
-
-app.resource('wall', {
-  name: String,
-  guid: String,
-  boards: ['board'],
-  pockets: ['pocket']
-});
-
-app.resource('board', {
-  name: String,
-  guid: String,
-  attributeName: String,
-  wall: 'wall'
-});
-
+ 
 app.resource('pocket', {
   name: String,
   guid: String,
-  wall: 'wall',
   data: ['pocketData']
 });
-
+ 
 app.resource('pocketData', {
   name: String,
   value: String,
   pocket: ['pocket']
 });
 
-app.listen( port );
+io.sockets
+  .on('connection', function (socket) {
+  
+    [ 'pocket:create', 'pocket:update', 'card:create', 'card:update', 'card:tagged', 'card:untagged' ]
+      .forEach(function( ev ) {
+
+        socket.on( ev, function ( data ) { socket.broadcast.emit( ev, data ); });
+      
+      });
+
+  });
+
+httpServer.listen( port );
+
