@@ -19,7 +19,7 @@ var shadow = {
 
 function Card( config ) {   
   var shape = new Kinetic.Group();
-  var id = config.id;
+  var id = config.pocketid;
   var title = config.title;
 
   var cardback = __createCardback( id, size.w, size.h, colors.fill, shadow.color );

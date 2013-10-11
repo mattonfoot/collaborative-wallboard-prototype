@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>VUU.SE UI Prototype</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Bootstrap -->
+    <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <div id="app">
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#board_1" data-toggle="tab">Board 1</a></li>
+        <li class="add-board"><a href="#add" onclick="return addBoard()">[+]</a></li>
+      </ul>
+
+      <div class="tab-content">
+        <div class="tab-pane active" id="board_1"></div>
+      </div>
+    </div>    
+    
+    <script src="./lib/vendor/jquery1.10.2.min.js"></script>
+    <script src="./lib/vendor/bootstrap.min.js"></script>
+    <script src="./lib/vendor/kinetic-v4.6.0.min.js"></script>
+    
+    <script src="./lib/vuu.se.eventqueue.js"></script>
+    
+    <script defer="defer">
+    
+// event queue setup
+
+var queue = new EventQueue();
+
+var boardCounter = 1;
+var colors = [ '', 'red', 'green', 'blue', 'silver', 'yellow', 'darkgrey', 'steel' ];
+
+function addBoard() {
+  var id = (++boardCounter);
+  
+  $( '<li><a href="#board_'+id+'" data-toggle="tab">Board '+id+'</a></li>' ).insertBefore( '#app .add-board' );
+  
+  $('.tab-content').append('<div class="tab-pane" id="board_'+id+'"></div>');
+  
+  createCanvasBoard( id );
+}
+
+function createCanvasBoard( id ) {
+  var board = new Kinetic.Stage({ container: 'board_' + id, width:800, height:600 });
+
+  var layer = new Kinetic.Layer({ x:0, y:0 });
+
+  var rect = new Kinetic.Rect({ x:10, y:10, width:780, height:580, fill:colors[ id ] });
+
+  layer.add( rect );
+
+  board.add( layer );
+}
+
+createCanvasBoard( boardCounter );
+
+    </script>
+  </body>
+</html>

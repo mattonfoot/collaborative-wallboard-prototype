@@ -51,6 +51,10 @@ var config = {
 var queue = new EventQueue( { debug: true } );
 var socket = io.connect('http://localhost:5000');
 
+socket.on( 'app:init', function( pockets ) { console.log( 'success', pockets ); });
+
+socket.on( 'app:initfail', function( pockets ) { console.log( 'fail',  pockets ); });
+
 // UI
 var stage = new Kinetic.Stage( config );
 new ChromeCanvas( stage );
@@ -60,9 +64,15 @@ new PocketFactory( queue, socket, wall_1 );
 new BoardFactory( queue, socket, wall_1 );
 
 // controls
-new ButtonCanvas( stage, '[+]', 'pocket:add', { x: 1, y: 501, width: 100, fontSize: 60 });
 new ButtonCanvas( stage, '[+]', 'board:add', { x: 1, y: 1, width: 50, fontSize: 25 });
+var addCardButton;
+queue.on( {}, 'boardcreate:end', function() {
+  if (!addCardButton) {
+    addCardButton = new ButtonCanvas( stage, '[+]', 'pocket:add', { x: 1, y: 501, width: 100, fontSize: 60 });
+  }
+});
 
+/*
 var cardlist = [];
 queue.on(cardlist, 'cardcreate:end', function( data, card ) { this.push( card ); });
 
@@ -74,7 +84,7 @@ queue.on(pocketlist, 'pocketcreate:end', function( data, pocket ) { this.push( p
 
 pocketlist.clones = [];
 queue.on(pocketlist, 'pocketclone:end', function( data, pocket ) { this.clones.push( pocket ); });
-
+*/
     </script>
   </body>
 </html>
