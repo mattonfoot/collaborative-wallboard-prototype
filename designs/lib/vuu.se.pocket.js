@@ -1,53 +1,44 @@
 var Pocket = (function() {
 
-var defaults = { w: 100, h: 65 };
-var counter = 0;
-
-function Pocket( queue, socket, config ) {
+function Pocket( queue, socket, data ) {
   var pocket = this;
-  pocket.id = config.id || 'pocket_' + (++counter);
   
-  var databag = {
-    'title': config.title
-  };
-
-  // private methods
-
-  function __broadcast( key, value ) {
-    var msg = {
-      pocketid: pocket.id,
-      key: key,
-      value: value
-    };
-    
-    queue.trigger( pocket, 'pocket:update', msg );    
-    socket.emit( 'pocket:update', msg );
-  };
+  pocket.id = data.id;
+  pocket.title = data.title;
+  pocket.cardnumber = data.cardnumber;
   
-  //  triggers 
-
-  queue.on( pocket, 'carddata:update', function( data, card ) {
-    if (data.pocketid === pocket.id) {
-      databag[ data.key ] = data.value;
-
-      socket.emit( 'pocket:update', data );
-    }
-  });
+  var databag = {};
+  
+  //  triggers
 
   socket.on( 'pocket:update', function( data ) {
-    if (data.pocketid === pocket.id) {
+    if (data.pocket === pocket.id) {
       databag[ data.key ] = data.value;
 
       queue.trigger( pocket, 'pocket:update', data );
     }
   });
   
-  // public methods
+  // public functions
+
+  pocket.getId = function() {
+    return pocket.id;
+  };
   
   pocket.set = function( key, value ) {
-    databag[ key ] = value;
+    var data = {
+      pocket: pocket.id,
+      key: key,
+      value: value
+    };
     
-    __broadcast( key, value );
+    databag[ data.key ] = data.value;
+
+    queue.trigger( pocket, 'pocket:update', data );
+    
+    socket.emit( 'pocket:update', data );
+    
+    return this;
   };
 
   pocket.get = function( key ) {

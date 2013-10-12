@@ -1,53 +1,102 @@
 var Card = (function() {
 
-// defaults
-var counter = 0;
-
-// constructor
-
-function Card( queue, socket, config ) {
+function Card( queue, socket, data ) {
   var card = this;
   
-  card.id = config.cardid || 'card_' + (++counter);
-  card.pocketid = config.pocketid;
-  card.title = config.title;  
-  card.shape = config.shape;
-  card.color;
+  card.id = data.id;  
+  card.links = data.links || {};
+  card.x = data.x;
+  card.y = data.y;
+  card.tagged = data.tagged || false;
   
-  __watch.call( card, queue, socket, card.shape );
-  
-  // public methods
-  
-  card.moveTo = function( x, y ) {
-    return __moveTo.call( card, queue, socket, card.shape, x, y, true );
+  // private
+
+  function __broadcastEvent( ev ) {  
+    queue.trigger( card, 'card:' + ev, { card: card } );
+    
+    socket.emit( 'card:' + ev, { card: card } );
   };
   
-  card.addTag = function( color ) {
-    return __addTag.call( card, queue, socket, card.shape, color, true );
+  // triggers
+
+  socket
+    .on('card:moveend', function( data ) {
+      if ( card.id === data.id ) {
+        card.moveTo( data.x, data.y );
+      }
+    })
+    .on('card:tagged', function( data ) {
+      if ( card.id === data.id ) {
+        card.addTag();
+      }
+    })
+    .on('card:untagged', function( data ) {
+      if ( card.id === data.id ) {
+        card.removeTag();
+      }
+    });
+  
+  // public functions
+
+  card.getId = function() {
+    return card.id;
+  };
+
+  card.getPocketId = function() {
+    return card.links.pocket;
+  };
+
+  card.getBoardId = function() {
+    return card.links.board;
+  };
+
+  card.getPosition = function() {
+    return { 
+      board: card.getBoardId(),
+      x: card.x,
+      y: card.y
+    };
+  };
+  
+  card.moveTo = function( x, y ) {
+    __broadcastEvent( 'movestart' );
+    
+    card.x = x;
+    card.y = y;
+    
+    __broadcastEvent( 'moveend' );
+    
+    return card;
+  };
+  
+  card.addTag = function() {
+    card.tagged = true;
+    
+    __broadcastEvent( 'tagged' );
+    
+    return card;
   };
   
   card.removeTag = function() {
-    return __removeTag.call( card, queue, socket, card.shape, true );
+    card.tagged = false;
+    
+    __broadcastEvent( 'untagged' );
+    
+    return card;
   };
   
   return card;
 }
 
-// private methods
+return Card;
 
-function __getCoordinates() {
-  return { 
-    cardid: this.id,
-    pocketid: this.pocketid,
-    color: this.color,
-    x: this.shape.getX(), 
-    y: this.shape.getY()
-  }
-}
+})();
 
-function __watch( queue, socket, shape ) {
-  var card = this;
 
+
+
+    
+  /*
   shape
     .on('mousedown touchstart', function() {
       if (card.active) {
@@ -69,79 +118,4 @@ function __watch( queue, socket, shape ) {
     .on('dragend', function() {
       __broadcastEvent.call( card, queue, 'moveend', socket, 'update', true );
     });
-    
-  socket
-    .on('card:update', function( data ) {
-      if ( card.id === data.cardid ) {
-        __moveTo.call( card, queue, socket, shape, data.x, data.y );
-      }
-    })
-    .on('card:tagged', function( data ) {
-      if ( card.id === data.cardid ) {
-        __addTag.call( card, queue, socket, shape, data.color );
-      }
-    })
-    .on('card:untagged', function( data ) {
-      if ( card.id === data.cardid ) {
-        __removeTag.call( card, queue, socket, shape );
-      }
-    });
-};
-
-function __broadcastEvent( queue, client, socket, server, remote ) {  
-  var data = __getCoordinates.call( this );
-  
-  queue.trigger( this, 'card:' + client, data );
-  
-  if ( remote ) {
-    socket.emit( 'card:' + server, data );
-  }
-}
-
-function __moveTo( queue, socket, shape, x, y, islocal ) {
-  __broadcastEvent.call( this, queue, 'movestart', socket, 'movestart' );
-  
-  shape.moveTo( x, y );
-  
-  __broadcastEvent.call( this, queue, 'moveend', socket, 'update', islocal );
-  
-  return this;
-};
-
-function __addTag( queue, socket, shape, color, islocal ) {
-  this.color = color;
-  
-  shape.tag( this.color );
-  
-  __broadcastEvent.call( this, queue, 'tagged', socket, 'tagged', islocal );
-  
-  return this;
-};
-
-function __removeTag( queue, socket, shape, islocal ) {
-  shape.untag();
-  
-  __broadcastEvent.call( this, queue, 'untagged', socket, 'untagged', islocal );
-  
-  return this;
-};
-
-// public methods
-
-Card.prototype.allowDrag = function() {
-  this.shape.setDraggable( true );
-  this.active = true;
-  
-  return this;
-};
-
-Card.prototype.disallowDrag = function() {
-  this.shape.setDraggable( false );
-  this.active = false;
-  
-  return this;
-};
-
-return Card;
-
-})();
+  */

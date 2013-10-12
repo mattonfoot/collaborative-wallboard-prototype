@@ -8,57 +8,236 @@
     <!-- Bootstrap -->
     <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+    
+    <style>
+      .tab-content {
+        width: 100%;
+        height: 600px;
+        border-bottom: 1px solid #ddd;
+        background: #f6f6f6;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
       <ul class="nav nav-tabs">
-        <li class="active"><a href="#board_1" data-toggle="tab">Board 1</a></li>
-        <li class="add-board"><a href="#add" onclick="return addBoard()">[+]</a></li>
+        <li><button type="button" class="btn btn-default add-board" title="Add Board"><i class="glyphicon glyphicon-plus"></i></button></li>
       </ul>
 
-      <div class="tab-content">
-        <div class="tab-pane active" id="board_1"></div>
+      <div class="tab-content"></div>
+      
+      <div class="btn-group">
+        <button type="button" class="btn btn-default add-region" disabled title="Create Region"><i class="glyphicon glyphicon-plus"></i> New Region</button>
+        <button type="button" class="btn btn-default add-pocket" disabled title="Create Card"><i class="glyphicon glyphicon-plus"></i> New Card</button>
       </div>
     </div>    
     
     <script src="./lib/vendor/jquery1.10.2.min.js"></script>
-    <script src="./lib/vendor/bootstrap.min.js"></script>
+    <script src="./lib/vendor/bootstrap.min.js"></script>    
     <script src="./lib/vendor/kinetic-v4.6.0.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     
     <script src="./lib/vuu.se.eventqueue.js"></script>
+    
+    <script src="./lib/vuu.se.wall.js"></script>
+    <script src="./lib/vuu.se.board.js"></script>
+    <script src="./lib/vuu.se.pocket.js"></script>
+    <script src="./lib/vuu.se.card.js"></script>
     
     <script defer="defer">
     
 // event queue setup
-
-var queue = new EventQueue();
-
-var boardCounter = 1;
-var colors = [ '', 'red', 'green', 'blue', 'silver', 'yellow', 'darkgrey', 'steel' ];
-
-function addBoard() {
-  var id = (++boardCounter);
   
-  $( '<li><a href="#board_'+id+'" data-toggle="tab">Board '+id+'</a></li>' ).insertBefore( '#app .add-board' );
+var socket = io.connect('http://localhost:5000'),
+    queue = new EventQueue( { debug: true } );
+
+socket
+  .on( 'app:init', function( walls ) {
   
-  $('.tab-content').append('<div class="tab-pane" id="board_'+id+'"></div>');
+    console.log( 'app:init', walls );
+
+    var app = $('#app'),
+        size = {
+          width: app.find('.tab-content').outerWidth(),
+          height: app.find('.tab-content').outerHeight()
+        },
+        wall = walls[0],
+        boardCounter = 1;
+
+    function createCanvasBoard( id ) {
+      var board = new Kinetic.Stage({ container: id, width: size.width, height: size.height });
+
+      var layer = new Kinetic.Layer({ x:0, y:0 });
+
+      board.add( layer );
+      
+      queue.on( layer, 'card:createend', function( data ) {
+        if ( data.card.links.board == id ) {
+          var card = new Kinetic.Rect({ x:10, y:10, width:100, height:65, fill: '#ddd', draggable: true });
+        
+          layer.add( card );
+          
+          layer.batchDraw();
+        }
+      });
+    }
   
-  createCanvasBoard( id );
-}
+    queue.trigger( app.get(0), 'app:initbegin', { app: app } );
+    
+    // build a wall from the initial data
+  
+    queue.trigger( app.wall, 'wall:createbegin', { wall: wall } );
 
-function createCanvasBoard( id ) {
-  var board = new Kinetic.Stage({ container: 'board_' + id, width:800, height:600 });
+    app.wall = new Wall( queue, wall );
+    app.data('wall', app.wall);
+  
+    queue.trigger( app.wall, 'wall:createend', { wall: app.wall } );
+    
+    // setup the board factory
 
-  var layer = new Kinetic.Layer({ x:0, y:0 });
+    app
+      .delegate('.add-board', 'mouseup', function() {
+        queue.trigger( this, 'board:createbegin', { wall: app.wall } );
+        
+        socket.emit( 'board:create', { wall: app.wall } );
+      });
+      
+    socket
+      .on('board:created', function( data ) {
+  
+        console.log( 'board:created', data );
+    
+        var board = new Board( queue, data );
+      
+        app.wall.addBoard( board );
+        
+        app.find( '.tab-content > .active, .nav-tabs > .active' ).removeClass( 'active' );
+        
+        app.find( '.tab-content' )
+          .append( '<div class="tab-pane active" id="'+ board.getId() +'"></div>' );
+        
+        createCanvasBoard( board.getId() );
+        
+        $( '<li class="active"><a href="#'+ board.getId() +'" data-toggle="tab">Board '+ app.wall.boards.length +'</a></li>' )
+          .insertBefore( $('#app .add-board').parent() );
+        
+        // setup the card factory part 1
+    
+        queue
+          .on( board, 'pocket:createend', function( data ) {
+            // for each board we need to create a card which communicates position on a board
+        
+            queue.trigger( this, 'card:createbegin', { board: board, pocket: data.pocket } );
+            
+            socket
+              .emit( 'card:create', { board: board, pocket: data.pocket } );
+          });
+        
+        queue.trigger( board, 'board:createend', { board: board } );
+      });
+      
+    // enable pocket and region creation when the first board has been created
+    
+    queue
+      .on( app, 'board:createend', function() {
+   // .once( 'board:createend', function() {     
+          app.find('.add-pocket, .add-region').removeAttr( 'disabled' );
+      });
+      
+    // setup the pocket factory
+      
+    app
+      .delegate('.add-pocket', 'mouseup', function() {
+        var title = prompt( 'Please provide a title for this card', 'Sample Card' );
+        
+        queue.trigger( this, 'pocket:createbegin', { wall: app.wall, title: title } );        
+      
+        socket
+          .emit( 'pocket:create', { wall: app.wall, title: title } );
+      });
+      
+    socket
+      .on('pocket:created', function( data ) {
+  
+        console.log( 'pocket:created', data );
+    
+        var pocket = new Pocket( queue, socket, data );
+      
+        app.wall.addPocket( pocket );
+        
+        queue.trigger( pocket, 'pocket:createend', { pocket: pocket } );
+      });
+      
+    // setup the card factory part 2
+      
+    socket
+      .on('card:created', function( data ) {
+  
+        console.log( 'card:created', data );
+    
+      
+        var card = new Card( queue, socket, data );
 
-  var rect = new Kinetic.Rect({ x:10, y:10, width:780, height:580, fill:colors[ id ] });
+        app.wall.getBoardById( data.links.board ).addCard( card );
+        
+        queue.trigger( card, 'card:createend', { card: card } );
+      });
+      
+    // setup the region factory
+    
+    app
+      .delegate('.add-region', 'mouseup', function() {
+        socket
+          .emit( 'region:create' );
+      });
 
-  layer.add( rect );
+  
+    queue.trigger( app.get(0), 'app:initend', { app: app } );
+  });
+  
 
-  board.add( layer );
-}
+  
+  
 
+
+/*
 createCanvasBoard( boardCounter );
+*/
+
+/*
+
+initialize app - done
+
+get current state from server
+  wall - done
+    boards
+      cards
+      regions
+    pockets
+    
+initialize UI remote façades
+initialize UI
+
+add a board to the wall - done
+  add a shelf to the board
+  
+add a card to the shelf
+
+add a region to the board
+
+move a card onto the board
+
+move a card over a region
+  modify the card data
+  
+-----
+  
+ui triggers create event
+  --> server creates model created event
+    --> UI creates remote façade
+      --> UI creates element
+
+*/
 
     </script>
   </body>
