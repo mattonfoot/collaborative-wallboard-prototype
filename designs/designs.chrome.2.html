@@ -14,7 +14,7 @@
         width: 100%;
         height: 600px;
         border-bottom: 1px solid #ddd;
-        background: #f6f6f6;
+        background: #f9f9f9;
       }
     </style>
   </head>
@@ -26,10 +26,10 @@
 
       <div class="tab-content"></div>
       
-      <div class="btn-group">
+      <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
         <button type="button" class="btn btn-default add-region" disabled title="Create Region"><i class="glyphicon glyphicon-plus"></i> New Region</button>
         <button type="button" class="btn btn-default add-pocket" disabled title="Create Card"><i class="glyphicon glyphicon-plus"></i> New Card</button>
-      </div>
+      </nav>
     </div>    
     
     <script src="./lib/vendor/jquery1.10.2.min.js"></script>
@@ -43,18 +43,25 @@
     <script src="./lib/vuu.se.board.js"></script>
     <script src="./lib/vuu.se.pocket.js"></script>
     <script src="./lib/vuu.se.card.js"></script>
+    <script src="./lib/vuu.se.region.js"></script>
+    
+    <script src="./lib/shapes/vuu.se.canvas.board.js"></script>
+    <script src="./lib/shapes/vuu.se.canvas.card.js"></script>
+    <script src="./lib/shapes/vuu.se.canvas.region.js"></script>
     
     <script defer="defer">
+  
+// namespace
+  
+var vuu = { se: {} };
     
 // event queue setup
   
 var socket = io.connect('http://localhost:5000'),
-    queue = new EventQueue( { debug: true } );
+    queue = new EventQueue( /* { debug: true } */ );
 
 socket
   .on( 'app:init', function( walls ) {
-  
-    console.log( 'app:init', walls );
 
     var app = $('#app'),
         size = {
@@ -63,24 +70,41 @@ socket
         },
         wall = walls[0],
         boardCounter = 1;
+        
+        
 
     function createCanvasBoard( id ) {
-      var board = new Kinetic.Stage({ container: id, width: size.width, height: size.height });
-
-      var layer = new Kinetic.Layer({ x:0, y:0 });
-
-      board.add( layer );
+      var canvasboard = new CanvasBoard(queue, { container: id, width: size.width, height: size.height });
       
-      queue.on( layer, 'card:createend', function( data ) {
-        if ( data.card.links.board == id ) {
-          var card = new Kinetic.Rect({ x:10, y:10, width:100, height:65, fill: '#ddd', draggable: true });
-        
-          layer.add( card );
+      queue
+        .on( canvasboard, 'card:createend', function( data ) {
+          if ( data.card.links.board == id ) {
+            var canvascard = new CanvasCard( queue, data.card, app.wall.getPocketById( data.card.links.pocket ) );
           
-          layer.batchDraw();
-        }
-      });
+            canvasboard.addCard( canvascard );
+          }
+        });
+      
+      queue
+        .on( canvasboard, 'region:createend', function( data ) {
+          if ( data.region.links.board == id ) {
+            var canvasregion = new CanvasRegion( queue, data.region );
+          
+            canvasboard.addRegion( canvasregion );
+          }
+        });
     }
+    
+    function beginCardCreation( board, pocket ) {
+      // for each board we need to create a card which communicates position on a board
+  
+      queue.trigger( this, 'card:createbegin', { board: board, pocket: pocket } );
+      
+      socket
+        .emit( 'card:create', { board: board, pocket: pocket } );
+    };
+    
+    
   
     queue.trigger( app.get(0), 'app:initbegin', { app: app } );
     
@@ -96,16 +120,30 @@ socket
     // setup the board factory
 
     app
-      .delegate('.add-board', 'mouseup', function() {
-        queue.trigger( this, 'board:createbegin', { wall: app.wall } );
+      .delegate('.add-board', 'mouseup touchend', function() {
+        var key = prompt( 'Please provide a data key that this board represents', '' );
         
-        socket.emit( 'board:create', { wall: app.wall } );
+        var data = { wall: app.wall, key: key };
+        
+        queue.trigger( this, 'board:createbegin', data );
+        
+        socket.emit( 'board:create', data );
+      });
+      
+    app
+      .delegate('a[data-toggle="tab"]', 'shown.bs.tab', function (e) {
+        var hash = e.target.hash;
+        var boardid = hash.substr( 1, hash.length - 1 );
+        
+        app.wall.setActiveBoardById( boardid );
       });
       
     socket
       .on('board:created', function( data ) {
-  
-        console.log( 'board:created', data );
+        
+        if ( app.wall.getBoardById( data.id ) ) {
+          return; // we already have it ( should we check if it's fully synced? )
+        }
     
         var board = new Board( queue, data );
       
@@ -118,19 +156,20 @@ socket
         
         createCanvasBoard( board.getId() );
         
-        $( '<li class="active"><a href="#'+ board.getId() +'" data-toggle="tab">Board '+ app.wall.boards.length +'</a></li>' )
+        $( '<li class="active"><a href="#'+ board.getId() +'" data-toggle="tab">' + board.getKey() + '</a></li>' )
           .insertBefore( $('#app .add-board').parent() );
+          
+        // now we have to create a new card for each pocket in the current wall
+        
+        app.wall.pockets.forEach(function( pocket ) {
+          beginCardCreation( board, pocket );
+        });
         
         // setup the card factory part 1
     
         queue
           .on( board, 'pocket:createend', function( data ) {
-            // for each board we need to create a card which communicates position on a board
-        
-            queue.trigger( this, 'card:createbegin', { board: board, pocket: data.pocket } );
-            
-            socket
-              .emit( 'card:create', { board: board, pocket: data.pocket } );
+            beginCardCreation( board, data.pocket );
           });
         
         queue.trigger( board, 'board:createend', { board: board } );
@@ -147,7 +186,7 @@ socket
     // setup the pocket factory
       
     app
-      .delegate('.add-pocket', 'mouseup', function() {
+      .delegate('.add-pocket', 'mouseup touchend', function() {
         var title = prompt( 'Please provide a title for this card', 'Sample Card' );
         
         queue.trigger( this, 'pocket:createbegin', { wall: app.wall, title: title } );        
@@ -158,8 +197,10 @@ socket
       
     socket
       .on('pocket:created', function( data ) {
-  
-        console.log( 'pocket:created', data );
+        
+        if ( app.wall.getPocketById( data.id ) ) {
+          return; // we already have it ( should we check if it's fully synced? )
+        }
     
         var pocket = new Pocket( queue, socket, data );
       
@@ -172,13 +213,16 @@ socket
       
     socket
       .on('card:created', function( data ) {
-  
-        console.log( 'card:created', data );
-    
+        
+        var board = app.wall.getBoardById( data.links.board );
+        
+        if ( board.getCardById( data.id ) ) {
+          return; // we already have it ( should we check if it's fully synced? )
+        }
       
         var card = new Card( queue, socket, data );
 
-        app.wall.getBoardById( data.links.board ).addCard( card );
+        board.addCard( card );
         
         queue.trigger( card, 'card:createend', { card: card } );
       });
@@ -186,23 +230,239 @@ socket
     // setup the region factory
     
     app
-      .delegate('.add-region', 'mouseup', function() {
+      .delegate('.add-region', 'mouseup touchend', function() {
+        var val = prompt( 'Please provide a value for this region', '' );
+        
+        var board = app.wall.getActiveBoard();
+        
+        var data = {
+          x: 10,
+          y: 10,
+          width: 250,
+          height: 150,
+          board: board,
+          value: val
+        };
+        
+        queue.trigger( this, 'region:createbegin', data );
+        
         socket
-          .emit( 'region:create' );
+          .emit( 'region:create', data );
       });
+      
+    socket
+      .on('region:created', function( data ) {
+        
+        var board = app.wall.getBoardById( data.links.board );
+        
+        if ( board.getRegionById( data.id ) ) {
+          return; // we already have it ( should we check if it's fully synced? )
+        }
+      
+        var region = new Region( queue, socket, data );
 
+        board.addRegion( region );
+        
+        queue.trigger( region, 'region:createend', { region: region } );
+      });
+      
+    // setup the card region collision watcher
+    
+    var regionalcards = {};
+
+    function cardIsInRegion( card, region ) {
+      var inLeft = card.x > region.x,
+          inRight = (card.x + 100) < (region.x + region.width);
+          inTop = card.y > region.y;
+          inBase = (card.y + 65) < (region.y + region.height);
+
+      return ( inLeft && inRight && inTop && inBase );
+    };
+    
+    function markCardAsInRegion( card, region ) {
+      if (!regionalcards[card]) regionalcards[card] = [];
+      
+      if ( regionalcards[card].indexOf( region ) < 0 ) {
+        regionalcards[card].push( region );
+        
+        return true;
+      }
+      
+      return false;
+    }
+    
+    function markCardAsNotInRegion( card, region ) {
+      if (!regionalcards[card]) regionalcards[card] = [];
+      
+      if ( regionalcards[card].indexOf( region ) < 0 ) return false;
+      
+      regionalcards[card].splice( regionalcards[card].indexOf( region ), 1);
+      
+      return true;
+    }
+    
+    queue
+      .on( app, 'card:moveend', function( data ) {      
+        var card = data.card;
+        var board = app.wall.getBoardById( card.getBoardId() );
+        var regions = board.regions;
+        
+        regions.forEach(function( region ) {
+          var hasBeenRemoved = markCardAsNotInRegion( card.id, region.id ),
+              hasBeenAdded = false,
+              ev;
+        
+          if ( cardIsInRegion( card, region ) ) {
+            hasBeenAdded = markCardAsInRegion( card.id, region.id );
+          }
+          
+          if ( hasBeenRemoved && !hasBeenAdded ) {
+            ev = 'card:regionexit'
+          }
+          
+          if ( !hasBeenRemoved && hasBeenAdded ) {
+            ev = 'card:regionenter'
+          }
+          
+          if ( ev ) {
+            queue.trigger( board, ev, { board: board, card: card, region: region } );
+          }
+        });
+      })
+      
+      .on( app, 'region:moveend', function( data ) { /* console.log( 'region:moved', data ); */ }) // check to see if any new cards have entered ??
+      
+      .on( app, 'card:regionenter', function( data ) {
+        var pocket = app.wall.getPocketById( data.card.getPocketId() );
+        
+        pocket.set( data.board.key, data.region.value );
+      })
+      
+      .on( app, 'card:regionexit', function( data ) {
+        var pocket = app.wall.getPocketById( data.card.getPocketId() );
+        
+        pocket.set( data.board.key );
+      });
+  
+  
+  
+  
+  
+    // plugin repository
+
+    vuu.se.plugins = (function() {
+
+      var plugins = {};
+
+      function PluginRegistry() {
+      };
+      
+      // private
+      
+      function appliesToKey( plugin, key ) {      
+        if (plugin.keys && plugin.keys.indexOf( key ) < 0) {
+          return false; // ignore any plugin that is limited to other plugins
+        }
+        
+        return true;
+      };
+      
+      // public
+
+      PluginRegistry.prototype.register = function( pluginfactory ) {
+        // this can only be called when the app is initiated or app will be undefined
+        /*
+        
+          if ( !appinitiated ) {
+            parked.push( pluginfactory );
+            
+            return;
+          }
+        
+        */
+      
+      
+        var plugin = pluginfactory( app, queue, socket );
+        
+        var name = plugin.name;
+        var oldPlugin = plugins[name];
+        
+        if (oldPlugin) {
+          console.log( 'Skipped plugin [' + name + '] as that plugin is already loaded' );
+        
+          return this;
+        }
+        
+        plugins[name] = plugin;
+        
+        return this;
+      };
+
+      PluginRegistry.prototype.process = function( pocketid, key, value ) {
+        var pocket = app.wall.getPocketById( pocketid );
+        var cards = [];
+        
+        app.wall.boards.forEach(function( board ) {        
+          board.cards.forEach(function( card ) {
+            if ( card.links.pocket == pocketid ) {
+              cards.push( card );
+            }
+          });
+        });
+      
+        for (var name in plugins) {
+          var plugin = plugins[ name ];
+        
+          if ( appliesToKey( plugin, key ) ) {
+            plugin.process( pocket, cards, key, value );
+          }
+        }
+        
+        return this;
+      };
+      
+      var registry = new PluginRegistry();
+      
+      queue
+        .on( registry, 'pocket:update', function( data ) {
+          registry.process( data.pocket, data.key, data.value );
+        });
+
+      return registry;
+
+    })();
   
     queue.trigger( app.get(0), 'app:initend', { app: app } );
-  });
-  
-
-  
-  
 
 
-/*
-createCanvasBoard( boardCounter );
-*/
+
+
+
+// example plugin
+
+vuu.se.plugins.register(function( app, queue, socket ) {
+
+  return {
+
+    name: 'displayColorTag',
+    
+    description: 'Displays a colored tag on a card when its pocket data has a color value set',
+    
+    keys: [ 'color' ],
+
+    process: function( pocket, cards, key, value ) {      
+      cards.forEach(function( card ) {      
+        if ( !!value ) {
+          return card.tag( value );
+        }
+        
+        return card.untag();
+      });
+    }
+  
+  };
+  
+});
 
 /*
 
@@ -215,29 +475,65 @@ get current state from server
       regions
     pockets
     
-initialize UI remote façades
-initialize UI
+--------
+    
+initialize UI remote façades - done
+initialize UI - done
 
 add a board to the wall - done
-  add a shelf to the board
+  add a shelf to the board  --  no shelf currently they just appear top left of each board
   
-add a card to the shelf
+add a card to the shelf --  adds straight to the baord for now
+  move a card onto the board --  adds straight to the baord
 
-add a region to the board
+add a region to the board - done
+  resize a region
+  move a region - done -- should this check all the cards to see if any cards are now within its bounds ??
 
-move a card onto the board
+move a card over a region - done
+  detect a collision between a region and card - done
+  modify the card data - 
+  
+--------
+  
+  
+server should return existing card from data store if one is already stored for a specific pocket and board combination
+  
+add two different regions to two different boards - done
+  delete a region
+  resize a region
+  color the background of a region if it is a valid color value
+  edit region value
+  regions display the value in a title position
+  
+predefined list of board name based on registered plugins
+  edit board name
+  
+gender plugin
+  predefined values if board is of a specific name
+  region value validation based on board name
+  color the background of a region based on its chosen predefined value
+  
+card tagging logic to allow plugins to create a tag shape 
+  card to work out the best way to display a tag
+  multiple predefined anchors to group tags around
+  
+cards are considered inside a region if they more than 50% of them is over it
 
-move a card over a region
-  modify the card data
+card is over two or more regions on the same board
+
+display pocket data when double clicking card
+  
   
 -----
   
 ui triggers create event
   --> server creates model created event
-    --> UI creates remote façade
+    --> UI creates remote façade --- because cards trigger off pockets both clients create a card so we get duplicates
       --> UI creates element
 
 */
+  });
 
     </script>
   </body>

@@ -6,6 +6,7 @@ function Board( queue, data ) {
   var board = this;
   
   this.id = data.id;
+  this.key = data.key;
   
   // var shape = options.shape;
   
@@ -17,6 +18,10 @@ function Board( queue, data ) {
 
   board.getId = function() {
     return board.id;
+  };
+
+  board.getKey = function() {
+    return board.key;
   };
   
   board.addRegion = function( region ) {
@@ -85,33 +90,6 @@ function Board( queue, data ) {
   
   return this;
 }
-
-
-
-// private functions
-
-/*
-function hasCollided( a, b ) {
-  return !(((a.getY() + a.getHeight()) < (b.getY())) ||
-      (a.getY() > (b.getY() + b.getHeight())) ||
-      ((a.getX() + a.getWidth()) < b.getX()) ||
-        (a.getX() > (b.getX() + b.getHeight())
-    ));
-};
-
-
-// public functions
-
-Board.prototype.updateCard = function( card ) {
-  card.removeTag();
-
-  this.regions.forEach(function( region ) {
-    if ( hasCollided( region.shape, card.shape ) ) {
-      card.addTag( region.shape.getFill() );
-    }
-  });
-};
-*/
 
 return Board;
 

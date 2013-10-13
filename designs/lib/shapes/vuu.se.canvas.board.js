@@ -1,36 +1,41 @@
-var BoardCanvas = (function() {
-
-var cardUpdateEvents = [ 'board:cardcreate', 'card:active', 'card:inactive', 'card:movestart', 'card:moveend', 'card:tagged', 'card:untagged' ];
-var regionUpdateEvents = [ 'board:regioncreate', 'region:active', 'region:inactive', 'region:movestart', 'region:moveend' ];
+var CanvasBoard  = (function() {
 
 // constructor
 
-function Board( stage, queue, options ) { 
-  var shape = this;
+function CanvasBoard( queue, options ) { 
+  var shape = new Kinetic.Stage({ container: options.container, width: options.width, height: options.height });
   
   // private methods
   
-  shape.regions = new Kinetic.Layer({
-    clip: [ options.x, options.y, options.w, options.h ]
-  });
-  stage.add( shape.regions );
-  regionUpdateEvents.forEach(function( ev ) {
-    queue.on( shape, ev, function() { shape.regions.batchDraw(); });
-  });
+  shape.regions = new Kinetic.Layer();
+  shape.add( shape.regions );
   
-  shape.cards = new Kinetic.Layer({
-    clip: [ options.x, options.y, options.w, options.h ]
-  });
-  stage.add( shape.cards );
-  cardUpdateEvents.forEach(function( ev ) {
-    queue.on( shape, ev, function() { shape.cards.batchDraw(); });
-  });
+  shape.cards = new Kinetic.Layer();
+  shape.add( shape.cards );
+  
+  // public methods
+  
+  shape.addRegion = function( canvasregion ) {
+    shape.regions.add( canvasregion );
+    
+    queue.trigger( shape, 'canvasboard:canvasregionadded', { canvasregion: canvasregion });
+    
+    shape.regions.batchDraw();
+  };
+  
+  shape.addCard = function( canvascard ) {
+    shape.cards.add( canvascard );
+    
+    queue.trigger( shape, 'canvasboard:canvascardadded', { canvascard: canvascard });
+    
+    shape.cards.batchDraw();
+  };
   
   // instance
   
-  return this;
+  return shape;
 };
 
-return Board;
+return CanvasBoard ;
 
 })();

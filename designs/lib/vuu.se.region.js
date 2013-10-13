@@ -1,101 +1,87 @@
-
 var Region = (function() {
 
-function Region( name, eq, config ) {
-  this.eq = eq;
-  this.cards = [];
+function Region( queue, socket, data ) {
+  var region = this;
+  
+  region.id = data.id;  
+  region.links = data.links || {};
+  region.x = data.x;
+  region.y = data.y;
+  region.width = data.width || 50;
+  region.height = data.height || 50;
+  region.value = data.value;
+  
+  // private
 
-  var shape = this.shape = new Kinetic.Rect({
-    name: name,
-    x: config.x,
-    y: config.y,
-    width: config.w,
-    height: config.h,
-    stroke: '#ddd',
-    opacity: 0.5,
-    draggable: true,
-    shadowColor: 'transparent',
-    shadowBlur: 3,
-    shadowOffset: 2,
-    shadowOpacity: 0.3
-  });
+  function __broadcastEvent( ev ) { 
+    queue.trigger( region, 'region:' + ev, { region: region } );
+    
+    socket.emit( 'region:' + ev, { region: region } );
+  };
   
-  var self = this;
-  
-  this.shape
-    .on('mousedown touchstart', function() {
-      shape.setOpacity( .7 );
-      
-      self.eq.trigger( self, 'region:active' );      
+  // triggers
+
+  socket
+    .on('region:moveend', function( data ) {
+      if ( region.id == data.region.id ) {
+        region.moveTo( data.region.x, data.region.y );
+      }
     })
-    .on('mouseup touchend', function() {
-      shape.setOpacity( .5 );
-      
-      self.eq.trigger( self, 'region:inactive' );
-    })
-    .on('dragstart', function() {
-      shape.setShadowColor( 'black' );
-      
-      self.eq.trigger( self, 'region:movestart', __getBounds.call( self ) );
-    })
-    /*
-    .on('dragmove', function() {
-      self.eq.trigger( self, 'region:move', __getBounds.call( self ) );
-    })
-    */
-    .on('dragend', function() {
-      shape.setShadowColor( 'transparent' );
-      
-      self.eq.trigger( self, 'region:moveend', __getBounds.call( self ) );
+    .on('region:resizeend', function( data ) {
+      if ( region.id == data.region.id ) {
+        region.resizeTo( data.region.width, data.region.height );
+      }
     });
   
+  // public functions
+
+  region.getId = function() {
+    return region.id;
+  };
+
+  region.getBoardId = function() {
+    return region.links.board;
+  };
+  
+  region.moveTo = function( x, y ) {
+    if ( region.x !== x || region.y !== y) {
+      __broadcastEvent( 'movestart' );
+      
+      region.x = x;
+      region.y = y;
+      
+      __broadcastEvent( 'moveend' );
+    }
+    
+    return region;
+  };
+  
+  region.resizeTo = function( width, height ) {
+    if ( region.width !== width || region.height !== height) {
+    
+    
+      __broadcastEvent( 'resizestart' );
+      
+      region.width = width;
+      region.height = height
+      
+      
+      __broadcastEvent( 'resizeend' );
+    }
+    
+    return region;
+  };
+  
+  region.setValue = function( val ) {
+    region.value = val;
+    
+    __broadcastEvent( 'setvalue' );
+    
+    return region;
+  };
+  
+  return region;
 }
-
-// private methods
-
-function __getBounds() {
-  return { 
-    x: this.shape.getX(), 
-    y: this.shape.getY(), 
-    w: this.shape.getWidth(), 
-    h: this.shape.getHeight()
-  }
-};
-
-// public methods
-
-Region.prototype.allowDrag = function() {
-  this.shape.setDraggable( true );
-};
-
-Region.prototype.disallowDrag = function() {
-  this.shape.setDraggable( false );
-};
-
-Region.prototype.move = function( x, y ) {
-  this.eq.trigger( this, 'region:movestart', __getBounds.call( this ) );
-  
-  this.shape.setX( x );
-  this.shape.setY( y );
-  
-  this.eq.trigger( this, 'region:move', __getBounds.call( this ) );
-  this.eq.trigger( this, 'region:moveend', __getBounds.call( this ) );
-};
-
-Region.prototype.resize = function( w, h ) {
-  
-  this.shape.setWidth( w );
-  this.shape.setHeight( h );
-  
-  this.eq.trigger( this, 'region:resize', __getBounds.call( this ) );
-};
-
-Region.prototype.setColor = function( color ) {
-  this.shape.setFill( color );
-  this.shape.setStroke( 'transparent' );
-  
-  this.eq.trigger( this, 'region:updated', { color: color } );
-};
 
 return Region;
 

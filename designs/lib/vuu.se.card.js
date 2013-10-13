@@ -7,7 +7,7 @@ function Card( queue, socket, data ) {
   card.links = data.links || {};
   card.x = data.x;
   card.y = data.y;
-  card.tagged = data.tagged || false;
+  card.tagged = data.tagged || '';
   
   // private
 
@@ -21,18 +21,18 @@ function Card( queue, socket, data ) {
 
   socket
     .on('card:moveend', function( data ) {
-      if ( card.id === data.id ) {
-        card.moveTo( data.x, data.y );
+      if ( card.id == data.card.id ) {
+        card.moveTo( data.card.x, data.card.y );
       }
     })
     .on('card:tagged', function( data ) {
       if ( card.id === data.id ) {
-        card.addTag();
+        card.tag( data.tagged );
       }
     })
     .on('card:untagged', function( data ) {
       if ( card.id === data.id ) {
-        card.removeTag();
+        card.untag();
       }
     });
   
@@ -59,25 +59,27 @@ function Card( queue, socket, data ) {
   };
   
   card.moveTo = function( x, y ) {
-    __broadcastEvent( 'movestart' );
-    
-    card.x = x;
-    card.y = y;
-    
-    __broadcastEvent( 'moveend' );
+    if ( card.x !== x || card.y !== y) {
+      __broadcastEvent( 'movestart' );
+      
+      card.x = x;
+      card.y = y;
+      
+      __broadcastEvent( 'moveend' );
+    }
     
     return card;
   };
   
-  card.addTag = function() {
-    card.tagged = true;
+  card.tag = function( color ) {
+    card.tagged = color;
     
     __broadcastEvent( 'tagged' );
     
     return card;
   };
   
-  card.removeTag = function() {
+  card.untag = function() {
     card.tagged = false;
     
     __broadcastEvent( 'untagged' );
@@ -91,31 +93,3 @@ function Card( queue, socket, data ) {
 return Card;
 
 })();
-
-
-
-
-    
-  /*
-  shape
-    .on('mousedown touchstart', function() {
-      if (card.active) {
-        this.displayActiveState();
-        
-        __broadcastEvent.call( card, queue, 'active', socket, 'active' );
-      }
-    })
-    .on('mouseup touchend', function() {
-      if (card.active) {
-        this.displayInactiveState();
-        
-        __broadcastEvent.call( card, queue, 'inactive', socket, 'inactive' );
-      }
-    })
-    .on('dragstart', function() {
-      __broadcastEvent.call( card, queue, 'movestart', socket, 'movestart' );
-    })
-    .on('dragend', function() {
-      __broadcastEvent.call( card, queue, 'moveend', socket, 'update', true );
-    });
-  */

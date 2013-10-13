@@ -1,11 +1,11 @@
-var Shelf = (function() {
+var CanvasShelf = (function() {
 
 var spacing = 10;
 var cardWidth = 100 + spacing;
 
 var updateEvents = [ 'cardtoboard:start', 'cardtoshelf:end', 'cardcreate:end', 'card:active', 'card:inactive', 'card:movestart', 'card:moveend', 'card:tagged', 'card:untagged' ];
 
-function Shelf( stage, queue ) {
+function CanvasShelf( stage, queue ) {
   var shelf = this;
   var numCards = 0;
   var width = 698;
@@ -80,6 +80,6 @@ function __organizeCards( cards ) {
 
 // exports
 
-return Shelf;
+return CanvasShelf;
 
 })();

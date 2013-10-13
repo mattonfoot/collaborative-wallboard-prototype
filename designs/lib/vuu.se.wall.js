@@ -66,6 +66,29 @@ function Wall( queue, data ) {
     return this;
   };
   
+  wall.setActiveBoardById = function( id ) {
+    var board;
+    boards.forEach(function( b ) {
+      if (b.id == id) {
+        board = b;
+      }
+    });
+    
+    if (!board) {
+      return;
+    }
+    
+    if (activeboard) {        
+      queue.trigger( wall, 'wall:boarddeactivated', { wall: wall, board: activeboard } );
+    }
+    
+    activeboard = board;
+        
+    queue.trigger( wall, 'wall:boardactivated', { wall: wall, board: activeboard } );
+
+    return this;
+  };
+  
   wall.getActiveBoard = function() {
     return activeboard;
   };
@@ -80,6 +103,18 @@ function Wall( queue, data ) {
 
   wall.getPocket = function( index ) {
     return pockets[ index ];
+  };
+
+  wall.getPocketById = function( id ) {
+    var result;
+    
+    pockets.forEach(function( pocket ) {
+      if ( pocket.getId() == id ) {
+        result = pocket;
+      }
+    });
+  
+    return result;
   };
   
   return wall;

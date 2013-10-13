@@ -21,6 +21,7 @@ app
  
   .resource('board', {
     wall: 'wall',
+    key: String,
     cards: ['card'],
     regions: ['regions']
   })
@@ -36,13 +37,16 @@ app
   .resource('card', {
     x: Number,
     y: Number,
+    tagged: String,
     board: 'board',
     pocket: 'pocket'
   })
  
   .resource('region', {
-    title: String,
-    color: String,
+    x: Number,
+    y: Number,
+    width: Number,
+    height: Number,
     value: String,
     board: 'board'
   });
@@ -53,9 +57,10 @@ function setupGenericBroadcasts( socket, triggers ) {
   triggers
     .forEach(function( ev ) {
 
-      socket.on( ev, function ( data ) {
-        socket.broadcast.emit( ev, data );
-      });
+      socket
+        .on( ev, function ( data ) {
+          socket.broadcast.emit( ev, data );
+        });
     
     });
       
@@ -64,57 +69,61 @@ function setupGenericBroadcasts( socket, triggers ) {
 
 function setupBoardCreation( socket, trigger, success, fail ) {
   var fail = function( err ) {
-    socket.emit( fail, { 
-      msg: 'failed to create a new board', 
-      data: data, 
-      err: err 
-    });
+    socket
+      .emit( fail, { 
+        msg: 'failed to create a new board', 
+        data: data, 
+        err: err 
+      });
   };
 
-  socket.on( trigger, function( data ) {
-    app.adapter.find( 'wall', data.wall.id )
-      .then(function( wall ) {
-        var obj = { links: { wall: wall.id } };
-  
-        app.adapter.create( 'board', obj )
-          .then(function( board ) {          
-            io.sockets.emit( success, board );
-          }, fail);
-      
-      }, fail);
+  socket
+    .on( trigger, function( data ) {
+      var obj = { key: data.key };
     
-  });
+      app.adapter
+        .find( 'wall', data.wall.id )
+        .then(function( wall ) {
+          obj.links = { wall: wall.id };
+    
+          app.adapter
+            .create( 'board', obj )
+            .then(function( board ) {          
+              io.sockets.emit( success, board );
+            }, fail);
+        
+        }, fail);
+      
+    });
     
 };
 
 
 function setupPocketCreation( socket, trigger, success, fail ) {
   var fail = function( err ) {
-    socket.emit( fail, { 
-      msg: 'failed to create a new pocket', 
-      data: data, 
-      err: err 
-    });
+    socket
+      .emit( fail, { 
+        msg: 'failed to create a new pocket', 
+        data: data, 
+        err: err 
+      });
   };
 
   socket.on( trigger, function( data ) {
     var obj = { title: data.title };
-            
-    console.log( obj );
     
-    app.adapter.find( 'wall', data.wall.id )
+    app.adapter
+      .find( 'wall', data.wall.id )
       .then(function( wall ) {
         obj.links = { wall: wall.id };
             
-        console.log( obj );
-      
-        app.adapter.findMany( 'pocket', { links: { wall: data.wall.id } } )
+        app.adapter
+          .findMany( 'pocket', { links: { wall: data.wall.id } } )
           .then(function( pockets ) {
             obj.cardnumber = pockets.length + 1;
-            
-            console.log( obj );
       
-            app.adapter.create( 'pocket', obj )
+            app.adapter
+              .create( 'pocket', obj )
               .then(function( pocket ) {
                 io.sockets.emit( success, pocket ); 
               }, fail);
@@ -127,53 +136,65 @@ function setupPocketCreation( socket, trigger, success, fail ) {
     
 };
 
- 
-function setupCardCreation( socket, trigger, success, fail ) {
-  
+
+function setupRegionCreation( socket, trigger, success, fail ) {
+  var fail = function( err ) {
+    socket
+      .emit( fail, { 
+        msg: 'failed to create a new region', 
+        data: data, 
+        err: err 
+      });
+  };
+
   socket.on( trigger, function( data ) {
-    var obj = {};
-            
-    console.log( obj );
+    var obj = { value: data.value, x: data.x, y: data.y, width: data.width, height: data.height };
     
-    app.adapter.find( 'board', data.board.id )
+    app.adapter
+      .find( 'board', data.board.id )
       .then(function( board ) {
         obj.links = { board: board.id };
-            
-        console.log( obj );
       
-        app.adapter.find( 'pocket', data.pocket.id )
-          .then(function( pocket ) {
-            obj.links.pocket = pocket.id;
-            
-            console.log( obj );
-      
-            app.adapter.create( 'card', obj )
-              .then(function( card ) {
-                io.sockets.emit( success, card );
-              }, fail);
-          
+        app.adapter
+          .create( 'region', obj )
+          .then(function( resource ) {
+            io.sockets.emit( success, resource ); 
           }, fail);
       
       }, fail);
-  
-  
-  
-  
-  
-  
-  
-    app.adapter.find( 'pocket', { pocketid: data.pocketid })
-      .then(function( pocket ) {        
-        data.links = { pocket: pocket.id };
     
-        var card = app.adapter.create( 'card', data );
-        
-        io.sockets.emit( success, card );
-      }, function() {
-        socket.emit( fail, { error: 'failed to create a new card', data: data } );
-      });
-  
   });
+    
+};
+
+ 
+function setupCardCreation( socket, trigger, success, fail ) {
+  
+  socket
+    .on( trigger, function( data ) {
+      var obj = {};
+      
+      app.adapter
+        .find( 'board', data.board.id )
+        .then(function( board ) {
+          obj.links = { board: board.id };
+        
+          app.adapter
+            .find( 'pocket', data.pocket.id )
+            .then(function( pocket ) {
+              obj.links.pocket = pocket.id;
+        
+              app.adapter
+                .create( 'card', obj )
+                .then(function( card ) {
+                  io.sockets.emit( success, card );
+                }, fail);
+            
+            }, fail);
+        
+        }, fail);
+    
+    });
     
 };
   
@@ -185,13 +206,15 @@ io.sockets
       .then(function( walls ) {
         socket.emit( 'app:init', walls );
       
-        setupGenericBroadcasts( socket, [ 'pocket:update', 'card:update', 'card:tagged', 'card:untagged' ] );
+        setupGenericBroadcasts( socket, [ 'pocket:update', 'region:moveend', 'region:resizeend', 'card:moveend', 'card:tagged', 'card:untagged' ] );
         
         setupBoardCreation( socket, 'board:create', 'board:created', 'board:createfail' );
         
         setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:createfail' );
         
         setupCardCreation( socket, 'card:create', 'card:created', 'card:createfail' );
+        
+        setupRegionCreation( socket, 'region:create', 'region:created', 'region:createfail' );
       }, function() {
         socket.emit( 'app:initfail' );
       });
