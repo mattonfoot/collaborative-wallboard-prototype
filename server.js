@@ -11,38 +11,34 @@ var port = process.env.PORT || 5000,
     io = socketio.listen( httpServer );
 
  
-app
-  .use( connect.static( __dirname + '/designs' ) )
+app.use( connect.static( __dirname + '/designs' ) );
+
+require('./lib/vuu.se.hypermedia.wall.js').init( app, io );
  
-  .resource('wall', {
-    boards: ['board'],
-    pockets: ['pocket']
-  })
- 
-  .resource('board', {
+app.resource('board', {
     wall: 'wall',
     key: String,
     cards: ['card'],
-    regions: ['regions']
-  })
+    regions: ['region']
+  });
  
-  .resource('pocket', {
+app.resource('pocket', {
     title: String,
     cardnumber: Number,
     color: String,
     wall: 'wall',
     cards: ['card']
-  })
+  });
 
-  .resource('card', {
+app.resource('card', {
     x: Number,
     y: Number,
     tagged: String,
     board: 'board',
     pocket: 'pocket'
-  })
+  });
  
-  .resource('region', {
+app.resource('region', {
     x: Number,
     y: Number,
     width: Number,
@@ -138,17 +134,17 @@ function setupPocketCreation( socket, trigger, success, fail ) {
 
 
 function setupRegionCreation( socket, trigger, success, fail ) {
-  var fail = function( err ) {
-    socket
-      .emit( fail, { 
-        msg: 'failed to create a new region', 
-        data: data, 
-        err: err 
-      });
-  };
-
   socket.on( trigger, function( data ) {
     var obj = { value: data.value, x: data.x, y: data.y, width: data.width, height: data.height };
+    
+    var fail = function( err ) {
+      socket
+        .emit( fail, { 
+          msg: 'failed to create a new region', 
+          data: data, 
+          err: err 
+        });
+    };
     
     app.adapter
       .find( 'board', data.board.id )
@@ -167,57 +163,125 @@ function setupRegionCreation( socket, trigger, success, fail ) {
     
 };
 
+function setupRegionUpdates( socket, triggers ) {
+  triggers
+    .forEach(function( ev ) {
+
+      socket
+        .on( ev, function ( data ) {
+        
+          var fail = function( err ) {
+            socket
+              .emit( fail, { 
+                msg: 'failed to update region', 
+                data: data, 
+                err: err 
+              });
+          };
+              
+          app.adapter
+            .update( 'region', data.region.id, data.region )
+            .then(function( resource ) {            
+              socket.broadcast.emit( ev, resource );
+              
+            }, fail );
+        
+        });
+    
+    });
+}
+
  
 function setupCardCreation( socket, trigger, success, fail ) {
   
   socket
     .on( trigger, function( data ) {
-      var obj = {};
+      var obj = { x: data.x, y: data.y, tagged: data.tagged };
+      
+      var fail = function( err ) {
+        socket
+          .emit( fail, { 
+            msg: 'failed to create a new card', 
+            data: data, 
+            err: err 
+          });
+      };
       
       app.adapter
-        .find( 'board', data.board.id )
-        .then(function( board ) {
-          obj.links = { board: board.id };
+        .find( 'card', { links: { board: data.board.id, pocket: data.pocket.id } } )
+        .then(function( card ) {        
+          io.sockets.emit( success, card );
         
+        }, function() {      
           app.adapter
-            .find( 'pocket', data.pocket.id )
-            .then(function( pocket ) {
-              obj.links.pocket = pocket.id;
-        
-              app.adapter
-                .create( 'card', obj )
-                .then(function( card ) {
-                  io.sockets.emit( success, card );
-                }, fail);
+            .find( 'board', data.board.id )
+            .then(function( board ) {
+              obj.links = { board: board.id };
             
-            }, fail);
-        
-        }, fail);
+              app.adapter
+                .find( 'pocket', data.pocket.id )
+                .then(function( pocket ) {
+                  obj.links.pocket = pocket.id;
+            
+                  app.adapter
+                    .create( 'card', obj )
+                    .then(function( card ) {
+                      io.sockets.emit( success, card );
+                    }, fail );
+                
+                }, fail );
+            
+            }, fail );
+            
+        });
     
     });
     
 };
+
+function setupCardUpdates( socket, triggers ) {    
+  triggers
+    .forEach(function( ev ) {
+
+      socket
+        .on( ev, function ( data ) {
+        
+          var fail = function( err ) {
+            socket
+              .emit( fail, { 
+                msg: 'failed to update card', 
+                data: data, 
+                err: err 
+              });
+          };
+              
+          app.adapter
+            .update( 'card', data.card.id, data.card )
+            .then(function( resource ) {            
+              socket.broadcast.emit( ev, resource );
+              
+            }, fail );
+        
+        });
+    
+    });
+}
   
 
 io.sockets
   .on( 'connection', function ( socket ) {
-  
-    app.adapter.findMany( 'wall', {} )
-      .then(function( walls ) {
-        socket.emit( 'app:init', walls );
       
-        setupGenericBroadcasts( socket, [ 'pocket:update', 'region:moveend', 'region:resizeend', 'card:moveend', 'card:tagged', 'card:untagged' ] );
-        
-        setupBoardCreation( socket, 'board:create', 'board:created', 'board:createfail' );
-        
-        setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:createfail' );
-        
-        setupCardCreation( socket, 'card:create', 'card:created', 'card:createfail' );
-        
-        setupRegionCreation( socket, 'region:create', 'region:created', 'region:createfail' );
-      }, function() {
-        socket.emit( 'app:initfail' );
-      });
+    setupGenericBroadcasts( socket, [ 'pocket:update' ] );
+    
+    setupBoardCreation( socket, 'board:create', 'board:created', 'board:createfail' );
+    
+    setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:createfail' );
+    
+    setupCardCreation( socket, 'card:create', 'card:created', 'card:createfail' );
+    setupCardUpdates( socket, [ 'card:moveend', 'card:tagged', 'card:untagged' ] );
+    
+    setupRegionCreation( socket, 'region:create', 'region:created', 'region:createfail' );
+    setupRegionUpdates( socket, [ 'region:moveend', 'region:resizeend' ] );
       
   });
 

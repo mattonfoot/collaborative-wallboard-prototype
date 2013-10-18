@@ -58,411 +58,150 @@ var vuu = { se: {} };
 // event queue setup
   
 var socket = io.connect('http://localhost:5000'),
-    queue = new EventQueue( /* { debug: true } */ );
-
-socket
-  .on( 'app:init', function( walls ) {
-
-    var app = $('#app'),
-        size = {
-          width: app.find('.tab-content').outerWidth(),
-          height: app.find('.tab-content').outerHeight()
-        },
-        wall = walls[0],
-        boardCounter = 1;
-        
-        
-
-    function createCanvasBoard( id ) {
-      var canvasboard = new CanvasBoard(queue, { container: id, width: size.width, height: size.height });
-      
-      queue
-        .on( canvasboard, 'card:createend', function( data ) {
-          if ( data.card.links.board == id ) {
-            var canvascard = new CanvasCard( queue, data.card, app.wall.getPocketById( data.card.links.pocket ) );
-          
-            canvasboard.addCard( canvascard );
-          }
-        });
-      
-      queue
-        .on( canvasboard, 'region:createend', function( data ) {
-          if ( data.region.links.board == id ) {
-            var canvasregion = new CanvasRegion( queue, data.region );
-          
-            canvasboard.addRegion( canvasregion );
-          }
-        });
-    }
+    queue = new EventQueue( { debug: true } ),
+    app = { element: $('#app'), wall: {} };
     
-    function beginCardCreation( board, pocket ) {
-      // for each board we need to create a card which communicates position on a board
+    
+    
+    
+  // triggers
+
+socket.on( 'app:init', initializeApplication);
+
+
+
+
+
+  // handlers
+
+
+function initializeApplication( resources ) {
+  var data = resources[0]; // for now we only do one wall in the whole thing
+  var controlsEnabled = false;
   
-      queue.trigger( this, 'card:createbegin', { board: board, pocket: pocket } );
-      
-      socket
-        .emit( 'card:create', { board: board, pocket: pocket } );
-    };
-    
-    
-  
-    queue.trigger( app.get(0), 'app:initbegin', { app: app } );
-    
-    // build a wall from the initial data
-  
-    queue.trigger( app.wall, 'wall:createbegin', { wall: wall } );
-
-    app.wall = new Wall( queue, wall );
-    app.data('wall', app.wall);
-  
-    queue.trigger( app.wall, 'wall:createend', { wall: app.wall } );
-    
-    // setup the board factory
-
-    app
-      .delegate('.add-board', 'mouseup touchend', function() {
-        var key = prompt( 'Please provide a data key that this board represents', '' );
-        
-        var data = { wall: app.wall, key: key };
-        
-        queue.trigger( this, 'board:createbegin', data );
-        
-        socket.emit( 'board:create', data );
-      });
-      
-    app
-      .delegate('a[data-toggle="tab"]', 'shown.bs.tab', function (e) {
-        var hash = e.target.hash;
-        var boardid = hash.substr( 1, hash.length - 1 );
-        
-        app.wall.setActiveBoardById( boardid );
-      });
-      
-    socket
-      .on('board:created', function( data ) {
-        
-        if ( app.wall.getBoardById( data.id ) ) {
-          return; // we already have it ( should we check if it's fully synced? )
-        }
-    
-        var board = new Board( queue, data );
-      
-        app.wall.addBoard( board );
-        
-        app.find( '.tab-content > .active, .nav-tabs > .active' ).removeClass( 'active' );
-        
-        app.find( '.tab-content' )
-          .append( '<div class="tab-pane active" id="'+ board.getId() +'"></div>' );
-        
-        createCanvasBoard( board.getId() );
-        
-        $( '<li class="active"><a href="#'+ board.getId() +'" data-toggle="tab">' + board.getKey() + '</a></li>' )
-          .insertBefore( $('#app .add-board').parent() );
-          
-        // now we have to create a new card for each pocket in the current wall
-        
-        app.wall.pockets.forEach(function( pocket ) {
-          beginCardCreation( board, pocket );
-        });
-        
-        // setup the card factory part 1
-    
-        queue
-          .on( board, 'pocket:createend', function( data ) {
-            beginCardCreation( board, data.pocket );
-          });
-        
-        queue.trigger( board, 'board:createend', { board: board } );
-      });
-      
-    // enable pocket and region creation when the first board has been created
-    
-    queue
-      .on( app, 'board:createend', function() {
-   // .once( 'board:createend', function() {     
-          app.find('.add-pocket, .add-region').removeAttr( 'disabled' );
-      });
-      
-    // setup the pocket factory
-      
-    app
-      .delegate('.add-pocket', 'mouseup touchend', function() {
-        var title = prompt( 'Please provide a title for this card', 'Sample Card' );
-        
-        queue.trigger( this, 'pocket:createbegin', { wall: app.wall, title: title } );        
-      
-        socket
-          .emit( 'pocket:create', { wall: app.wall, title: title } );
-      });
-      
-    socket
-      .on('pocket:created', function( data ) {
-        
-        if ( app.wall.getPocketById( data.id ) ) {
-          return; // we already have it ( should we check if it's fully synced? )
-        }
-    
-        var pocket = new Pocket( queue, socket, data );
-      
-        app.wall.addPocket( pocket );
-        
-        queue.trigger( pocket, 'pocket:createend', { pocket: pocket } );
-      });
-      
-    // setup the card factory part 2
-      
-    socket
-      .on('card:created', function( data ) {
-        
-        var board = app.wall.getBoardById( data.links.board );
-        
-        if ( board.getCardById( data.id ) ) {
-          return; // we already have it ( should we check if it's fully synced? )
-        }
-      
-        var card = new Card( queue, socket, data );
-
-        board.addCard( card );
-        
-        queue.trigger( card, 'card:createend', { card: card } );
-      });
-      
-    // setup the region factory
-    
-    app
-      .delegate('.add-region', 'mouseup touchend', function() {
-        var val = prompt( 'Please provide a value for this region', '' );
-        
-        var board = app.wall.getActiveBoard();
-        
-        var data = {
-          x: 10,
-          y: 10,
-          width: 250,
-          height: 150,
-          board: board,
-          value: val
-        };
-        
-        queue.trigger( this, 'region:createbegin', data );
-        
-        socket
-          .emit( 'region:create', data );
-      });
-      
-    socket
-      .on('region:created', function( data ) {
-        
-        var board = app.wall.getBoardById( data.links.board );
-        
-        if ( board.getRegionById( data.id ) ) {
-          return; // we already have it ( should we check if it's fully synced? )
-        }
-      
-        var region = new Region( queue, socket, data );
-
-        board.addRegion( region );
-        
-        queue.trigger( region, 'region:createend', { region: region } );
-      });
-      
-    // setup the card region collision watcher
-    
-    var regionalcards = {};
-
-    function cardIsInRegion( card, region ) {
-      var inLeft = card.x > region.x,
-          inRight = (card.x + 100) < (region.x + region.width);
-          inTop = card.y > region.y;
-          inBase = (card.y + 65) < (region.y + region.height);
-
-      return ( inLeft && inRight && inTop && inBase );
-    };
-    
-    function markCardAsInRegion( card, region ) {
-      if (!regionalcards[card]) regionalcards[card] = [];
-      
-      if ( regionalcards[card].indexOf( region ) < 0 ) {
-        regionalcards[card].push( region );
-        
-        return true;
-      }
-      
-      return false;
-    }
-    
-    function markCardAsNotInRegion( card, region ) {
-      if (!regionalcards[card]) regionalcards[card] = [];
-      
-      if ( regionalcards[card].indexOf( region ) < 0 ) return false;
-      
-      regionalcards[card].splice( regionalcards[card].indexOf( region ), 1);
-      
-      return true;
-    }
-    
-    queue
-      .on( app, 'card:moveend', function( data ) {      
-        var card = data.card;
-        var board = app.wall.getBoardById( card.getBoardId() );
-        var regions = board.regions;
-        
-        regions.forEach(function( region ) {
-          var hasBeenRemoved = markCardAsNotInRegion( card.id, region.id ),
-              hasBeenAdded = false,
-              ev;
-        
-          if ( cardIsInRegion( card, region ) ) {
-            hasBeenAdded = markCardAsInRegion( card.id, region.id );
-          }
-          
-          if ( hasBeenRemoved && !hasBeenAdded ) {
-            ev = 'card:regionexit'
-          }
-          
-          if ( !hasBeenRemoved && hasBeenAdded ) {
-            ev = 'card:regionenter'
-          }
-          
-          if ( ev ) {
-            queue.trigger( board, ev, { board: board, card: card, region: region } );
-          }
-        });
-      })
-      
-      .on( app, 'region:moveend', function( data ) { /* console.log( 'region:moved', data ); */ }) // check to see if any new cards have entered ??
-      
-      .on( app, 'card:regionenter', function( data ) {
-        var pocket = app.wall.getPocketById( data.card.getPocketId() );
-        
-        pocket.set( data.board.key, data.region.value );
-      })
-      
-      .on( app, 'card:regionexit', function( data ) {
-        var pocket = app.wall.getPocketById( data.card.getPocketId() );
-        
-        pocket.set( data.board.key );
-      });
-  
-  
-  
-  
-  
-    // plugin repository
-
-    vuu.se.plugins = (function() {
-
-      var plugins = {};
-
-      function PluginRegistry() {
-      };
-      
-      // private
-      
-      function appliesToKey( plugin, key ) {      
-        if (plugin.keys && plugin.keys.indexOf( key ) < 0) {
-          return false; // ignore any plugin that is limited to other plugins
-        }
-        
-        return true;
-      };
-      
-      // public
-
-      PluginRegistry.prototype.register = function( pluginfactory ) {
-        // this can only be called when the app is initiated or app will be undefined
-        /*
-        
-          if ( !appinitiated ) {
-            parked.push( pluginfactory );
-            
-            return;
-          }
-        
-        */
-      
-      
-        var plugin = pluginfactory( app, queue, socket );
-        
-        var name = plugin.name;
-        var oldPlugin = plugins[name];
-        
-        if (oldPlugin) {
-          console.log( 'Skipped plugin [' + name + '] as that plugin is already loaded' );
-        
-          return this;
-        }
-        
-        plugins[name] = plugin;
-        
-        return this;
-      };
-
-      PluginRegistry.prototype.process = function( pocketid, key, value ) {
-        var pocket = app.wall.getPocketById( pocketid );
-        var cards = [];
-        
-        app.wall.boards.forEach(function( board ) {        
-          board.cards.forEach(function( card ) {
-            if ( card.links.pocket == pocketid ) {
-              cards.push( card );
-            }
-          });
-        });
-      
-        for (var name in plugins) {
-          var plugin = plugins[ name ];
-        
-          if ( appliesToKey( plugin, key ) ) {
-            plugin.process( pocket, cards, key, value );
-          }
-        }
-        
-        return this;
-      };
-      
-      var registry = new PluginRegistry();
-      
-      queue
-        .on( registry, 'pocket:update', function( data ) {
-          registry.process( data.pocket, data.key, data.value );
-        });
-
-      return registry;
-
-    })();
-  
-    queue.trigger( app.get(0), 'app:initend', { app: app } );
-
-
-
-
-
-// example plugin
-
-vuu.se.plugins.register(function( app, queue, socket ) {
-
-  return {
-
-    name: 'displayColorTag',
-    
-    description: 'Displays a colored tag on a card when its pocket data has a color value set',
-    
-    keys: [ 'color' ],
-
-    process: function( pocket, cards, key, value ) {      
-      cards.forEach(function( card ) {      
-        if ( !!value ) {
-          return card.tag( value );
-        }
-        
-        return card.untag();
-      });
-    }
-  
+  app.size = {
+    width: app.element.find('.tab-content').outerWidth(),
+    height: app.element.find('.tab-content').outerHeight()
   };
   
-});
+    // triggers
+
+  queue.on( app, 'app:initbegin', triggerAddWall );
+  
+  queue.on( app, 'wall:createend', completeApp);
+  
+  queue.on( app, 'board:cloned', addTab );
+  
+  queue.on( app, 'board:createend', addTab );
+
+  queue.on( app, 'wall:boardadded', enableBoardControls );
+    
+  app.element.delegate('a[data-toggle="tab"]', 'shown.bs.tab', activateBoard);
+
+  app.element.delegate( '.add-board', 'mouseup touchend', triggerAddBoard );
+
+  app.element.delegate( '.add-region', 'mouseup touchend', triggerAddRegion );
+
+  app.element.delegate( '.add-pocket', 'mouseup touchend', triggerAddPocket );
+  
+    // handlers
+    
+  function addTab( data ) {  
+    app.element.find( 'li.active' ).removeClass('active');
+    
+    var id = data.board.id;
+    
+    $( '<li class="active"><a href="#'+ id +'" data-toggle="tab">' + data.board.getKey() + '</a></li>' ).insertBefore( app.element.find( '.add-board' ).parent() );
+    
+    app.wall.setActiveBoardById( id );
+  }
+    
+  function completeApp( wall ) {
+    app.data('wall', wall);
+  
+    queue.trigger( app, 'app:initend', { app: app } );
+  }
+  
+  function activateBoard(e) {
+    var hash = e.target.hash;
+    var boardid = hash.substr( 1, hash.length - 1 );
+    
+    app.wall.setActiveBoardById( boardid );
+  }
+
+  function triggerAddBoard( ev ) {  
+    queue.trigger( app, 'board:add', ev  );
+  }
+
+  function triggerAddRegion( ev ) {  
+    queue.trigger( app, 'region:add', ev );
+  }
+
+  function triggerAddPocket( ev ) {  
+    queue.trigger( app, 'pocket:add', ev );
+  }
+
+  function triggerAddWall( data ) {
+    queue.trigger( app, 'wall:clone', data.wall );
+  }
+      
+  function enableBoardControls() {
+    if ( !controlsEnabled ) {
+      app.element.find('.add-pocket, .add-region').removeAttr( 'disabled' );
+      controlsEnabled = true;
+    }
+  }
+
+  queue.trigger( app, 'app:initbegin', { app: app, wall: data } );
+}
+
+
+
+
+  // triggers
+
+queue.on( app, 'wall:clone', cloneWall );
+
+
+
+
+
+  // handlers
+    
+function cloneWall( data ) {
+  data.links = data.links || {};
+    
+  app.wall = new Wall( queue, data );
+  
+  console.log( app.wall );
+  
+  var boards = data.links.boards || [];
+  boards.forEach( function( id ) {
+    $.get('/boards/' + id, function( data ) {
+      if ( data.boards && data.boards[0] ) {
+        queue.trigger( app.wall, 'board:clone', data.boards[0] );
+      }
+    });
+  });
+  
+  
+  var pockets = data.links.pockets || [];
+  pockets.forEach( function( id ) {
+    $.get('/pockets/' + id, function( data ) {
+      if ( data.pockets && data.pockets[0] ) {
+        queue.trigger( app.wall, 'pocket:clone', data.pockets[0] );
+      }
+    });
+  });
+
+  queue.trigger( app.wall, 'wall:cloned', { wall: app.wall } );
+}
+
+
+
+  
+
+
 
 /*
 
@@ -497,12 +236,12 @@ move a card over a region - done
 --------
   
   
-server should return existing card from data store if one is already stored for a specific pocket and board combination
+server should return existing card from data store if one is already stored for a specific pocket and board combination =- done
   
 add two different regions to two different boards - done
   delete a region
   resize a region
-  color the background of a region if it is a valid color value
+  color the background of a region if it is a valid color value - done
   edit region value
   regions display the value in a title position
   
@@ -523,6 +262,10 @@ cards are considered inside a region if they more than 50% of them is over it
 card is over two or more regions on the same board
 
 display pocket data when double clicking card
+
+server needs to update hypermedia rather than just pass message on - done
+
+db backup
   
   
 -----
@@ -533,8 +276,13 @@ ui triggers create event
       --> UI creates element
 
 */
-  });
-
     </script>
+    <script src="./lib/commands/vuu.se.board.create.js"></script>
+    <script src="./lib/commands/vuu.se.pocket.create.js"></script>
+    <script src="./lib/commands/vuu.se.card.create.js"></script>
+    <script src="./lib/commands/vuu.se.region.create.js"></script>
+    <script src="./lib/commands/vuu.se.card.trackmovement.js"></script>
+    <script src="./lib/vuu.se.plugins.js"></script>
+    <script src="./lib/vuu.se.plugins.displayColorTag.js"></script>
   </body>
 </html>

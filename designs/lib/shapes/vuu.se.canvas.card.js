@@ -18,7 +18,11 @@ var shadow = {
 // constructor
 
 function CanvasCard( queue, card, pocket ) {   
-  var shape = new Kinetic.Group({ draggable: true });
+  var shape = new Kinetic.Group({
+    x: card.x || 5,
+    y: card.y || 5,
+    draggable: true
+  });
   var title = pocket.title;
 
   var cardback = __createCardback( size.w, size.h, colors.fill, shadow.color );

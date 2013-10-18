@@ -8,8 +8,6 @@ function Board( queue, data ) {
   this.id = data.id;
   this.key = data.key;
   
-  // var shape = options.shape;
-  
   var regions = this.regions = [];
   var cards = this.cards = [];
   var shelf;
@@ -25,13 +23,15 @@ function Board( queue, data ) {
   };
   
   board.addRegion = function( region ) {
-    regions.push( region );
+    if ( board.getCardById( region.id ) ) {
+      return false; // we already have it
+    }
     
-    // shape.regions.add( region.shape );
+    regions.push( region );
         
     queue.trigger( board, 'board:regionadded', { board: board, region: region } );
     
-    return board;
+    return true;
   };
   
   board.getRegion = function( index ) {
@@ -51,13 +51,15 @@ function Board( queue, data ) {
   };
 
   board.addCard = function( card ) {
-    cards.push( card );
+    if ( board.getCardById( card.id ) ) {
+      return false; // we already have it
+    }
     
-    // shape.cards.add( card.shape );
+    cards.push( card );
         
     queue.trigger( board, 'board:cardadded', { board: board, card: card } );
     
-    return board;
+    return true;
   };
   
   board.getCard = function( index ) {
@@ -75,6 +77,14 @@ function Board( queue, data ) {
   
     return result;
   };
+  
+  board.activate = function() {
+    queue.trigger( board, 'board:activated', { board: board } );
+  }
+  
+  board.deactivate = function() {
+    queue.trigger( board, 'board:deactivated', { board: board } );
+  }
 
   board.addShelf = function( s ) {
     shelf = s;

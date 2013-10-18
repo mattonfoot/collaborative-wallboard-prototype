@@ -6,12 +6,30 @@ var Wall = (function() {
 function Wall( queue, data ) {
   var wall = this;
   
-  this.id = data.id;
+  wall.id = data.id;
+  wall.links = wall.links || {};
         
-  var boards = wall.boards = [];
-  var pockets = wall.pockets = [];
+  wall.links.boards = [];
+  wall.links.pockets = [];
   
   var activeboard;
+
+  // private
+
+  function __activateBoard( board ) {    
+    if (!board) {
+      return wall;
+    }
+    
+    if (activeboard) {    
+      activeboard.deactivate();
+    }
+    
+    activeboard = board;
+    activeboard.activate();
+
+    return wall;
+  }
 
   // public functions
 
@@ -19,26 +37,30 @@ function Wall( queue, data ) {
     return wall.id;
   };
 
-  wall.addBoard = function( board ) {
-    boards.push( board );
+  wall.addBoard = function( board ) {   
+    if ( wall.getBoardById( data.id ) ) {      
+      return false; // we already have it
+    }
+  
+    wall.links.boards.push( board );
         
     queue.trigger( wall, 'wall:boardadded', { wall: wall, board: board } );
     
     if (!activeboard) {
-      this.setActiveBoard();
+      wall.setActiveBoard();
     }
     
-    return wall;
+    return true;
   };
 
   wall.getBoard = function( index ) {
-    return boards[ index ];
+    return wall.links.boards[ index ];
   };
 
   wall.getBoardById = function( id ) {
     var result;
     
-    boards.forEach(function( board ) {
+    wall.links.boards.forEach(function( board ) {
       if ( board.getId() == id ) {
         result = board;
       }
@@ -49,44 +71,24 @@ function Wall( queue, data ) {
   
   wall.setActiveBoard = function( index ) {
     index = index || 0;
-    var len = boards.length;
+    var len = wall.links.boards.length;
     
     if ( index >= len || index < 0 ) {
-      return this;
+      return wall;
     }
     
-    if (activeboard) {        
-      queue.trigger( wall, 'wall:boarddeactivated', { wall: wall, board: activeboard } );
-    }
-    
-    activeboard = boards[ index ];
-        
-    queue.trigger( wall, 'wall:boardactivated', { wall: wall, board: activeboard } );
-
-    return this;
+    return __activateBoard( wall.links.boards[ index ] );
   };
   
   wall.setActiveBoardById = function( id ) {
     var board;
-    boards.forEach(function( b ) {
+    wall.links.boards.forEach(function( b ) {
       if (b.id == id) {
         board = b;
       }
     });
     
-    if (!board) {
-      return;
-    }
-    
-    if (activeboard) {        
-      queue.trigger( wall, 'wall:boarddeactivated', { wall: wall, board: activeboard } );
-    }
-    
-    activeboard = board;
-        
-    queue.trigger( wall, 'wall:boardactivated', { wall: wall, board: activeboard } );
-
-    return this;
+    return __activateBoard( board );
   };
   
   wall.getActiveBoard = function() {
@@ -94,7 +96,7 @@ function Wall( queue, data ) {
   };
 
   wall.addPocket = function( pocket ) {
-    pockets.push( pocket );
+    wall.links.pockets.push( pocket );
         
     queue.trigger( wall, 'wall:pocketadded', { wall: wall, pocket: pocket } );
     
@@ -102,13 +104,13 @@ function Wall( queue, data ) {
   };
 
   wall.getPocket = function( index ) {
-    return pockets[ index ];
+    return wall.links.pockets[ index ];
   };
 
   wall.getPocketById = function( id ) {
     var result;
     
-    pockets.forEach(function( pocket ) {
+    wall.links.pockets.forEach(function( pocket ) {
       if ( pocket.getId() == id ) {
         result = pocket;
       }
