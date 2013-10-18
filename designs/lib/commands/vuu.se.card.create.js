@@ -13,7 +13,7 @@ queue.on( app.wall, 'card:add', addCard );
 
 queue.on( app.wall, 'card:createbegin', createCard );
 
-queue.on( app.wall, 'card:clone', cloneCard );
+queue.on( app.wall, 'card:clone', cloneCards );
 
 socket.on( 'card:created', completeCard );
   
@@ -36,7 +36,7 @@ function addCard( data ) {
   queue.trigger( this, 'card:createbegin', data );
 }
 
-function cloneCard( data ) {
+function cloneCards( data ) {
   $.get('/pockets/' + data.pocket.id + '/cards/', function( resources ) {
     resources.cards.forEach(function( card ) {    
       if ( card.links.board == data.board.id ) {

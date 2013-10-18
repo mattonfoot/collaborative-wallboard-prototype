@@ -62,7 +62,10 @@ function __buildBoard( ev, data ) {
     
     // clone the regions
     
-    console.log( '-->', data );
+    var regions = data.links.regions || [];
+    regions.forEach(function( id ) {
+      queue.trigger( app.wall, 'region:clone', { board: board, region: { id: id } } );
+    });
     
     // create cards for existing pockets
     

@@ -88,15 +88,15 @@ function initializeApplication( resources ) {
 
   queue.on( app, 'app:initbegin', triggerAddWall );
   
-  queue.on( app, 'wall:createend', completeApp);
-  
   queue.on( app, 'board:cloned', addTab );
   
   queue.on( app, 'board:createend', addTab );
+  
+  queue.on( app, 'wall:createend', completeApp);
 
   queue.on( app, 'wall:boardadded', enableBoardControls );
     
-  app.element.delegate('a[data-toggle="tab"]', 'shown.bs.tab', activateBoard);
+  app.element.delegate( 'a[data-toggle="tab"]', 'shown.bs.tab', activateBoard );
 
   app.element.delegate( '.add-board', 'mouseup touchend', triggerAddBoard );
 
