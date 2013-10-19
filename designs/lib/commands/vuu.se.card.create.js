@@ -80,5 +80,7 @@ function __buildCard( ev, data ) {
 
   if ( board.addCard( card ) ) {
     queue.trigger( card, ev, { card: card } );
+    
+    queue.trigger( card, 'card:moveend', { card: card });
   }
 }

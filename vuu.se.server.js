@@ -63,7 +63,7 @@ function setupGenericBroadcasts( socket, triggers ) {
 };
 
 
-function setupBoardCreation( socket, trigger, success, fail ) {
+function setupBoardCreation( socket, trigger, acknowledge, success, fail ) {
   var fail = function( err ) {
     socket
       .emit( fail, { 
@@ -85,7 +85,8 @@ function setupBoardCreation( socket, trigger, success, fail ) {
           app.adapter
             .create( 'board', obj )
             .then(function( board ) {          
-              io.sockets.emit( success, board );
+              socket.emit( acknowledge, board );
+              socket.broadcast.emit( success, board );
             }, fail);
         
         }, fail);
@@ -95,7 +96,7 @@ function setupBoardCreation( socket, trigger, success, fail ) {
 };
 
 
-function setupPocketCreation( socket, trigger, success, fail ) {
+function setupPocketCreation( socket, trigger, acknowledge, success, fail ) {
   var fail = function( err ) {
     socket
       .emit( fail, { 
@@ -120,8 +121,9 @@ function setupPocketCreation( socket, trigger, success, fail ) {
       
             app.adapter
               .create( 'pocket', obj )
-              .then(function( pocket ) {
-                io.sockets.emit( success, pocket ); 
+              .then(function( pocket ) {      
+                socket.emit( acknowledge, board );
+                socket.broadcast.emit( success, board );
               }, fail);
           
           }, fail);
@@ -133,7 +135,7 @@ function setupPocketCreation( socket, trigger, success, fail ) {
 };
 
 
-function setupRegionCreation( socket, trigger, success, fail ) {
+function setupRegionCreation( socket, trigger, acknowledge, success, fail ) {
   socket.on( trigger, function( data ) {
     var obj = { value: data.value, x: data.x, y: data.y, width: data.width, height: data.height };
     
@@ -153,8 +155,9 @@ function setupRegionCreation( socket, trigger, success, fail ) {
       
         app.adapter
           .create( 'region', obj )
-          .then(function( resource ) {
-            io.sockets.emit( success, resource ); 
+          .then(function( resource ) {      
+            socket.emit( acknowledge, board );
+            socket.broadcast.emit( success, board );
           }, fail);
       
       }, fail);
@@ -192,7 +195,7 @@ function setupRegionUpdates( socket, triggers ) {
 }
 
  
-function setupCardCreation( socket, trigger, success, fail ) {
+function setupCardCreation( socket, trigger, acknowledge, success, fail ) {
   
   socket
     .on( trigger, function( data ) {
@@ -210,7 +213,7 @@ function setupCardCreation( socket, trigger, success, fail ) {
       app.adapter
         .find( 'card', { links: { board: data.board.id, pocket: data.pocket.id } } )
         .then(function( card ) {        
-          io.sockets.emit( success, card );
+          socket.broadcast.emit( success, card );
         
         }, function() {      
           app.adapter
@@ -225,8 +228,9 @@ function setupCardCreation( socket, trigger, success, fail ) {
             
                   app.adapter
                     .create( 'card', obj )
-                    .then(function( card ) {
-                      io.sockets.emit( success, card );
+                    .then(function( card ) {      
+                      socket.emit( acknowledge, board );
+                      socket.broadcast.emit( success, board );
                     }, fail );
                 
                 }, fail );
@@ -239,7 +243,7 @@ function setupCardCreation( socket, trigger, success, fail ) {
     
 };
 
-function setupCardUpdates( socket, triggers ) {    
+function setupCardUpdates( socket, triggers ) {
   triggers
     .forEach(function( ev ) {
 
@@ -273,11 +277,11 @@ io.sockets
       
     setupGenericBroadcasts( socket, [ 'pocket:update' ] );
     
-    setupBoardCreation( socket, 'board:create', 'board:created', 'board:createfail' );
+    setupBoardCreation( socket, 'board:create', 'board:created', 'board:clone', 'board:createfail' );
     
-    setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:createfail' );
+    setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:clone', 'pocket:createfail' );
     
-    setupCardCreation( socket, 'card:create', 'card:created', 'card:createfail' );
+    setupCardCreation( socket, 'card:create', 'card:created', 'card:clone', 'card:createfail' );
     setupCardUpdates( socket, [ 'card:moveend', 'card:tagged', 'card:untagged' ] );
     
     setupRegionCreation( socket, 'region:create', 'region:created', 'region:createfail' );
