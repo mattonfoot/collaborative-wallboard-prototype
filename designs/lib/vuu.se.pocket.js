@@ -1,6 +1,15 @@
+  
+  // emits:  pocket:update
+  
+  // triggers:  pocket:update
+  
+  // on (socket):  pocket:update --> pocket:update
+  
+  // on (queue):  
+
 var Pocket = (function() {
 
-function Pocket( queue, socket, data ) {
+function Pocket( queue, data ) {
   var pocket = this;
   
   pocket.id = data.id;
@@ -9,23 +18,9 @@ function Pocket( queue, socket, data ) {
   
   var databag = {};
   
-  //  triggers
-
-  socket.on( 'pocket:update', function( data ) {
-    if (data.pocket === pocket.id) {
-      databag[ data.key ] = data.value;
-
-      queue.trigger( pocket, 'pocket:update', data );
-    }
-  });
+  // private
   
-  // public functions
-
-  pocket.getId = function() {
-    return pocket.id;
-  };
-  
-  pocket.set = function( key, value ) {
+  function __set( key, value ) {
     var data = {
       pocket: pocket.id,
       key: key,
@@ -36,9 +31,17 @@ function Pocket( queue, socket, data ) {
 
     queue.trigger( pocket, 'pocket:update', data );
     
-    socket.emit( 'pocket:update', data );
-    
-    return this;
+    return pocket;
+  }
+  
+  // public functions
+
+  pocket.getId = function() {
+    return pocket.id;
+  };
+  
+  pocket.set = function( key, value ) {
+    return __set( key, value );
   };
 
   pocket.get = function( key ) {

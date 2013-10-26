@@ -1,3 +1,13 @@
+
+  // emits:  
+
+  // triggers:  canvascard:moved, canvascard:activated, canvascard:deactivated
+  
+  // on (socket):  
+  
+  // on (queue):  card:moveend --> canvascard:moved, card:tagged, card:untagged
+
+
 var CanvasCard = (function() {
 
 // defaults
@@ -34,45 +44,42 @@ function CanvasCard( queue, card, pocket ) {
   shape.add( tag );
   
   queue
-    .on( shape, 'card:moveend', function( data ) {
+    .on( shape, 'card:moved', function( data ) {
       if ( card.id === data.card.id &&
           ( shape.getX() != card.x || shape.getY() != card.y ) ) {
-        shape.moveTo( card.x, card.y );
+        __moveTo( card.x, card.y );
       }
     })
     .on( shape, 'card:tagged', function( data ) {
       if ( card.id === data.card.id ) {
-        shape.tag( card.tagged );
+        __tag( card.tagged );
       }
     })
     .on( shape, 'card:untagged', function( data ) {
       if ( card.id === data.card.id ) {
-        shape.untag();
+        __untag();
+      }
+    })
+    .on( shape, 'card:updated', function( data ) {
+      if ( card.id === data.id &&
+          ( shape.getX() != card.x || shape.getY() != card.y ) ) {
+        __moveTo( card.x, card.y );
       }
     });
   
   shape
     .on('mousedown touchstart', function() {
-      shape.displayActiveState();
-      shape.moveToTop();
+      __displayActiveState();
       
-      queue.trigger( shape, 'canvascard:activated', { card: card, pocket: pocket } ); // could the board catch this in a canvas event bubble?
+      queue.trigger( shape, 'canvascard:activated', { card: card, pocket: pocket } );
     })
     .on('mouseup touchend', function() {
-      shape.displayInactiveState();
+      __displayInactiveState();
       
       queue.trigger( shape, 'canvascard:deactivated', { card: card, pocket: pocket } );
     })
-    .on('dragstart', function() {
-        //queue.trigger( shape, 'canvascard:movestart', { card: card, pocket: pocket } );
-    })
-    .on('drag', function() {        
-      // card.moveTo( shape.getX(), shape.getY() );
-    })
-    .on('dragend', function() {
-      card.moveTo( shape.getX(), shape.getY() );
-      
-      queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket } );
+    .on('dragend', function() {      
+      queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
     });
     
   // private methods
@@ -87,66 +94,51 @@ function CanvasCard( queue, card, pocket ) {
     } catch(e) {
     }
   }
-
-  // public methods
   
-  shape.displayActiveState = function() {
-    cardback.setStroke( colors.stroke.active );
-    cardback.setShadowBlur( shadow.blur.active );
-    cardback.setShadowOffset( shadow.offset.active );
-    
-    __redrawLayer();
-
-    return shape;
-  };
-  
-  shape.displayInactiveState = function() {
-    cardback.setStroke( colors.stroke.inactive );
-    cardback.setShadowBlur( shadow.blur.inactive );
-    cardback.setShadowOffset( shadow.offset.inactive );
-    
-    __redrawLayer();
-
-    return shape;
-  };
-  
-  shape.moveTo = function( x, y ) {
-    //queue.trigger( shape, 'canvascard:movestart', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );  
+  function __moveTo( x, y ) {
     shape.moveToTop();
     
     shape.setX( x );
     shape.setY( y );
     
     __redrawLayer();
+  }
+  
+  function __displayActiveState() {
+    cardback.setStroke( colors.stroke.active );
+    cardback.setShadowBlur( shadow.blur.active );
+    cardback.setShadowOffset( shadow.offset.active );
     
-    card.moveTo( shape.getX(), shape.getY() );
+    shape.moveToTop();
     
-    queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
-    
-    return shape;
+    __redrawLayer();
   };
   
-  shape.tag = function( color ) {  
+  function __displayInactiveState() {
+    cardback.setStroke( colors.stroke.inactive );
+    cardback.setShadowBlur( shadow.blur.inactive );
+    cardback.setShadowOffset( shadow.offset.inactive );
+    
+    __redrawLayer();
+  };
+  
+  function __tag( color ) {
     tag.setFill( color );
     tag.setOpacity( 1 );
     
     __redrawLayer();
-    
-    return shape;
   };
   
-  shape.untag = function() {
+  function __untag() {
     tag.setOpacity( 0 );
     
     __redrawLayer();
-    
-    return shape;
   };
   
   // initialise
   
-  shape.displayActiveState();
-  shape.untag();
+  __displayInactiveState();
+  __untag();
   
   // instance
 

@@ -1,17 +1,22 @@
 
+  // emits:  pocket:create
+  
+  // triggers:  pocket:createbegin, pocket:cloned, pocket:createend
+  
+  // on (socket):  pocket:created --> pocket:createend
+  
+  // on (queue):  pocket:add --> pocket:createbegin, pocket:clone --> pocket:cloned, pocket:createbegin --> pocket:create
+
+
 
 
 
 
   // triggers
 
-queue.on( app.wall, 'pocket:add', addPocket );
-
 queue.on( app.wall, 'pocket:clone', clonePocket );
 
-queue.on( app.wall, 'pocket:createbegin', createPocket );
-
-socket.on( 'pocket:created', completePocket );
+queue.on( app.wall, 'pocket:create', createPocket );
 
 
 
@@ -20,22 +25,12 @@ socket.on( 'pocket:created', completePocket );
 
   // handlers
 
-function addPocket() {
-  var title = prompt( 'Please provide a title for this card', 'Sample Card' );
-  
-  queue.trigger( app.wall, 'pocket:createbegin', { wall: app.wall, title: title } );
-}
-
 function clonePocket( data ) {
   __buildPocket( 'pocket:cloned', data );
 }
 
-function createPocket( data ) {  
-  socket.emit( 'pocket:create', data );
-}
-      
-function completePocket( data ) {  
-  __buildPocket( 'pocket:createend', data );
+function createPocket( data ) {
+  __buildPocket( 'pocket:created', data );
 }
 
 
@@ -48,11 +43,9 @@ function __buildPocket( ev, data ) {
     return; // we already have it ( should we check if it's fully synced? )
   }
 
-  var pocket = new Pocket( queue, socket, data );
+  var pocket = new Pocket( queue, data );
 
   app.wall.addPocket( pocket );
   
   queue.trigger( app.wall, ev, { pocket: pocket } );
-
-  return pocket;
 }

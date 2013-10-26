@@ -1,4 +1,12 @@
 
+  // emits:  
+  
+  // triggers:  
+  
+  // on (socket): 
+
+  // on (queue):  pocket:update
+
     // plugin repository
 
     vuu.se.plugins = (function() {

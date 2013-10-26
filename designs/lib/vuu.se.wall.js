@@ -1,4 +1,13 @@
 
+  // emits:  
+  
+  // triggers:  wall:pocketadded, wall:boardadded
+  
+  // on (socket):  
+  
+  // on (queue):  
+
+
 var Wall = (function() {
 
 // constructor

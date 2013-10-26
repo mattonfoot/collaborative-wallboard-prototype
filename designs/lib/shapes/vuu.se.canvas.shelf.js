@@ -3,7 +3,7 @@ var CanvasShelf = (function() {
 var spacing = 10;
 var cardWidth = 100 + spacing;
 
-var updateEvents = [ 'cardtoboard:start', 'cardtoshelf:end', 'cardcreate:end', 'card:active', 'card:inactive', 'card:movestart', 'card:moveend', 'card:tagged', 'card:untagged' ];
+var updateEvents = [ 'board:addcard', 'shelf:addcard', 'card:created', 'card:active', 'card:inactive', 'card:moved', 'card:tagged', 'card:untagged' ];
 
 function CanvasShelf( stage, queue ) {
   var shelf = this;

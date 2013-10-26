@@ -50,6 +50,21 @@
     <script src="./lib/shapes/vuu.se.canvas.region.js"></script>
     
     <script defer="defer">
+    
+  
+  // emits:  
+  
+  // triggers:  app:initend, board:add, region:add, pocket:add, wall:clone, app:initbegin
+  
+  // on (socket):  app:init --> app:initbegin
+  
+  // on (queue):  app:initbegin --> wall:clone, board:cloned --> [board:activated], board:createend --> [board:activated], wall:createend --> app:initend, wall:boardadded
+
+
+    
+    
+    
+    
   
 // namespace
   
@@ -88,23 +103,165 @@ function initializeApplication( resources ) {
 
   queue.on( app, 'app:initbegin', triggerAddWall );
   
-  queue.on( app, 'board:cloned', addTab );
-  
-  queue.on( app, 'board:createend', addTab );
-  
-  queue.on( app, 'wall:createend', completeApp);
+  queue.on( app, 'wall:cloned', completeApp);
 
   queue.on( app, 'wall:boardadded', enableBoardControls );
     
   app.element.delegate( 'a[data-toggle="tab"]', 'shown.bs.tab', activateBoard );
+  
+  // add board control
 
   app.element.delegate( '.add-board', 'mouseup touchend', triggerAddBoard );
 
+  queue.on( app, 'app:createboard', function( data ) {
+    socket.emit( 'board:create', data );
+  });
+    
+  socket.on( 'board:created', function( data ) { 
+    queue.trigger( app, 'board:create', data );
+  });
+  
+  socket.on( 'board:createfail', function( data ) {
+    alert( 'board:createfail' );
+  });
+  
+  queue.on( app, 'board:cloned', addTab );
+  
+  queue.on( app, 'board:created', addTab );
+
+  function triggerAddBoard( ev ) {  
+    var key = prompt( 'Please provide a data key that this board represents', '' );
+    
+    var data = { wall: app.wall, key: key };
+    
+    queue.trigger( app, 'app:createboard', data );
+  }
+  
+  // add region control
+
   app.element.delegate( '.add-region', 'mouseup touchend', triggerAddRegion );
 
-  app.element.delegate( '.add-pocket', 'mouseup touchend', triggerAddPocket );
+  queue.on( app, 'app:createregion', function( data ) {
+    socket.emit( 'region:create', data );
+  });
+
+  queue.on( app, 'region:moved', function( data ) {
+    socket.emit( 'region:moved', data );
+  });
+
+  queue.on( app, 'region:resized', function( data ) {
+    socket.emit( 'region:resized', data );
+  });
   
-    // handlers
+  socket.on( 'region:created', function( data ) {
+    queue.trigger( app, 'region:create', data );
+  });
+  
+  socket.on( 'region:updated', function( data ) {
+    queue.trigger( app, 'region:updated', data );
+  });
+  
+  socket.on( 'region:createfail', function( data ) {
+    alert( 'region:createfail' );
+  });
+
+  function triggerAddRegion( ev ) {  
+    var board = app.wall.getActiveBoard();
+    
+    var val = prompt( 'Please provide a value for this region', '' );
+    
+    var data = {
+      x: 10,
+      y: 10,
+      width: 250,
+      height: 150,
+      board: board,
+      value: val
+    };
+    
+    queue.trigger( app, 'app:createregion', data );
+  }
+  
+  // add pocket control
+
+  app.element.delegate( '.add-pocket', 'mouseup touchend', triggerAddPocket );
+
+  queue.on( app, 'app:createpocket', function( data ) {
+    socket.emit( 'pocket:create', data );
+  });
+  
+  socket.on( 'pocket:created', function( data ) {
+    queue.trigger( app, 'pocket:create', data );
+  });
+  
+  socket.on( 'pocket:createfail', function( data ) {
+    alert( 'pocket:createfail' );
+  });
+  
+  queue.on( app.wall, 'pocket:created', function ( data ) {
+    var pocket = data.pocket;
+    
+    app.wall.links.boards.forEach(function( board ) {
+      queue.trigger( app, 'app:createcard', { board: board, pocket: pocket } );
+    });
+  });
+
+  queue.on( app.wall, 'pocket:cloned', function ( data ) {
+    var pocket = data.pocket;
+    
+    app.wall.links.boards.forEach(function( board ) {  
+      $.get('/pockets/' + pocket.id + '/cards/', function( resources ) {
+        resources.cards.forEach(function( card ) {    
+          if ( card.links.board == board.id ) {
+            queue.trigger( app, 'app:clonecard', card );
+          }
+        });
+      });
+    });
+  });
+
+  function triggerAddPocket( ev ) {  
+    var title = prompt( 'Please provide a title for this card', 'Sample Card' );
+    
+    queue.trigger( app.wall, 'app:createpocket', { wall: app.wall, title: title } );
+  }
+  
+  // add card control
+
+  queue.on( app, 'app:createcard', function( data ) {
+    socket.emit( 'card:create', data );
+  });
+
+  queue.on( app, 'card:moved', function( data ) {
+    socket.emit( 'card:moved', data );
+  });
+
+  queue.on( app, 'card:tagged', function( data ) {
+    socket.emit( 'card:tagged', data );
+  });
+
+  queue.on( app, 'card:untagged', function( data ) {
+    socket.emit( 'card:untagged', data );
+  });
+  
+  socket.on( 'card:created', function( data ) {
+    queue.trigger( app, 'card:create', data );
+  });
+  
+  socket.on( 'card:updated', function( data ) {
+    queue.trigger( app, 'card:updated', data );
+  });
+
+  queue.on( app, 'app:clonecard', function( data ) {
+    queue.trigger( app, 'card:clone', data );
+  });
+  
+  socket.on( 'card:createfail', function( data ) {
+    alert( 'card:createfail' );
+  });
+  
+  
+  // handlers
     
   function addTab( data ) {  
     app.element.find( 'li.active' ).removeClass('active');
@@ -117,7 +274,7 @@ function initializeApplication( resources ) {
   }
     
   function completeApp( wall ) {
-    app.data('wall', wall);
+    app.element.data('wall', wall);
   
     queue.trigger( app, 'app:initend', { app: app } );
   }
@@ -127,18 +284,6 @@ function initializeApplication( resources ) {
     var boardid = hash.substr( 1, hash.length - 1 );
     
     app.wall.setActiveBoardById( boardid );
-  }
-
-  function triggerAddBoard( ev ) {  
-    queue.trigger( app, 'board:add', ev  );
-  }
-
-  function triggerAddRegion( ev ) {  
-    queue.trigger( app, 'region:add', ev );
-  }
-
-  function triggerAddPocket( ev ) {  
-    queue.trigger( app, 'pocket:add', ev );
   }
 
   function triggerAddWall( data ) {
@@ -158,6 +303,18 @@ function initializeApplication( resources ) {
 
 
 
+    
+    
+  // emits:  
+  
+  // triggers:  board:clone, pocket:clone, wall:cloned
+  
+  // on (socket):  
+  
+  // on (queue):  wall:clone
+
+
+    
   // triggers
 
 queue.on( app, 'wall:clone', cloneWall );

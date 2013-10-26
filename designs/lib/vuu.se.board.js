@@ -1,3 +1,13 @@
+
+  // emits:  
+  
+  // triggers:  board:regionadded, board:cardadded, board:activated, board:deactivated, board:shelfadded
+  
+  // on (socket):  
+  
+  // on (queue):  
+
+
 var Board = (function() {
 
 // constructor

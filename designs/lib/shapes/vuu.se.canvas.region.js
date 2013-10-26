@@ -1,4 +1,15 @@
-var CanvasRegion = (function() {
+
+  // emits:  
+  
+  // triggers:  canvasregion:activated, canvasregion:deactivated, canvasregion:moved, canvasregion:resized
+  
+  // on (socket):  
+  
+  // on (queue):  region:moveend --> [region:movestart] + [region:moveend] + canvasregion:moved, region:resizeend --> [region:resizestart] + [region:resizeend] + canvasregion:resized
+
+
+  
+  var CanvasRegion = (function() {
 
 // defaults
 
@@ -32,42 +43,42 @@ function CanvasRegion( queue, region ) {
     draggable: true
   });
   
+  // triggers
+  
   queue
-    .on( shape, 'region:moveend', function( data ) {
-      if ( region.id === data.region.id &&
-          ( shape.getX() != region.x || shape.getY() != region.y ) ) {
-        shape.moveTo( region.x, region.y );
+    .on( shape, 'region:moved', function( data ) {
+      if ( region.id === data.id &&
+          ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+        __moveTo( data.x, data.y );
       }
     })
-    .on( shape, 'region:resizeend', function( data ) {    
-      if ( region.id === data.region.id &&
-          ( shape.width != data.region.width || shape.height != data.region.height ) ) {
-        shape.resizeTo( data.region.width, data.region.height );
+    .on( shape, 'region:resized', function( data ) {    
+      if ( region.id === data.id &&
+          ( shape.width != data.width || shape.height != data.height ) ) {
+        __resizeTo( data.width, data.height );
+      }
+    })
+    .on( shape, 'region:updated', function( data ) {    
+      if ( region.id === data.id &&
+          ( shape.width != data.width || shape.height != data.height || shape.getX() != data.x || shape.getY() != data.y ) ) {
+        __moveTo( data.x, data.y );
+        __resizeTo( data.width, data.height );
       }
     });
   
   shape
     .on('mousedown touchstart', function() {
-      shape.displayActiveState();      
-      shape.moveToTop();
+      __displayActiveState(); 
       
       queue.trigger( shape, 'canvasregion:activated', { region: region } ); // could the board catch this in a canvas event bubble?
     })
     .on('mouseup touchend', function() {
-      shape.displayInactiveState();
+      __displayInactiveState();
       
       queue.trigger( shape, 'canvasregion:deactivated', { region: region } );
     })
-    .on('dragstart', function() { 
-        //queue.trigger( shape, 'canvasregion:movestart', { region: region } );
-    })
-    .on('drag', function() {        
-      // region.moveTo( shape.getX(), shape.getY() );
-    })
     .on('dragend', function() {
-      region.moveTo( shape.getX(), shape.getY() );
-      
-      queue.trigger( shape, 'canvasregion:moved', { region: region } );
+      queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
     });
     
   // private methods
@@ -91,18 +102,18 @@ function CanvasRegion( queue, region ) {
     return;
   }
   
-  // public methods
-  
-  shape.displayActiveState = function() {
+  function __displayActiveState() {
     shape.setShadowBlur( shadow.blur.active );
     shape.setShadowOffset( shadow.offset.active );
+    
+    shape.moveToTop();
     
     __redrawLayer();
 
     return shape;
   };
   
-  shape.displayInactiveState = function() {
+  function __displayInactiveState() {
     shape.setShadowBlur( shadow.blur.inactive );
     shape.setShadowOffset( shadow.offset.inactive );
     
@@ -111,40 +122,24 @@ function CanvasRegion( queue, region ) {
     return shape;
   };
   
-  shape.moveTo = function( x, y ) {
-    //queue.trigger( shape, 'canvasregion:movestart', { region: region, x: shape.getX(), y: shape.getY() } );  
+  function __moveTo( x, y ) {
     shape.moveToTop();
     
     shape.setX( x );
     shape.setY( y );
     
     __redrawLayer();
-    
-    region.moveTo( shape.getX(), shape.getY() );
-    
-    queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
-    
-    return shape;
   };
   
-  shape.resizeTo = function( width, height ) {
-    //queue.trigger( shape, 'canvasregion:movestart', { region: region, x: shape.getX(), y: shape.getY() } );  
+  function __resizeTo( width, height ) {
     shape.moveToTop();
     
     shape.setSize( width, height );
     
     __redrawLayer();
-    
-    region.resizeTo( shape.getWidth(), shape.getHeight() );
-    
-    queue.trigger( shape, 'canvasregion:resized', { region: region, width: shape.getWidth(), height: shape.getHeight() } );
-    
-    return shape;
   };
   
-  
-  
-  shape.displayActiveState();
+  __displayInactiveState();
   
   // instance
 

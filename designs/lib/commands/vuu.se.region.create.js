@@ -1,17 +1,22 @@
 
+  // emits:  region:create
+  
+  // triggers:  region:createbegin, region:createend, region:cloned
+  
+  // on (socket):  region:created --> region:createend
+  
+  // on (queue):  region:add --> region:createbegin, region:createbegin --> region:create, region:clone --> region:cloned
+
+
 
 
 
 
   // triggers
 
-queue.on( app.wall, 'region:add', addRegion );
-
-queue.on( app.wall, 'region:createbegin', createRegion );
-
 queue.on( app.wall, 'region:clone', cloneRegions );
 
-socket.on( 'region:created', completeRegion );
+queue.on( app.wall, 'region:create', createRegion );
 
 
 
@@ -19,23 +24,6 @@ socket.on( 'region:created', completeRegion );
 
 
   // handlers
-
-function addRegion() {  
-  var board = app.wall.getActiveBoard();
-  
-  var val = prompt( 'Please provide a value for this region', '' );
-  
-  var data = {
-    x: 10,
-    y: 10,
-    width: 250,
-    height: 150,
-    board: board,
-    value: val
-  };
-  
-  queue.trigger( this, 'region:createbegin', data );
-}
 
 function cloneRegions( data ) {
   $.get('/regions/' + data.region.id, function( resources ) {
@@ -47,12 +35,8 @@ function cloneRegions( data ) {
   });
 }
 
-function createRegion( data ) {  
-  socket.emit( 'region:create', data );
-}
-
-function completeRegion( data ) {
-  __buildRegion( 'region:createend', region );
+function createRegion( data ) {
+  __buildRegion( 'region:created', data );
 }
 
 
@@ -63,7 +47,7 @@ function completeRegion( data ) {
 function __buildRegion( ev, data ) {
   var board = app.wall.getBoardById( data.links.board );
 
-  var region = new Region( queue, socket, data );
+  var region = new Region( queue, data );
 
   if ( board.addRegion( region ) ) {
     queue.trigger( region, ev, { region: region } );

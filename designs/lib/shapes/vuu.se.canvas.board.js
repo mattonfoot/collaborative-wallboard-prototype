@@ -1,3 +1,12 @@
+
+  // emits:  
+  
+  // triggers:  canvasboard:canvasregionadded, canvasboard:canvascardadded
+  
+  // on (socket):  
+  
+  // on (queue):  
+
 var CanvasBoard  = (function() {
 
 // constructor

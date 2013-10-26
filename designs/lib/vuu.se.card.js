@@ -1,6 +1,15 @@
+
+  // emits:  card:movestart, card:moveend, card:tagged, card:untagged
+  
+  // triggers:  card:movestart, card:moveend, card:tagged, card:untagged
+  
+  // on (socket):  card:moveend --> card:movestart + card:moveend, card:tagged --> card:tagged, card:untagged --> card:untagged
+  
+  // on (queue):  
+
 var Card = (function() {
 
-function Card( queue, socket, data ) {
+function Card( queue, data ) {
   var card = this;
   
   card.id = data.id;  
@@ -8,64 +17,42 @@ function Card( queue, socket, data ) {
   card.x = data.x;
   card.y = data.y;
   card.tagged = data.tagged || '';
+  // triggers
+  
+  queue
+    .on( card, 'canvascard:moved', function( data ) {
+      if ( card.id === data.card.id &&
+          ( card.x != data.x || card.y != data.y ) ) {
+        __moveTo( data.x, data.y );
+    
+        __broadcastEvent( 'moved' );
+      }
+    })
+    .on( card, 'card:updated', function( data ) {  
+      if ( card.id === data.id &&
+          ( card.x != data.x || card.y != data.y ) ) {
+        __moveTo( data.x, data.y );
+      }
+    });
   
   // private
 
-  function __broadcastEvent( ev, broadcast ) {  
+  function __broadcastEvent( ev ) {  
     queue.trigger( card, 'card:' + ev, { card: card } );
-    
-    if ( broadcast ) {
-      socket.emit( 'card:' + ev, { card: card } );
-    }
   }
   
-  function __moveTo( x, y, broadcast ) {
-    if ( card.x !== x || card.y !== y) {
-      __broadcastEvent( 'movestart', broadcast );
-      
-      card.x = x;
-      card.y = y;
-      
-      __broadcastEvent( 'moveend', broadcast );
-    }
-    
-    return card;
+  function __moveTo( x, y ) {
+    card.x = x;
+    card.y = y;
   }
   
-  function __tag( color, broadcast ) {
+  function __tag( color ) {
     card.tagged = color;
-    
-    __broadcastEvent( 'tagged', broadcast );
-    
-    return card;
   }
   
-  function __untag( broadcast ) {
+  function __untag() {
     card.tagged = false;
-    
-    __broadcastEvent( 'untagged', broadcast );
-    
-    return card;
   }
-  
-  // triggers
-
-  socket
-    .on('card:moveend', function( data ) {
-      if ( card.id == data.id ) {
-        __moveTo( data.x, data.y, false );
-      }
-    })
-    .on('card:tagged', function( data ) {
-      if ( card.id === data.id ) {
-        __tag( data.tagged, false );
-      }
-    })
-    .on('card:untagged', function( data ) {
-      if ( card.id === data.id ) {
-        __untag( false );
-      }
-    });
   
   // public functions
 
@@ -89,16 +76,20 @@ function Card( queue, socket, data ) {
     };
   };
   
-  card.moveTo = function( x, y ) {
-    return __moveTo( x, y, true );
-  };
-  
   card.tag = function( color ) {
-    return __untag( color, true );
+    __untag( color );
+    
+    __broadcastEvent( 'tagged' );
+    
+    return card;
   };
   
   card.untag = function() {
-    return __untag( true );
+    __untag();
+    
+    __broadcastEvent( 'untagged' );
+    
+    return card;
   };
   
   return card;

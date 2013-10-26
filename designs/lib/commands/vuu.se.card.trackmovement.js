@@ -1,4 +1,13 @@
 
+  // emits:  
+  
+  // triggers:  card:regionenter, card:regionexit
+  
+  // on (socket):  
+  
+  // on (queue):  card:moveend --> (card:regionenter || card:regionexit), region:moveend, card:regionenter --> [pocket:update], card:regionexit --> [pocket:update]
+
+
     // setup the card region collision watcher
     
     var regionalcards = {};
@@ -63,9 +72,9 @@
     }
     
     queue
-      .on( app, 'card:moveend', trackCardMovement)
+      .on( app, 'card:moved', trackCardMovement)
       
-      .on( app, 'region:moveend', function( data ) { /* console.log( 'region:moved', data ); */ }) // check to see if any new cards have entered ??
+      .on( app, 'region:moved', function( data ) { /* console.log( 'region:moved', data ); */ }) // check to see if any new cards have entered ??
       
       .on( app, 'card:regionenter', function( data ) {
         var pocket = app.wall.getPocketById( data.card.getPocketId() );

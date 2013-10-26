@@ -1,21 +1,22 @@
 
+  // emits:  card:create
+  
+  // triggers:  card:cloned, card:createend, card:moveend
+  
+  // on (socket):  card:created --> card:createend + card:moveend
+  
+  // on (queue):  pocket:createend --> card:add + card:add, pocket:cloned --> card:clone + card:clone, card:add --> card:createbegin, card:createbegin --> card:create, card:clone --> card:cloned + card:moveend
+
+
 
 
 
 
   // triggers
 
-queue.on( app.wall, 'pocket:createend', triggerAddCard );
+queue.on( app.wall, 'card:create', createCard );
 
-queue.on( app.wall, 'pocket:cloned', triggerCloneCard );
-
-queue.on( app.wall, 'card:add', addCard );
-
-queue.on( app.wall, 'card:createbegin', createCard );
-
-queue.on( app.wall, 'card:clone', cloneCards );
-
-socket.on( 'card:created', completeCard );
+queue.on( app.wall, 'card:clone', cloneCard );
   
   
   
@@ -23,64 +24,30 @@ socket.on( 'card:created', completeCard );
   
   
   // handlers
-  
-function triggerAddCard( data ) {
-  __createCard( 'card:add', data );
-}
-  
-function triggerCloneCard( data ) {
-  __createCard( 'card:clone', data );
-}
-
-function addCard( data ) {
-  queue.trigger( this, 'card:createbegin', data );
-}
-
-function cloneCards( data ) {
-  $.get('/pockets/' + data.pocket.id + '/cards/', function( resources ) {
-    resources.cards.forEach(function( card ) {    
-      if ( card.links.board == data.board.id ) {
-        __buildCard( 'card:cloned', card );
-      }
-    });
-  });
-}
 
 function createCard( data ) {
-  socket.emit( 'card:create', data );
+  __buildCard( 'card:created', data );
 }
-
-function completeCard( data ) {
-  __buildCard( 'card:createend', data );
+  
+function cloneCard( data ) {
+  __buildCard( 'card:cloned', data );
 }
 
 
 
 // helpers
 
-function __createCard( ev, data ) {
-  var pocket = data.pocket;
-  
-  if ( data.board ) {
-    queue.trigger( this, ev, { board: data.board, pocket: pocket } );
-    
-    return;
-  }
-  
-  app.wall.links.boards.forEach(function( board ) {  
-    queue.trigger( this, ev, { board: board, pocket: pocket } );
-  });
-}
-
 
 function __buildCard( ev, data ) {
-  var board = app.wall.getBoardById( data.links.board );
+  var boardid = (data.board ? data.board.id : data.links.board );
 
-  var card = new Card( queue, socket, data );
+  var board = app.wall.getBoardById( boardid );
+
+  var card = new Card( queue, data );
 
   if ( board.addCard( card ) ) {
     queue.trigger( card, ev, { card: card } );
     
-    queue.trigger( card, 'card:moveend', { card: card });
+    queue.trigger( card, 'card:moved', { card: card });
   }
 }

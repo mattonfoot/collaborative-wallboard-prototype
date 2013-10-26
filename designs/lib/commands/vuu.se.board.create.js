@@ -1,17 +1,22 @@
 
+  // emits:  board:create
+  
+  // triggers:  board:createbegin, board:cloned, board:create, board:createend, region:clone, card:add, card:createend, card:cloned, region:createend, region:cloned
+  
+  // on (socket):  board:created --> board:createend + region:clone + card:add
+  
+  // on (queue):  board:add --> board:createbegin, board:clone --> board:cloned, board:createbegin --> board:create
+
+
 
 
 
 
   // triggers
 
-queue.on( app.wall, 'board:add', addBoard );
-
 queue.on( app.wall, 'board:clone', cloneBoard );
 
-queue.on( app.wall, 'board:createbegin', createBoard );
-
-socket.on( 'board:created', completeBoard );
+queue.on( app.wall, 'board:create', createBoard );
 
 
 
@@ -19,27 +24,13 @@ socket.on( 'board:created', completeBoard );
 
 
   // handlers
-    
-function addBoard() {
-  var key = prompt( 'Please provide a data key that this board represents', '' );
-  
-  console.log( app.wall );
-  
-  var data = { wall: app.wall, key: key };
-  
-  queue.trigger( app.wall, 'board:createbegin', data );
-}
 
 function cloneBoard( data ) {
   __buildBoard( 'board:cloned', data );
 }
 
-function createBoard( data ) {  
-  socket.emit( 'board:create', data );
-}
-
-function completeBoard( data ) {
-  __buildBoard( 'board:createend', data );
+function createBoard( data ) {
+  __buildBoard( 'board:created', data );
 }
 
 
@@ -70,7 +61,7 @@ function __buildBoard( ev, data ) {
     // create cards for existing pockets
     
     app.wall.links.pockets.forEach(function( pocket ) {
-      queue.trigger( app.wall, 'card:add', { board: board, pocket: pocket } );
+      queue.trigger( app, 'pocket:cloned', { pocket: pocket } );
     });
   }
 }
@@ -81,10 +72,10 @@ function __buildCanvasBoard( app, board ) {
   
     // triggers
   
-  queue.on( canvasboard, 'card:createend', addCanvasCard);
+  queue.on( canvasboard, 'card:created', addCanvasCard);
   queue.on( canvasboard, 'card:cloned', addCanvasCard);
   
-  queue.on( canvasboard, 'region:createend', addCanvasRegion);
+  queue.on( canvasboard, 'region:created', addCanvasRegion);
   queue.on( canvasboard, 'region:cloned', addCanvasRegion);
   
   // handlers
