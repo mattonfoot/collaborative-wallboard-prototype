@@ -13,10 +13,13 @@
     var regionalcards = {};
 
     function cardIsInRegion( card, region ) {
-      var inLeft = card.x > region.x,
-          inRight = (card.x + 100) < (region.x + region.width);
-          inTop = card.y > region.y;
-          inBase = (card.y + 65) < (region.y + region.height);
+      var cardX = (card.x + (card.width / 2));
+      var cardY = (card.y + (card.height / 2));
+    
+      var inLeft = cardX > region.x,
+          inRight = cardX < (region.x + region.width);
+          inTop = cardY > region.y;
+          inBase = cardY < (region.y + region.height);
 
       return ( inLeft && inRight && inTop && inBase );
     };

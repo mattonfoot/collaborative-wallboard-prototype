@@ -12,8 +12,6 @@ var CanvasCard = (function() {
 
 // defaults
 
-var size = { w: 100, h: 65 };
-
 var colors = {
   fill: '#f6f6f6',
   stroke: { active: '#aaa', inactive: '#e5e5e5' }
@@ -35,7 +33,7 @@ function CanvasCard( queue, card, pocket ) {
   });
   var title = pocket.title;
 
-  var cardback = __createCardback( size.w, size.h, colors.fill, shadow.color );
+  var cardback = __createCardback( card.width, card.height, colors.fill, shadow.color );
   var tag = __createTag();
   
   shape.add( cardback );

@@ -16,6 +16,8 @@ function Card( queue, data ) {
   card.links = data.links || {};
   card.x = data.x;
   card.y = data.y;
+  card.width = 100;
+  card.height = 65;
   card.tagged = data.tagged || '';
   // triggers
   
