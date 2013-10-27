@@ -77,7 +77,7 @@ function Card( queue, data ) {
   };
   
   card.tag = function( color ) {
-    __untag( color );
+    __tag( color );
     
     __broadcastEvent( 'tagged' );
     
