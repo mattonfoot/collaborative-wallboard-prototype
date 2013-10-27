@@ -48,25 +48,23 @@
       var board = app.wall.getBoardById( card.getBoardId() );
       var regions = board.regions;
       
-      regions.forEach(function( region ) {
-        var hasBeenRemoved = markCardAsNotInRegion( card.id, region.id ),
-            hasBeenAdded = false,
-            ev;
+      // has the card left the regions it was in
       
+      regions.forEach(function( region ) {
+        if ( !cardIsInRegion( card, region ) ) {
+          if ( markCardAsNotInRegion( card.id, region.id ) ) {
+            queue.trigger( board, 'card:regionexit', { board: board, card: card, region: region } );
+          }
+        }
+      });
+      
+      // has the card entered any new regions
+      
+      regions.forEach(function( region ) {      
         if ( cardIsInRegion( card, region ) ) {
-          hasBeenAdded = markCardAsInRegion( card.id, region.id );
-        }
-        
-        if ( hasBeenRemoved && !hasBeenAdded ) {
-          ev = 'card:regionexit'
-        }
-        
-        if ( !hasBeenRemoved && hasBeenAdded ) {
-          ev = 'card:regionenter'
-        }
-        
-        if ( ev ) {
-          queue.trigger( board, ev, { board: board, card: card, region: region } );
+          if ( markCardAsInRegion( card.id, region.id ) ) {
+            queue.trigger( board, 'card:regionenter', { board: board, card: card, region: region } );
+          }
         }
       });
     }
