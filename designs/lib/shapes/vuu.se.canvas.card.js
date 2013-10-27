@@ -78,6 +78,9 @@ function CanvasCard( queue, card, pocket ) {
     })
     .on('dragend', function() {      
       queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
+    })
+    .on('dblclick', function() {      
+      queue.trigger( shape, 'canvascard:opened', { pocket: pocket } );
     });
     
   // private methods

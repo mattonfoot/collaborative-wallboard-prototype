@@ -373,6 +373,39 @@ function cloneWall( data ) {
 
 
   
+  
+  // triggers
+  
+  
+
+  queue.on( app, 'canvascard:opened', function( data ) {
+    var pocket = data.pocket;
+    var data = pocket.getData();
+    var html = '';
+    
+    for ( var key in data ) {
+      html += '<tr><th>'+ key + '</th><td>' + data[ key ] + '</td></tr>';
+    }
+    
+    $('<div class="modal fade"> \
+  <div class="modal-dialog"> \
+    <div class="modal-content"> \
+      <div class="modal-header"> \
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> \
+        <h4 class="modal-title">[#' + pocket.cardnumber + '] ' + pocket.title + '</h4> \
+      </div> \
+      <div class="modal-body"><table class="table"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>' + html + '</tbody></table></div> \
+      <div class="modal-footer"> \
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> \
+      </div> \
+    </div> \
+  </div> \
+</div>').appendTo('body').modal('show');
+  });
+  
+  
+  
+  
 
 
 
@@ -430,9 +463,9 @@ card tagging logic to allow plugins to create a tag shape
   card to work out the best way to display a tag
   multiple predefined anchors to group tags around
   
-cards are considered inside a region if they more than 50% of them is over it
+cards are considered inside a region if they more than 50% of them is over it - done
 
-card is over two or more regions on the same board
+card is over two or more regions on the same board - done (issue with tagging that will be resolved by card working out way to display tags)
 
 display pocket data when double clicking card
 
@@ -445,7 +478,7 @@ db backup
   
 ui triggers create event
   --> server creates model created event
-    --> UI creates remote façade --- because cards trigger off pockets both clients create a card so we get duplicates
+    --> UI creates remote façade --- because cards trigger off pockets both clients create a card so we get duplicates - fixed
       --> UI creates element
 
 */

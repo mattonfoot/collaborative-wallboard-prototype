@@ -47,6 +47,16 @@ function Pocket( queue, data ) {
   pocket.get = function( key ) {
     return databag[ key ];
   };
+
+  pocket.getData = function() {
+    var d = {};
+    
+    for ( var key in databag ) {
+      d[ key ] = databag[ key ];
+    }
+  
+    return d;
+  };
   
   // instance
 
