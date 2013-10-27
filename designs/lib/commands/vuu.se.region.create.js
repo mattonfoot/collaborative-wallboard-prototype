@@ -26,9 +26,11 @@ queue.on( app.wall, 'region:create', createRegion );
   // handlers
 
 function cloneRegions( data ) {
+  var boardid = data.region.links ? data.region.links.board : data.board.id;
+
   $.get('/regions/' + data.region.id, function( resources ) {
     resources.regions.forEach(function( region ) {    
-      if ( region.links.board == data.board.id ) {
+      if ( region.links.board == boardid ) {
         __buildRegion( 'region:cloned', region );
       }
     });

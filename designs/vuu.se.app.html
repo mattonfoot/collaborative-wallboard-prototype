@@ -120,6 +120,10 @@ function initializeApplication( resources ) {
   socket.on( 'board:created', function( data ) { 
     queue.trigger( app, 'board:create', data );
   });
+    
+  socket.on( 'board:clone', function( data ) { 
+    queue.trigger( app, 'board:clone', data );
+  });
   
   socket.on( 'board:createfail', function( data ) {
     alert( 'board:createfail' );
@@ -157,6 +161,10 @@ function initializeApplication( resources ) {
     queue.trigger( app, 'region:create', data );
   });
   
+  socket.on( 'region:clone', function( data ) {
+    queue.trigger( app, 'region:clone', { region: data } );
+  });
+  
   socket.on( 'region:updated', function( data ) {
     queue.trigger( app, 'region:updated', data );
   });
@@ -192,6 +200,10 @@ function initializeApplication( resources ) {
   
   socket.on( 'pocket:created', function( data ) {
     queue.trigger( app, 'pocket:create', data );
+  });  
+  
+  socket.on( 'pocket:clone', function( data ) {
+    queue.trigger( app, 'pocket:clone', data );
   });
   
   socket.on( 'pocket:createfail', function( data ) {
@@ -246,6 +258,10 @@ function initializeApplication( resources ) {
   
   socket.on( 'card:created', function( data ) {
     queue.trigger( app, 'card:create', data );
+  });
+  
+  socket.on( 'card:clone', function( data ) {
+    queue.trigger( app, 'card:clone', data );
   });
   
   socket.on( 'card:updated', function( data ) {

@@ -73,6 +73,13 @@
     
     queue
       .on( app, 'card:moved', trackCardMovement)
+      .on( app, 'card:updated', function( data ) {
+        var board = app.wall.getBoardById( data.links.board );
+        
+        var card = board.getCardById( data.id );
+      
+        trackCardMovement( { card: card } );
+      })
       
       .on( app, 'region:moved', function( data ) { /* console.log( 'region:moved', data ); */ }) // check to see if any new cards have entered ??
       
