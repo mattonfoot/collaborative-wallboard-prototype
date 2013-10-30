@@ -30,18 +30,17 @@ var shadow = {
 // constructor
 
 function CanvasRegion( queue, region ) {
-  var color = __asColor( region.value ); 
- 
-  var shape = new Kinetic.Rect({
-    x: region.x,
-    y: region.y,
-    width: region.width,
-    height: region.height,    
-    fill: color || colors.fill,
-    shadowOpacity: 0.5,
-    shadowColor: shadow.color,
+  var shape = new Kinetic.Group({
+    x: region.x || 5,
+    y: region.y || 5,
     draggable: true
   });
+  var color = __asColor( region.value );
+
+  var background = __createBackground( region.width, region.height, color || colors.fill, shadow.color );
+  
+  shape.add( background );
+  shape.add( __createTitleText( region.width, region.value ) );
   
   // triggers
   
@@ -82,7 +81,33 @@ function CanvasRegion( queue, region ) {
     });
     
   // private methods
+
+function __createBackground( w, h, fill, shadow ) {
+  return new Kinetic.Rect({
+    x: 0,
+    y: 0,
+    width: w,
+    height: h,
+    fill: fill,
+    shadowOpacity: 0.5,
+    shadowColor: shadow
+  });
+};
     
+function __createTitleText( w, title ) {
+  return new Kinetic.Text({
+    x: 5,
+    y: 5,
+    width: w - 10,
+    text: title,
+    fontSize: 16,
+    fontFamily: 'Calibri',
+    fontWeight: 600,
+    fill: '#666',
+    align: 'center'
+  });
+};
+
   function __redrawLayer() {
     try {
       var layer = shape.getLayer();
@@ -103,8 +128,8 @@ function CanvasRegion( queue, region ) {
   }
   
   function __displayActiveState() {
-    shape.setShadowBlur( shadow.blur.active );
-    shape.setShadowOffset( shadow.offset.active );
+    background.setShadowBlur( shadow.blur.active );
+    background.setShadowOffset( shadow.offset.active );
     
     shape.moveToTop();
     
@@ -114,8 +139,8 @@ function CanvasRegion( queue, region ) {
   };
   
   function __displayInactiveState() {
-    shape.setShadowBlur( shadow.blur.inactive );
-    shape.setShadowOffset( shadow.offset.inactive );
+    background.setShadowBlur( shadow.blur.inactive );
+    background.setShadowOffset( shadow.offset.inactive );
     
     __redrawLayer();
 
