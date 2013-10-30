@@ -17,6 +17,8 @@ var validColors = [ 'red', 'green', 'blue', 'yellow', 'orange', 'aqua', 'black',
 
 var size = { width: 100, height: 100 };
 
+var handleSize = 20;
+
 var colors = {
   fill: '#eee'
 };
@@ -36,11 +38,15 @@ function CanvasRegion( queue, region ) {
     draggable: true
   });
   var color = __asColor( region.value );
+  var resizing = false;
 
   var background = __createBackground( region.width, region.height, color || colors.fill, shadow.color );
+  var handle = __createHandle( region.width, region.height );
+  var title = __createTitleText( region.width, region.value );
   
   shape.add( background );
-  shape.add( __createTitleText( region.width, region.value ) );
+  shape.add( title );
+  shape.add( handle );
   
   // triggers
   
@@ -79,6 +85,27 @@ function CanvasRegion( queue, region ) {
     .on('dragend', function() {
       queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
     });
+  
+  handle
+    .on('mousedown touchstart', function() {
+      resizing = true;
+    })
+    .on('mouseup touchend', function() {
+      resizing = false;
+    })
+    .on('dragmove', function( evt ) {
+      evt.cancelBubble = true;
+      
+      var width = handle.getX() + ( handleSize / 2 );
+      var height = handle.getY() + ( handleSize / 2 );
+      
+      __resizeTo( width, height );
+    })
+    .on('dragend', function( evt ) {
+      evt.cancelBubble = true;
+      
+      queue.trigger( shape, 'canvasregion:resized', { region: region, width: background.getWidth(), height: background.getHeight() } );
+    });
     
   // private methods
 
@@ -108,6 +135,20 @@ function __createTitleText( w, title ) {
   });
 };
 
+function __createHandle( w, h ) {
+  return new Kinetic.Rect({
+    x: w - ( handleSize / 2 ),
+    y: h - ( handleSize / 2 ),
+    width: handleSize,
+    height: handleSize,
+    stroke: '#ddd',
+    strokeWidth: 2,
+    cornerRadius: ( handleSize / 2 ),
+    opacity: 0,
+    draggable: true
+  });
+};
+
   function __redrawLayer() {
     try {
       var layer = shape.getLayer();
@@ -131,6 +172,8 @@ function __createTitleText( w, title ) {
     background.setShadowBlur( shadow.blur.active );
     background.setShadowOffset( shadow.offset.active );
     
+    handle.setOpacity( 1 );
+    
     shape.moveToTop();
     
     __redrawLayer();
@@ -141,6 +184,8 @@ function __createTitleText( w, title ) {
   function __displayInactiveState() {
     background.setShadowBlur( shadow.blur.inactive );
     background.setShadowOffset( shadow.offset.inactive );
+    
+    handle.setOpacity( 0 );
     
     __redrawLayer();
 
@@ -159,7 +204,8 @@ function __createTitleText( w, title ) {
   function __resizeTo( width, height ) {
     shape.moveToTop();
     
-    shape.setSize( width, height );
+    background.setSize( width, height );
+    title.setWidth( width - 10 );
     
     __redrawLayer();
   };
