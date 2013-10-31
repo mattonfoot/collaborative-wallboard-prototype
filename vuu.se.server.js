@@ -244,7 +244,7 @@ function setupCardCreation( socket, trigger, success, fail ) {
                     .create( 'card', obj )
                     .then(function( card ) {      
                       socket.emit( success, card );
-                      socket.broadcast.emit( 'card:clone', card );
+                      socket.broadcast.emit( 'card:cloned', card );
                     }, fail );
                 
                 }, fail );

@@ -116,6 +116,7 @@ function __createBackground( w, h, fill, shadow ) {
     width: w,
     height: h,
     fill: fill,
+    opacity: .1,
     shadowOpacity: 0.5,
     shadowColor: shadow
   });

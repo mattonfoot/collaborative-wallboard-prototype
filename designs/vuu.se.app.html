@@ -39,15 +39,19 @@
     
     <script src="./lib/vuu.se.eventqueue.js"></script>
     
-    <script src="./lib/vuu.se.wall.js"></script>
-    <script src="./lib/vuu.se.board.js"></script>
-    <script src="./lib/vuu.se.pocket.js"></script>
-    <script src="./lib/vuu.se.card.js"></script>
+    <script src="./lib/shapes/vuu.se.canvas.region.js"></script>
     <script src="./lib/vuu.se.region.js"></script>
     
-    <script src="./lib/shapes/vuu.se.canvas.board.js"></script>
     <script src="./lib/shapes/vuu.se.canvas.card.js"></script>
-    <script src="./lib/shapes/vuu.se.canvas.region.js"></script>
+    <script src="./lib/vuu.se.card.js"></script>
+    
+    <script src="./lib/shapes/vuu.se.canvas.board.js"></script>
+    <script src="./lib/vuu.se.board.js"></script>
+    
+    <script src="./lib/vuu.se.pocket.js"></script>
+    
+    <script src="./lib/vuu.se.wall.js"></script>
+    
     
     <script defer="defer">
     
@@ -98,6 +102,8 @@ function initializeApplication( resources ) {
     width: app.element.find('.tab-content').outerWidth(),
     height: app.element.find('.tab-content').outerHeight()
   };
+  
+  
   
     // triggers
 
@@ -243,6 +249,22 @@ function initializeApplication( resources ) {
   queue.on( app, 'app:createcard', function( data ) {
     socket.emit( 'card:create', data );
   });
+  
+  socket.on( 'card:created', function( data ) {
+    queue.trigger( app, 'card:create', data );
+  });
+
+  queue.on( app, 'app:clonecard', function( data ) {
+    queue.trigger( app, 'card:clone', data );
+  });
+  
+  socket.on( 'card:cloned', function( data ) {
+    queue.trigger( app, 'card:clone', data );
+  });
+  
+  socket.on( 'card:createfail', function( data ) {
+    alert( 'card:createfail' );
+  });
 
   queue.on( app, 'card:moved', function( data ) {
     socket.emit( 'card:moved', data );
@@ -256,24 +278,8 @@ function initializeApplication( resources ) {
     socket.emit( 'card:untagged', data );
   });
   
-  socket.on( 'card:created', function( data ) {
-    queue.trigger( app, 'card:create', data );
-  });
-  
-  socket.on( 'card:clone', function( data ) {
-    queue.trigger( app, 'card:clone', data );
-  });
-  
   socket.on( 'card:updated', function( data ) {
     queue.trigger( app, 'card:updated', data );
-  });
-
-  queue.on( app, 'app:clonecard', function( data ) {
-    queue.trigger( app, 'card:clone', data );
-  });
-  
-  socket.on( 'card:createfail', function( data ) {
-    alert( 'card:createfail' );
   });
   
   
