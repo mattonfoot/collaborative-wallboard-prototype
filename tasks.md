@@ -19,12 +19,12 @@ add a card to the shelf
   move a card onto the board
 
 ~~add a region to the board~~  
-  resize a region  
+  ~~resize a region~~  
   ~~move a region - done~~ -- should this check all the cards to see if any cards are now within its bounds ??
 
 ~~move a card over a region~~  
   ~~detect a collision between a region and card~~  
-  modify the card data - 
+  ~~modify the card data~~  
   
 --------
   
@@ -32,8 +32,8 @@ add a card to the shelf
   
 ~~add two different regions to two different boards~~  
   ~~color the background of a region if it is a valid color value~~  
-  regions display the value in a title position  
-  resize a region  
+  ~~regions display the value in a title position~~  
+  ~~resize a region~~  
   edit region value  
   delete a region  
   
@@ -61,12 +61,18 @@ card tagging logic to allow plugins to create a tag shape
 
 db backup
 
-infinite board scrolling
+~~infinite board scrolling~~
   
+each user needs a unique value they are assigned  
+  value is sent with all create requests  
+  value is returned with all events so that creator can ignore certain events  
+  
+list walls for user to choose one to work on  
+  allow wall switching  
   
 -----
   
 ui triggers create event  
   --> server creates model created event  
-    --> UI creates remote facade --- because cards trigger off pockets both clients create a card so we get duplicates - fixed  
+    --> UI creates remote facade --- because cards trigger off pockets both clients create a card so we get duplicates - intermittent  
       --> UI creates element
