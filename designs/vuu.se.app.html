@@ -20,17 +20,35 @@
   </head>
   <body>
     <div id="app">
-      <ul class="nav nav-tabs">
-        <li><button type="button" class="btn btn-default add-board" title="Add Board"><i class="glyphicon glyphicon-plus"></i></button></li>
-      </ul>
+        <ul class="nav nav-tabs">
+            <li><button type="button" class="btn btn-default add-board" title="Add Board"><i class="glyphicon glyphicon-plus"></i></button></li>
+        </ul>
 
-      <div class="tab-content"></div>
-      
-      <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
-        <button type="button" class="btn btn-default add-region" disabled title="Create Region"><i class="glyphicon glyphicon-plus"></i> New Region</button>
-        <button type="button" class="btn btn-default add-pocket" disabled title="Create Card"><i class="glyphicon glyphicon-plus"></i> New Card</button>
-      </nav>
-    </div>    
+        <div class="tab-content"></div>
+        
+        <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+            <button type="button" class="btn btn-default add-region" title="Create Region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
+            <button type="button" class="btn btn-default add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button><!-- Button trigger modal -->
+            <button type="button" class="btn btn-default view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
+        </nav>
+
+        <div class="modal fade" id="wallModal" tabindex="-1" role="dialog" aria-labelledby="wallModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" id="wallModalLabel">VUU.SE wall list</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Choose a wall to view:</p>
+
+                        <div class="list-group" id="wallList">
+                        </div>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    </div>
     
     <script src="./lib/vendor/jquery1.10.2.min.js"></script>
     <script src="./lib/vendor/bootstrap.min.js"></script>    
@@ -95,13 +113,42 @@ socket.on( 'app:init', initializeApplication);
 
 
 function initializeApplication( resources ) {
-  var data = resources[0]; // for now we only do one wall in the whole thing
-  var controlsEnabled = false;
+    // display a list of all the walls in the systems
   
-  app.size = {
-    width: app.element.find('.tab-content').outerWidth(),
-    height: app.element.find('.tab-content').outerHeight()
-  };
+    app.size = {
+        width: app.element.find('.tab-content').outerWidth(),
+        height: app.element.find('.tab-content').outerHeight()
+    };
+
+    // put list of walls in modal
+    var walllist = [];
+
+    $.each(resources, function() {
+        console.log( this );
+
+        var wallLink = $('<a href="#" class="list-group-item">'+ (this.name || this.id) +'</a>').data( 'wall', this );
+        walllist.push( wallLink );
+    });
+    $('#wallList').append( walllist );
+
+    // display modal
+    $('#wallModal').modal( 'show' );
+
+    app.element.on( 'mouseup touchend', '.list-group-item', triggerDisplayWall );
+
+    function triggerDisplayWall( e ) {
+        e.preventDefault();
+
+        var wall = $(e.target).data( 'wall');
+
+        initializeWall( wall );
+
+        $('#wallModal').modal( 'hide' );
+    }
+}
+
+function initializeWall( data ) {
+  var controlsEnabled = false;
   
   
   
@@ -113,11 +160,11 @@ function initializeApplication( resources ) {
 
   queue.on( app, 'wall:boardadded', enableBoardControls );
     
-  app.element.delegate( 'a[data-toggle="tab"]', 'shown.bs.tab', activateBoard );
+  app.element.on( 'shown.bs.tab', 'a[data-toggle="tab"]', activateBoard );
   
   // add board control
 
-  app.element.delegate( '.add-board', 'mouseup touchend', triggerAddBoard );
+  app.element.on( 'mouseup touchend', '.add-board', triggerAddBoard );
 
   queue.on( app, 'app:createboard', function( data ) {
     socket.emit( 'board:create', data );
@@ -149,7 +196,7 @@ function initializeApplication( resources ) {
   
   // add region control
 
-  app.element.delegate( '.add-region', 'mouseup touchend', triggerAddRegion );
+  app.element.on( 'mouseup touchend', '.add-region', triggerAddRegion );
 
   queue.on( app, 'app:createregion', function( data ) {
     socket.emit( 'region:create', data );
@@ -198,7 +245,7 @@ function initializeApplication( resources ) {
   
   // add pocket control
 
-  app.element.delegate( '.add-pocket', 'mouseup touchend', triggerAddPocket );
+  app.element.on( 'mouseup touchend', '.add-pocket', triggerAddPocket );
 
   queue.on( app, 'app:createpocket', function( data ) {
     socket.emit( 'pocket:create', data );
@@ -351,8 +398,6 @@ function cloneWall( data ) {
   data.links = data.links || {};
     
   app.wall = new Wall( queue, data );
-  
-  console.log( app.wall );
   
   var boards = data.links.boards || [];
   boards.forEach( function( id ) {

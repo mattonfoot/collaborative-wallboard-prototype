@@ -4,7 +4,7 @@
   "description": "A digital Wall Board Prototype for collaborative interactive boards",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node vuu.se.server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

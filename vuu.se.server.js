@@ -47,6 +47,34 @@ app.resource('region', {
     board: 'board'
   });
 
+// Walls
+
+
+function setupWallCreation( socket, trigger, success, fail ) {
+  var fail = function( err ) {
+      socket
+          .emit( fail, { 
+              msg: 'failed to create a new wall', 
+              data: data, 
+              err: err 
+          });
+  };
+
+  socket
+      .on( trigger, function( data ) {
+          var obj = { name: data.name };
+
+          app.adapter
+              .create( 'wall', obj )
+              .then(function( wall ) {
+                  socket.emit( success, wall );
+                  socket.broadcast.emit( 'wall:clone', wall );
+              }, fail);
+        
+      });
+    
+};
+
 // boards
 
 
@@ -289,12 +317,14 @@ function setupCardUpdates( socket, triggers ) {
 io.sockets
   .on( 'connection', function ( socket ) {
       
-    //setupGenericBroadcasts( socket, [ 'pocket:update' ] );
+  //setupGenericBroadcasts( socket, [ 'pocket:update' ] );
+    
+    setupWallCreation( socket, 'wall:create', 'wall:created', 'wall:createfail' );
     
     setupBoardCreation( socket, 'board:create', 'board:created', 'board:createfail' );
     
     setupPocketCreation( socket, 'pocket:create', 'pocket:created', 'pocket:createfail' );
-//setupPocketUpdates( socket, [ 'pocket:updated' ] );
+  //setupPocketUpdates( socket, [ 'pocket:updated' ] );
     
     setupCardCreation( socket, 'card:create', 'card:created', 'card:createfail' );
     setupCardUpdates( socket, [ 'card:moved', 'card:tagged', 'card:untagged' ] );
