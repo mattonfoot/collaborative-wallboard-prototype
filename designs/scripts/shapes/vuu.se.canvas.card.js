@@ -1,197 +1,210 @@
-var CanvasCard = (function() {
 
-// defaults
+// event <-- card:moved, card:tagged, card:untagged, card:updated, canvascard:mousedown, canvascard:touchstart, canvascard:mouseup, canvascard:touchend, canvascard:dragend, canvascard:dblclick
 
-var colors = {
-  fill: '#f6f6f6',
-  stroke: { active: '#aaa', inactive: '#e5e5e5' }
-};
+// event --> canvascard:activated, canvascard:deactivated, canvascard:moved, canvascard:opened
 
-var shadow = {
-  color: 'black',
-  offset: { active: 2, inactive: 1 },
-  blur: { active: 9, inactive: 5 }
-};
+define(function() {
 
-// constructor
+    var CanvasCard = (function() {
 
-function CanvasCard( queue, card, pocket ) {
-  var shape = new Kinetic.Group({
-    x: card.x || 5,
-    y: card.y || 5,
-    draggable: true
-  });
-  var title = pocket.title;
+        // defaults
 
-  var cardback = __createCardback( card.width, card.height, colors.fill, shadow.color );
-  var tag = __createTag();
+        var colors = {
+          fill: '#f6f6f6',
+          stroke: { active: '#aaa', inactive: '#e5e5e5' }
+        };
 
-  shape.add( cardback );
-  shape.add( __createIdText( pocket.cardnumber ) );
-  shape.add( __createTitleText( pocket.title ) );
-  shape.add( tag );
+        var shadow = {
+          color: 'black',
+          offset: { active: 2, inactive: 1 },
+          blur: { active: 9, inactive: 5 }
+        };
 
-  queue
-    .on( shape, 'card:moved', function( data ) {
-      if ( card.id === data.card.id &&
-          ( shape.getX() != card.x || shape.getY() != card.y ) ) {
-        __moveTo( card.x, card.y );
-      }
-    })
-    .on( shape, 'card:tagged', function( data ) {
-      if ( card.id === data.card.id ) {
-        __tag( card.tagged );
-      }
-    })
-    .on( shape, 'card:untagged', function( data ) {
-      if ( card.id === data.card.id ) {
-        __untag();
-      }
-    })
-    .on( shape, 'card:updated', function( data ) {
-      if ( card.id === data.id &&
-          ( shape.getX() != card.x || shape.getY() != card.y ) ) {
-        __moveTo( card.x, card.y );
-      }
-    });
+        // constructor
 
-  shape
-    .on('mousedown touchstart', function() {
-      __displayActiveState();
+        function CanvasCard( queue, card, pocket ) {
+            var shape = new Kinetic.Group({
+              x: card.x || 5,
+              y: card.y || 5,
+              draggable: true
+            });
+            var title = pocket.title;
 
-      queue.trigger( shape, 'canvascard:activated', { card: card, pocket: pocket } );
-    })
-    .on('mouseup touchend', function() {
-      __displayInactiveState();
+            var cardback = __createCardback( card.width, card.height, colors.fill, shadow.color );
+            var tag = __createTag();
 
-      queue.trigger( shape, 'canvascard:deactivated', { card: card, pocket: pocket } );
-    })
-    .on('dragend', function() {
-      queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
-    })
-    .on('dblclick', function() {
-      queue.trigger( shape, 'canvascard:opened', { pocket: pocket } );
-    });
+            shape.add( cardback );
+            shape.add( __createIdText( pocket.cardnumber ) );
+            shape.add( __createTitleText( pocket.title ) );
+            shape.add( tag );
 
-  // private methods
+            queue
+              .on( shape, 'card:moved', function( data ) {
+                if ( card.id === data.card.id &&
+                    ( shape.getX() != card.x || shape.getY() != card.y ) ) {
+                  __moveTo( card.x, card.y );
+                }
+              })
+              .on( shape, 'card:tagged', function( data ) {
+                if ( card.id === data.card.id ) {
+                  __tag( card.tagged );
+                }
+              })
+              .on( shape, 'card:untagged', function( data ) {
+                if ( card.id === data.card.id ) {
+                  __untag();
+                }
+              })
+              .on( shape, 'card:updated', function( data ) {
+                if ( card.id === data.id &&
+                    ( shape.getX() != card.x || shape.getY() != card.y ) ) {
+                  __moveTo( card.x, card.y );
+                }
+              });
 
-  function __redrawLayer() {
-    try {
-      var layer = shape.getLayer();
+            shape
+              .on('mousedown touchstart', function() {
+                __displayActiveState();
 
-      if (layer) {
-        layer.batchDraw();
-      }
-    } catch(e) {
-    }
-  }
+                queue.trigger( shape, 'canvascard:activated', { card: card, pocket: pocket } );
+              })
+              .on('mouseup touchend', function() {
+                __displayInactiveState();
 
-  function __moveTo( x, y ) {
-    shape.moveToTop();
+                queue.trigger( shape, 'canvascard:deactivated', { card: card, pocket: pocket } );
+              })
+              .on('dragend', function() {
+                queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
+              })
+              .on('dblclick', function() {
+                queue.trigger( shape, 'canvascard:opened', { pocket: pocket } );
+              });
 
-    shape.setX( x );
-    shape.setY( y );
+            // private methods
 
-    __redrawLayer();
-  }
+            function __redrawLayer() {
+              try {
+                var layer = shape.getLayer();
 
-  function __displayActiveState() {
-    cardback.setStroke( colors.stroke.active );
-    cardback.setShadowBlur( shadow.blur.active );
-    cardback.setShadowOffset( shadow.offset.active );
+                if (layer) {
+                  layer.batchDraw();
+                }
+              } catch(e) {
+              }
+            }
 
-    shape.moveToTop();
+            function __moveTo( x, y ) {
+              shape.moveToTop();
 
-    __redrawLayer();
-  };
+              shape.setX( x );
+              shape.setY( y );
 
-  function __displayInactiveState() {
-    cardback.setStroke( colors.stroke.inactive );
-    cardback.setShadowBlur( shadow.blur.inactive );
-    cardback.setShadowOffset( shadow.offset.inactive );
+              __redrawLayer();
+            }
 
-    __redrawLayer();
-  };
+            function __displayActiveState() {
+              cardback.setStroke( colors.stroke.active );
+              cardback.setShadowBlur( shadow.blur.active );
+              cardback.setShadowOffset( shadow.offset.active );
 
-  function __tag( color ) {
-    tag.setFill( color );
-    tag.setOpacity( 1 );
+              shape.moveToTop();
 
-    __redrawLayer();
-  };
+              __redrawLayer();
+            };
 
-  function __untag() {
-    tag.setOpacity( 0 );
+            function __displayInactiveState() {
+              cardback.setStroke( colors.stroke.inactive );
+              cardback.setShadowBlur( shadow.blur.inactive );
+              cardback.setShadowOffset( shadow.offset.inactive );
 
-    __redrawLayer();
-  };
+              __redrawLayer();
+            };
 
-  // initialise
+            function __tag( color ) {
+              tag.setFill( color );
+              tag.setOpacity( 1 );
 
-  __displayInactiveState();
-  __untag();
+              __redrawLayer();
+            };
 
-  // instance
+            function __untag() {
+              tag.setOpacity( 0 );
 
-  return shape;
-}
+              __redrawLayer();
+            };
 
-// private methods
+            // initialise
 
-function __createCardback( w, h, fill, shadow ) {
-  return new Kinetic.Rect({
-    x: 0,
-    y: 0,
-    width: w,
-    height: h,
-    cornerRadius: 5,
-    fill: fill,
-    strokeWidth: 1,
-    shadowOpacity: 0.5,
-    shadowColor: shadow,
-  });
-};
+            __displayInactiveState();
+            __untag();
 
-function __createIdText( id ) {
-  return new Kinetic.Text({
-    x: 5,
-    y: 2,
-    text: '#' + id,
-    fontSize: 15,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-};
+            // instance
 
-function __createTitleText( title ) {
-  return new Kinetic.Text({
-    x: 5,
-    y: 22,
-    width: 85,
-    height: 36,
-    text: title,
-    fontSize: 11,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-};
+            return shape;
+          }
 
-function __createTag() {
-  return new Kinetic.Rect({
-    x: 95,
-    y: 5,
-    width: 10,
-    height: 10,
-    fill: '#eee',
-    stroke: '#666',
-    strokeWidth: 1,
-    cornerRadius: 2,
-    opacity: 0
-  });
-};
+          // private methods
 
-// public methods
+          function __createCardback( w, h, fill, shadow ) {
+            return new Kinetic.Rect({
+              x: 0,
+              y: 0,
+              width: w,
+              height: h,
+              cornerRadius: 5,
+              fill: fill,
+              strokeWidth: 1,
+              shadowOpacity: 0.5,
+              shadowColor: shadow,
+            });
+          };
 
-return CanvasCard;
+          function __createIdText( id ) {
+            return new Kinetic.Text({
+              x: 5,
+              y: 2,
+              text: '#' + id,
+              fontSize: 15,
+              fontFamily: 'Calibri',
+              fill: '#666'
+            });
+          };
 
-})();
+          function __createTitleText( title ) {
+            return new Kinetic.Text({
+              x: 5,
+              y: 22,
+              width: 85,
+              height: 36,
+              text: title,
+              fontSize: 11,
+              fontFamily: 'Calibri',
+              fill: '#666'
+            });
+          };
+
+          function __createTag() {
+            return new Kinetic.Rect({
+              x: 95,
+              y: 5,
+              width: 10,
+              height: 10,
+              fill: '#eee',
+              stroke: '#666',
+              strokeWidth: 1,
+              cornerRadius: 2,
+              opacity: 0
+            });
+          };
+
+          // public methods
+
+          return CanvasCard;
+
+      })();
+
+      // export
+
+      return CanvasCard;
+
+});

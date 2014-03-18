@@ -55,38 +55,40 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
     // cardlocation:changed
     app.queue.on( app, 'card:moved', function( data ) {
-      socket.emit( 'card:moved', data ); // should be put to server
+        app.socket.emit( 'card:moved', data ); // should be put to server
     });
 
     // pocket:tagged
     app.queue.on( app, 'card:tagged', function( data ) {
-      socket.emit( 'card:tagged', data ); // should be put to server
+        app.socket.emit( 'card:tagged', data ); // should be put to server
     });
 
     // pocket:untagged
     app.queue.on( app, 'card:untagged', function( data ) {
-      socket.emit( 'card:untagged', data ); // should be put to server
+        app.socket.emit( 'card:untagged', data ); // should be put to server
     });
 
     app.queue.on( app, 'region:moved', function( data ) {
-      socket.emit( 'region:moved', data ); // should be put to server
+        app.socket.emit( 'region:moved', data ); // should be put to server
     });
 
     app.queue.on( app, 'region:resized', function( data ) {
-      socket.emit( 'region:resized', data ); // should be put to server
+        app.socket.emit( 'region:resized', data ); // should be put to server
     });
 
     [
       'vuu.se.monitor',
       'vuu.se.plugins',
 
-      'commands/vuu.se.canvas.card.open',
-      'commands/vuu.se.canvasboard.create',
-      'commands/vuu.se.card.create',
-      'commands/vuu.se.card.trackmovement',
-      'commands/vuu.se.pocket.create',
-      'commands/vuu.se.region.create',
-      'commands/vuu.se.wall.create',
+      'commands/vuu.se.board.created',
+      'commands/vuu.se.canvas.card.opened',
+      'commands/vuu.se.canvasboard.created',
+      'commands/vuu.se.card.created',
+      'commands/vuu.se.card.moved',
+      'commands/vuu.se.pocket.added',
+      'commands/vuu.se.pocket.created',
+      'commands/vuu.se.region.created',
+      'commands/vuu.se.wall.opened',
 
       'controls/vuu.se.controls.addboard',
       'controls/vuu.se.controls.addpocket',

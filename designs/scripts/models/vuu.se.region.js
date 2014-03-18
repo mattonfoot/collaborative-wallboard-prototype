@@ -112,4 +112,4 @@ define(function() {
 
     return Region;
 
-})();
+});

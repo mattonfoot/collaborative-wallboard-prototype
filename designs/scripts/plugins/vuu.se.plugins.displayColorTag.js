@@ -2,7 +2,7 @@ define(function() {
 
     function initialize( app ) {
 
-        vuu.se.plugins.register(function( app, queue ) {
+        app.plugins.register(function( app, queue ) {
 
           return {
 
@@ -25,7 +25,7 @@ define(function() {
           };
 
         });
-        
+
     }
 
     return {

@@ -5,30 +5,30 @@
 
 define([ 'models/vuu.se.pocket' ], function( Pocket ) {
 
-function initialize( app ) {
-    app.queue.on( app, 'pocket:created', clonePocket );
+    function initialize( app ) {
+        app.queue.on( app, 'pocket:created', clonePocket );
 
-    // handlers
+        // handlers
 
-    function clonePocket( data ) {
-      var wall = app.wall;
+        function clonePocket( data ) {
+          var wall = app.wall;
 
-      if ( wall.getPocketById( data.id ) ) {
-        return; // we already have it ( should we check if it's fully synced? )
-      }
+          if ( wall.getPocketById( data.id ) ) {
+              return; // we already have it ( should we check if it's fully synced? )
+          }
 
-      var pocket = new Pocket( queue, data );
+          var pocket = new Pocket( app.queue, data );
 
-      app.queue.trigger( wall, 'pocket:cloned', { pocket: pocket } );
+          app.queue.trigger( wall, 'pocket:cloned', { pocket: pocket } );
 
-      if ( wall.addPocket( pocket ) ) {
-          app.queue.trigger( wall, 'pocket:added', { wall: wall, pocket: pocket } );
-      }
+          if ( wall.addPocket( pocket ) ) {
+              app.queue.trigger( wall, 'pocket:added', { wall: wall, pocket: pocket } );
+          }
+        }
     }
-}
 
-return {
-initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });

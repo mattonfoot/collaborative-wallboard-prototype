@@ -1,107 +1,124 @@
-var CanvasBoard  = (function() {
 
-// defaults
+// event <-- app:mousewheel
 
-var min_scale = 0.1;
+// event --> canvasboard:scaled, canvascard:added, canvasregion:added
 
-// constructor
+define([ 'kinetic' ], function() {
 
-function CanvasBoard( queue, options ) {
-  var shape = new Kinetic.Stage({
-    container: options.container,
-    width: options.width,
-    height: options.height,
-    draggable: true
-  });
+    var CanvasBoard  = (function() {
 
-  shape.regions = new Kinetic.Layer();
-  shape.add( shape.regions );
+        // defaults
 
-  shape.cards = new Kinetic.Layer();
-  shape.add( shape.cards );
+        var min_scale = 0.1;
 
-  // triggers
+        // constructor
 
-  var $container = $( '#' + options.container );
-  var scale = 1;
+        function CanvasBoard( queue, options ) {
+            var shape = new Kinetic.Stage({
+                container: options.container,
+                width: options.width,
+                height: options.height,
+                draggable: true
+            });
 
-  $container
-    .bind('mousewheel', function( e, delta ) {
+            shape.regions = new Kinetic.Layer();
+            shape.add( shape.regions );
 
-      delta = e.originalEvent.wheelDelta;
+            shape.cards = new Kinetic.Layer();
+            shape.add( shape.cards );
 
-      //prevent only the actual wheel movement
-      if (delta !== 0) {
-        e.preventDefault();
-      }
+            // triggers
 
-      var cur_scale;
-      if (delta > 0) {
-        cur_scale = scale + Math.abs(delta / 640);
-      } else {
-        cur_scale = scale - Math.abs(delta / 640);
-      }
+            var $container = $( '#' + options.container );
+            var scale = 1;
 
-      if (cur_scale > min_scale) {
+            $container
+              .bind('mousewheel', function( e, delta ) {
 
-        var cnvsPos = __getPos( $container );
+                  delta = e.originalEvent.wheelDelta;
 
-        var Apos = shape.getAbsolutePosition();
+                  //prevent only the actual wheel movement
+                  if (delta !== 0) {
+                      e.preventDefault();
+                  }
 
-        var mousePos = shape.getMousePosition();
+                  var cur_scale;
+                  if (delta > 0) {
+                      cur_scale = scale + Math.abs(delta / 640);
+                  } else {
+                      cur_scale = scale - Math.abs(delta / 640);
+                  }
 
-        var smallCalc  = (e.pageX - Apos.x - cnvsPos.x)/scale;
-        var smallCalcY = (e.pageY - Apos.y - cnvsPos.y)/scale;
+                  if (cur_scale > min_scale) {
 
-        var endCalc = (e.pageX - cnvsPos.x) - cur_scale*smallCalc;
-        var endCalcY = (e.pageY - cnvsPos.y) - cur_scale*smallCalcY;
+                      var cnvsPos = __getPos( $container );
 
-        scale = cur_scale;
+                      var Apos = shape.getAbsolutePosition();
 
-        shape.setPosition( endCalc, endCalcY);
+                      var mousePos = shape.getMousePosition();
 
-        shape.regions.setScale(cur_scale);
-        shape.regions.batchDraw();
+                      var smallCalc  = (e.pageX - Apos.x - cnvsPos.x)/scale;
+                      var smallCalcY = (e.pageY - Apos.y - cnvsPos.y)/scale;
 
-        shape.cards.setScale(cur_scale);
-        shape.cards.batchDraw();
-      }
+                      var endCalc = (e.pageX - cnvsPos.x) - cur_scale*smallCalc;
+                      var endCalcY = (e.pageY - cnvsPos.y) - cur_scale*smallCalcY;
+
+                      scale = cur_scale;
+
+                      shape.setPosition( endCalc, endCalcY);
+
+                      shape.regions.setScale(cur_scale);
+                      shape.regions.batchDraw();
+
+                      shape.cards.setScale(cur_scale);
+                      shape.cards.batchDraw();
+
+                      queue.trigger( shape, 'canvasboard:scaled', { canvasboard: shape });
+                  }
 
 
-    });
+              });
 
-  // private methods
+            // private methods
 
-  function __getPos(el){
-		for (var lx=0, ly=0;
-         el != null;
-         lx += el.offsetLeft, ly += el.offsetTop, el = el.offsetParent);
-    	return {x: lx,y: ly};
-	}
+            function __getPos(el){
+            		for (var lx=0, ly=0;
+                     el != null;
+                     lx += el.offsetLeft, ly += el.offsetTop, el = el.offsetParent);
+                return {x: lx,y: ly};
+          	}
 
-  // public methods
+            // public methods
 
-  shape.addRegion = function( canvasregion ) {
-    shape.regions.add( canvasregion );
+            shape.addRegion = function( canvasregion ) {
+                shape.regions.add( canvasregion );
 
-    queue.trigger( shape, 'canvasregion:added', { canvasregion: canvasregion });
+                queue.trigger( shape, 'canvasregion:added', { canvasregion: canvasregion });
 
-    shape.regions.batchDraw();
-  };
+                shape.regions.batchDraw();
+            };
 
-  shape.addCard = function( canvascard ) {
-    shape.cards.add( canvascard );
+            shape.addCard = function( canvascard ) {
+                shape.cards.add( canvascard );
 
-    queue.trigger( shape, 'canvascard:added', { canvascard: canvascard });
+                queue.trigger( shape, 'canvascard:added', { canvascard: canvascard });
 
-    shape.cards.batchDraw();
-  };
+                shape.cards.batchDraw();
+            };
 
-  // instance
+            // instance
 
-  return shape;
-};
+            return shape;
+        };
 
-return CanvasBoard ;
+        // Factory
 
-})();
+        return CanvasBoard ;
+
+    })();
+
+    // export
+
+    return CanvasBoard;
+
+});

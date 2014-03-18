@@ -1,99 +1,92 @@
-
-var vuu = vuu || {};
-vuu.se = vuu.se || {};
-
 define(function() {
 
-function initialize( app ) {
-  var socket = app.socket
-    , queue = app.queue;
+    function initialize( app ) {
 
-  vuu.se.plugins = (function() {
+        app.plugins = (function() {
 
-      var plugins = {};
+            var plugins = {};
 
-      function PluginRegistry() {
-      };
+            function PluginRegistry() {};
 
-      // private
+            // private
 
-      function appliesToKey( plugin, key ) {
-        if (plugin.keys && plugin.keys.indexOf( key ) < 0) {
-          return false; // ignore any plugin that is limited to other plugins
-        }
+            function appliesToKey( plugin, key ) {
+                if (plugin.keys && plugin.keys.indexOf( key ) < 0) {
+                    return false; // ignore any plugin that is limited to other plugins
+                }
 
-        return true;
-      };
+                return true;
+            };
 
-      // public
+            // public
 
-      PluginRegistry.prototype.register = function( pluginfactory ) {
-        // this can only be called when the app is initiated or app will be undefined
-        /*
+            PluginRegistry.prototype.register = function( pluginfactory ) {
+                // this can only be called when the app is initiated or app will be undefined
+                /*
 
-          if ( !appinitiated ) {
-            parked.push( pluginfactory );
+                  if ( !appinitiated ) {
+                    parked.push( pluginfactory );
 
-            return;
-          }
+                    return;
+                  }
 
-        */
+                */
 
 
-        var plugin = pluginfactory( app, queue );
+                var plugin = pluginfactory( app, app.queue );
 
-        var name = plugin.name;
-        var oldPlugin = plugins[name];
+                var name = plugin.name;
+                var oldPlugin = plugins[name];
 
-        if (oldPlugin) {
-          console.log( 'Skipped plugin [' + name + '] as that plugin is already loaded' );
+                if (oldPlugin) {
+                  console.log( 'Skipped plugin [' + name + '] as that plugin is already loaded' );
 
-          return this;
-        }
+                  return this;
+                }
 
-        plugins[name] = plugin;
+                plugins[name] = plugin;
 
-        return this;
-      };
+                return this;
+            };
 
-      PluginRegistry.prototype.process = function( pocketid, key, value ) {
-        var pocket = app.wall.getPocketById( pocketid );
-        var cards = [];
+            PluginRegistry.prototype.process = function( pocketid, key, value ) {
+                var pocket = app.wall.getPocketById( pocketid );
+                var cards = [];
 
-        app.wall.links.boards.forEach(function( board ) {
-          board.cards.forEach(function( card ) {
-            if ( card.links.pocket == pocketid ) {
-              cards.push( card );
+                app.wall.links.boards.forEach(function( board ) {
+                  board.cards.forEach(function( card ) {
+                    if ( card.links.pocket == pocketid ) {
+                      cards.push( card );
+                    }
+                  });
+                });
+
+                for (var name in plugins) {
+                  var plugin = plugins[ name ];
+
+                  if ( appliesToKey( plugin, key ) ) {
+                    plugin.process( pocket, cards, key, value );
+                  }
+                }
+
+                return this;
+            };
+
+            function __updatePocket( data ) {
+                registry.process( data.pocket, data.key, data.value );
             }
-          });
-        });
 
-        for (var name in plugins) {
-          var plugin = plugins[ name ];
+            var registry = new PluginRegistry();
 
-          if ( appliesToKey( plugin, key ) ) {
-            plugin.process( pocket, cards, key, value );
-          }
-        }
+            app.queue.on( registry, 'pocket:update', __updatePocket);
 
-        return this;
-      };
+            return registry;
 
-      function __updatePocket( data ) {
-        registry.process( data.pocket, data.key, data.value );
-      }
+        })();
+    }
 
-      var registry = new PluginRegistry();
-
-      queue.on( registry, 'pocket:update', __updatePocket);
-
-      return registry;
-
-    })();
-}
-
-return {
-  initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });

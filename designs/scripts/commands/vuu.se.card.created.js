@@ -18,7 +18,7 @@ function initialize( app ) {
         return; // we already have it ( should we check if it's fully synced? )
       }
 
-      var card = new Card( queue, data );
+      var card = new Card( app.queue, data );
 
       app.queue.trigger( card, 'card:cloned', { card: card } );
 

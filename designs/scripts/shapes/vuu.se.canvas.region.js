@@ -1,214 +1,227 @@
-var CanvasRegion = (function() {
 
-// defaults
+// event <--
 
-var validColors = [ 'red', 'green', 'blue', 'yellow', 'orange', 'aqua', 'black', 'brown', 'coral', 'crimson', 'cyan', 'gray', 'lime', 'magenta', 'maroon' ];
+// event -->
 
-var size = { width: 100, height: 100 };
+define(function() {
 
-var handleSize = 20;
+    var CanvasRegion = (function() {
 
-var colors = {
-  fill: '#aaa'
-};
+        // defaults
 
-var shadow = {
-  color: '#eee',
-  offset: { active: 1, inactive: 0 },
-  blur: { active: 5, inactive: 0 }
-};
+        var validColors = [ 'red', 'green', 'blue', 'yellow', 'orange', 'aqua', 'black', 'brown', 'coral', 'crimson', 'cyan', 'gray', 'lime', 'magenta', 'maroon' ];
 
-// constructor
+        var size = { width: 100, height: 100 };
 
-function CanvasRegion( queue, region ) {
-  var shape = new Kinetic.Group({
-    x: region.x || 5,
-    y: region.y || 5,
-    draggable: true
-  });
-  var color = __asColor( region.value );
-  var resizing = false;
+        var handleSize = 20;
 
-  var background = __createBackground( region.width, region.height, color || colors.fill, shadow.color );
-  var handle = __createHandle( region.width, region.height );
-  var title = __createTitleText( region.width, region.value );
+        var colors = {
+          fill: '#aaa'
+        };
 
-  shape.add( background );
-  shape.add( title );
-  shape.add( handle );
+        var shadow = {
+          color: '#eee',
+          offset: { active: 1, inactive: 0 },
+          blur: { active: 5, inactive: 0 }
+        };
 
-  // triggers
+        // constructor
 
-  queue
-    .on( shape, 'region:moved', function( data ) {
-      if ( region.id === data.id &&
-          ( shape.getX() != data.x || shape.getY() != data.y ) ) {
-        __moveTo( data.x, data.y );
-      }
-    })
-    .on( shape, 'region:resized', function( data ) {
-      if ( region.id === data.id &&
-          ( shape.width != data.width || shape.height != data.height ) ) {
-        __resizeTo( data.width, data.height );
-      }
-    })
-    .on( shape, 'region:updated', function( data ) {
-      if ( region.id === data.id &&
-          ( shape.width != data.width || shape.height != data.height || shape.getX() != data.x || shape.getY() != data.y ) ) {
-        __moveTo( data.x, data.y );
-        __resizeTo( data.width, data.height );
-      }
-    });
+        function CanvasRegion( queue, region ) {
+            var shape = new Kinetic.Group({
+                x: region.x || 5,
+                y: region.y || 5,
+                draggable: true
+            });
+            var color = __asColor( region.value );
+            var resizing = false;
 
-  shape
-    .on('mousedown touchstart', function() {
-      __displayActiveState();
+            var background = __createBackground( region.width, region.height, color || colors.fill, shadow.color );
+            var handle = __createHandle( region.width, region.height );
+            var title = __createTitleText( region.width, region.value );
 
-      queue.trigger( shape, 'canvasregion:activated', { region: region } ); // could the board catch this in a canvas event bubble?
-    })
-    .on('mouseup touchend', function() {
-      __displayInactiveState();
+            shape.add( background );
+            shape.add( title );
+            shape.add( handle );
 
-      queue.trigger( shape, 'canvasregion:deactivated', { region: region } );
-    })
-    .on('dragend', function() {
-      queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
-    });
+            // triggers
 
-  handle
-    .on('mousedown touchstart', function() {
-      resizing = true;
-    })
-    .on('mouseup touchend', function() {
-      resizing = false;
-    })
-    .on('dragmove', function( evt ) {
-      evt.cancelBubble = true;
+            queue
+              .on( shape, 'region:moved', function( data ) {
+                if ( region.id === data.id &&
+                    ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+                  __moveTo( data.x, data.y );
+                }
+              })
+              .on( shape, 'region:resized', function( data ) {
+                if ( region.id === data.id &&
+                    ( shape.width != data.width || shape.height != data.height ) ) {
+                  __resizeTo( data.width, data.height );
+                }
+              })
+              .on( shape, 'region:updated', function( data ) {
+                if ( region.id === data.id &&
+                    ( shape.width != data.width || shape.height != data.height || shape.getX() != data.x || shape.getY() != data.y ) ) {
+                  __moveTo( data.x, data.y );
+                  __resizeTo( data.width, data.height );
+                }
+              });
 
-      var width = handle.getX() + ( handleSize / 2 );
-      var height = handle.getY() + ( handleSize / 2 );
+            shape
+              .on('mousedown touchstart', function() {
+                __displayActiveState();
 
-      __resizeTo( width, height );
-    })
-    .on('dragend', function( evt ) {
-      evt.cancelBubble = true;
+                queue.trigger( shape, 'canvasregion:activated', { region: region } ); // could the board catch this in a canvas event bubble?
+              })
+              .on('mouseup touchend', function() {
+                __displayInactiveState();
 
-      queue.trigger( shape, 'canvasregion:resized', { region: region, width: background.getWidth(), height: background.getHeight() } );
-    });
+                queue.trigger( shape, 'canvasregion:deactivated', { region: region } );
+              })
+              .on('dragend', function() {
+                queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
+              });
 
-  // private methods
+            handle
+              .on('mousedown touchstart', function() {
+                resizing = true;
+              })
+              .on('mouseup touchend', function() {
+                resizing = false;
+              })
+              .on('dragmove', function( evt ) {
+                evt.cancelBubble = true;
 
-function __createBackground( w, h, fill, shadow ) {
-  return new Kinetic.Rect({
-    x: 0,
-    y: 0,
-    width: w,
-    height: h,
-    fill: fill,
-    opacity: .1,
-    shadowOpacity: 0.5,
-    shadowColor: shadow
-  });
-};
+                var width = handle.getX() + ( handleSize / 2 );
+                var height = handle.getY() + ( handleSize / 2 );
 
-function __createTitleText( w, title ) {
-  return new Kinetic.Text({
-    x: 5,
-    y: 5,
-    width: w - 10,
-    text: title,
-    fontSize: 16,
-    fontFamily: 'Calibri',
-    fontWeight: 600,
-    fill: '#666',
-    align: 'center'
-  });
-};
+                __resizeTo( width, height );
+              })
+              .on('dragend', function( evt ) {
+                evt.cancelBubble = true;
 
-function __createHandle( w, h ) {
-  return new Kinetic.Rect({
-    x: w - ( handleSize / 2 ),
-    y: h - ( handleSize / 2 ),
-    width: handleSize,
-    height: handleSize,
-    stroke: '#ddd',
-    strokeWidth: 2,
-    cornerRadius: ( handleSize / 2 ),
-    opacity: 0,
-    draggable: true
-  });
-};
+                queue.trigger( shape, 'canvasregion:resized', { region: region, width: background.getWidth(), height: background.getHeight() } );
+              });
 
-  function __redrawLayer() {
-    try {
-      var layer = shape.getLayer();
+            // private methods
 
-      if (layer) {
-        layer.batchDraw();
-      }
-    } catch(e) {
-    }
-  }
+          function __createBackground( w, h, fill, shadow ) {
+            return new Kinetic.Rect({
+              x: 0,
+              y: 0,
+              width: w,
+              height: h,
+              fill: fill,
+              opacity: .1,
+              shadowOpacity: 0.5,
+              shadowColor: shadow
+            });
+          };
 
-  function __asColor( color ) {
-    if ( color && validColors.indexOf( color ) >= 0 ) {
-      return color;
-    }
+          function __createTitleText( w, title ) {
+            return new Kinetic.Text({
+              x: 5,
+              y: 5,
+              width: w - 10,
+              text: title,
+              fontSize: 16,
+              fontFamily: 'Calibri',
+              fontWeight: 600,
+              fill: '#666',
+              align: 'center'
+            });
+          };
 
-    return;
-  }
+          function __createHandle( w, h ) {
+            return new Kinetic.Rect({
+              x: w - ( handleSize / 2 ),
+              y: h - ( handleSize / 2 ),
+              width: handleSize,
+              height: handleSize,
+              stroke: '#ddd',
+              strokeWidth: 2,
+              cornerRadius: ( handleSize / 2 ),
+              opacity: 0,
+              draggable: true
+            });
+          };
 
-  function __displayActiveState() {
-    background.setShadowBlur( shadow.blur.active );
-    background.setShadowOffset( shadow.offset.active );
+            function __redrawLayer() {
+              try {
+                var layer = shape.getLayer();
 
-    handle.setOpacity( 1 );
+                if (layer) {
+                  layer.batchDraw();
+                }
+              } catch(e) {
+              }
+            }
 
-    shape.moveToTop();
+            function __asColor( color ) {
+              if ( color && validColors.indexOf( color ) >= 0 ) {
+                return color;
+              }
 
-    __redrawLayer();
+              return;
+            }
 
-    return shape;
-  };
+            function __displayActiveState() {
+              background.setShadowBlur( shadow.blur.active );
+              background.setShadowOffset( shadow.offset.active );
 
-  function __displayInactiveState() {
-    background.setShadowBlur( shadow.blur.inactive );
-    background.setShadowOffset( shadow.offset.inactive );
+              handle.setOpacity( 1 );
 
-    handle.setOpacity( 0 );
+              shape.moveToTop();
 
-    __redrawLayer();
+              __redrawLayer();
 
-    return shape;
-  };
+              return shape;
+            };
 
-  function __moveTo( x, y ) {
-    shape.moveToTop();
+            function __displayInactiveState() {
+              background.setShadowBlur( shadow.blur.inactive );
+              background.setShadowOffset( shadow.offset.inactive );
 
-    shape.setX( x );
-    shape.setY( y );
+              handle.setOpacity( 0 );
 
-    __redrawLayer();
-  };
+              __redrawLayer();
 
-  function __resizeTo( width, height ) {
-    shape.moveToTop();
+              return shape;
+            };
 
-    background.setSize( width, height );
-    title.setWidth( width - 10 );
+            function __moveTo( x, y ) {
+              shape.moveToTop();
 
-    __redrawLayer();
-  };
+              shape.setX( x );
+              shape.setY( y );
 
-  __displayInactiveState();
+              __redrawLayer();
+            };
 
-  // instance
+            function __resizeTo( width, height ) {
+              shape.moveToTop();
 
-  return shape;
-}
+              background.setSize( width, height );
+              title.setWidth( width - 10 );
 
-// public methods
+              __redrawLayer();
+            };
 
-return CanvasRegion;
+            __displayInactiveState();
 
-})();
+            // instance
+
+            return shape;
+        }
+
+        // public methods
+
+        return CanvasRegion;
+
+    })();
+
+    // export
+
+    return CanvasRegion;
+
+});

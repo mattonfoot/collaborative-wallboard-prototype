@@ -96,4 +96,4 @@ define(function() {
 
     return Card;
 
-})();
+});

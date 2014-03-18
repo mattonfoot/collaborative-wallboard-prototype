@@ -3,7 +3,7 @@
 
 // event --> region:cloned, board:added
 
-define(function() {
+define([ 'models/vuu.se.region' ], function( Region ) {
 
     function initialize( app ) {
         app.queue.on( app, 'region:created', createRegion );
@@ -13,7 +13,7 @@ define(function() {
         function createRegion( data ) {
           var board = app.wall.getBoardById( data.links.board );
 
-          var region = new Region( queue, data );
+          var region = new Region( app.queue, data );
 
           app.queue.trigger( region, 'region:cloned', { region: region } );
 

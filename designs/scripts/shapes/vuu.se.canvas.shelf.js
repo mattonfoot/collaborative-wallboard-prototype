@@ -1,89 +1,102 @@
-var CanvasShelf = (function() {
 
-// defaults
+// event <--
 
-var spacing = 10;
-var cardWidth = 100 + spacing;
+// event -->
 
-var updateEvents = [ 'board:addcard', 'shelf:addcard', 'card:created', 'card:active', 'card:inactive', 'card:moved', 'card:tagged', 'card:untagged' ];
+define(function() {
 
-// constructor
+    var CanvasShelf = (function() {
 
-function CanvasShelf( stage, queue ) {
-  var shelf = this;
-  var numCards = 0;
-  var width = 698;
-  var height = 70;
-  var upperBound = width;
-  var cards = [];
+        // defaults
 
-  var layer = new Kinetic.Layer({
-    x: 100,
-    y: 515,
-    clip: [0, 0, width, height]
-  });
+        var spacing = 10;
+        var cardWidth = 100 + spacing;
 
-  var cardMenu = new Kinetic.Group({
-    draggable: true,
-    dragBoundFunc: function(pos) {
-      var numCards = cardMenu.children.length;
+        var updateEvents = [ 'board:addcard', 'shelf:addcard', 'card:created', 'card:active', 'card:inactive', 'card:moved', 'card:tagged', 'card:untagged' ];
 
-      return {
-        x: ( pos.x < 100 && (numCards * cardWidth >= width) ? pos.x : 100 ),
-        y: cardMenu.getAbsolutePosition().y
-      }
-    }
-  });
+        // constructor
 
-  layer.add( cardMenu );
-  stage.add( layer );
+        function CanvasShelf( stage, queue ) {
+            var shelf = this;
+            var numCards = 0;
+            var width = 698;
+            var height = 70;
+            var upperBound = width;
+            var cards = [];
 
-  // private methods
+            var layer = new Kinetic.Layer({
+              x: 100,
+              y: 515,
+              clip: [0, 0, width, height]
+            });
 
-  function __batchDraw() {
-    layer.batchDraw();
-  };
+            var cardMenu = new Kinetic.Group({
+              draggable: true,
+              dragBoundFunc: function(pos) {
+                var numCards = cardMenu.children.length;
 
-  function __addCard( data, card ) {
-    cards.push( card );
-    cardMenu.add( card.shape );
+                return {
+                  x: ( pos.x < 100 && (numCards * cardWidth >= width) ? pos.x : 100 ),
+                  y: cardMenu.getAbsolutePosition().y
+                }
+              }
+            });
 
-    numCards++;
-    upperBound = ((numCards * cardWidth) - cardWidth - width) * -1;
+            layer.add( cardMenu );
+            stage.add( layer );
 
-    __organizeCards( cards );
-  };
+            // private methods
 
-  // triggers
+            function __batchDraw() {
+              layer.batchDraw();
+            };
 
-  queue.on( shelf, 'cardcreate:end', function( data, card ) {
-    __addCard.call( shelf, data, card );
-  });
+            function __addCard( data, card ) {
+              cards.push( card );
+              cardMenu.add( card.shape );
 
-  updateEvents.forEach(function( ev ) {
-    queue.on( cardMenu, ev, __batchDraw);
-  });
+              numCards++;
+              upperBound = ((numCards * cardWidth) - cardWidth - width) * -1;
 
-  // instance
+              __organizeCards( cards );
+            };
 
-  return shelf;
-};
+            // triggers
 
-// private methods
+            queue.on( shelf, 'cardcreate:end', function( data, card ) {
+              __addCard.call( shelf, data, card );
+            });
 
-function __organizeCards( cards ) {
-  var x = spacing;
-  var y = 2;
+            updateEvents.forEach(function( ev ) {
+              queue.on( cardMenu, ev, __batchDraw);
+            });
 
-  cards.forEach(function( card ) {
-    card.moveTo( x, y );
+            // instance
 
-    x = x + cardWidth;
-  });
-};
+            return shelf;
+          };
 
-// exports
+          // private methods
 
-return CanvasShelf;
+          function __organizeCards( cards ) {
+            var x = spacing;
+            var y = 2;
 
-})();
+            cards.forEach(function( card ) {
+              card.moveTo( x, y );
+
+              x = x + cardWidth;
+            });
+        };
+
+        // exports
+
+        return CanvasShelf;
+
+    })();
+
+    // export
+
+    return CanvasShelf;
+
+});

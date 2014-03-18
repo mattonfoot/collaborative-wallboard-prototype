@@ -122,4 +122,4 @@ define(function() {
 
 return Board;
 
-})();
+});
