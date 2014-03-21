@@ -30,13 +30,25 @@ function initialize( app ) {
 
         var regions = data.links.regions || [];
         regions.forEach(function( id ) {
-            app.queue.trigger( app, 'region:created', { links: { board: board.id, region: { id: id } } } ); // faking the server event
+          $.get('/regions/' + id, function( resources ) {
+            resources.regions.forEach(function( region ) {
+              if ( region.links.board == board.id ) {
+                  app.queue.trigger( app, 'region:created', region ); // faked by this module
+              }
+            });
+          });
         });
 
         // create cards for existing pockets
 
         wall.links.pockets.forEach(function( pocket ) {
-            app.queue.trigger( app, 'pocket:created', pocket ); // faking the server event
+          $.get('/pockets/' + id, function( pocket ) {
+            resources.pockets.forEach(function( pocket ) {
+              if ( pocket.links.wall == wall.id ) {
+                  app.queue.trigger( app, 'pocket:created', pocket ); // faked by this module
+              }
+            });
+          });
         });
       }
     }

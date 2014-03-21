@@ -42,7 +42,7 @@ define(function() {
             };
 
             board.addRegion = function( region ) {
-              if ( board.getCardById( region.id ) ) {
+              if ( board.getRegionById( region.id ) ) {
                 return false; // we already have it
               }
 
