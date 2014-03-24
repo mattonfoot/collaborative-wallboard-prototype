@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node vuu.se.server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./node_modules/mocha/bin/mocha"
   },
   "repository": {
     "type": "git",

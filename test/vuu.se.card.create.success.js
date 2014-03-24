@@ -2,9 +2,9 @@ var should = require('chai').should();
 
 describe('Given that a new Card will be added to a specific board', function() {
 
-    var EventQueue = require('../designs/lib/vuu.se.eventqueue.js');
-    var Card = require('../designs/lib/models/vuu.se.card.js');
-    var Command = require('../designs/lib/commands/vuu.se.card.create.js');
+    var EventQueue = require('../designs/scripts/vuu.se.eventqueue.js');
+    var Card = require('../designs/scripts/models/vuu.se.card.js');
+    var Command = require('../designs/scripts/commands/vuu.se.card.create.js');
 
     var queue = new EventQueue();
 
