@@ -10,26 +10,26 @@ define(function() {
 
         function triggerAddRegion( e ) {
             var val = prompt( 'Please provide a value for this region', '' );
-            var board = app.wall.getActiveBoard();
 
             var data = {
-              x: 10,
-              y: 10,
-              width: 250,
-              height: 150,
-              board: board,
-              value: val
+                regions: [
+                    {
+                        x: 10,
+                        y: 10,
+                        width: 250,
+                        height: 150,
+                        board: app.wall.getActiveBoard().id,
+                        value: val
+                    }
+                ]
             };
 
-            $.post('/regions/', data)
-                .done(function() {
-                //  alert( "success" );
-                })
-                .fail(function() {
-                  alert( "error" );
-                })
-                .always(function() {
-                  alert( "finished" );
+            $.ajax({
+                    url: '/regions/',
+                    dataType: "json",
+                    contentType: "application/json;charset=utf-8",
+                    type: "POST",
+                    data: JSON.stringify( data )
                 });
         }
 

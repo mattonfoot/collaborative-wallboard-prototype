@@ -3,27 +3,24 @@
 
 // event --> wall:opened
 
-define(function() {
+define([ 'models/vuu.se.wall' ], function( Wall ) {
 
     function initialize( app ) {
-        var queue = app.queue;
-
         app.element.on( 'mouseup touchend', '.list-group-item', triggerDisplayWall );
 
         function triggerDisplayWall( e ) {
             e.preventDefault();
 
-            var wall = $( e.target ).data( 'wall');
+            var data = $( e.target ).data( 'wall');
 
-            // the following should be a method on the app
+            data.links = data.links || {};
+
+            var wall = new Wall( app.queue, data );
+
+            app.queue.trigger( app, 'wall:opened', wall );
 
             $('#wallModal').modal( 'hide' );
-
-            app.wall = {};
-
-            queue.trigger( app, 'wall:opened', wall );
         }
-
     }
 
     return {

@@ -18,17 +18,23 @@ define([
             var id = data.board.id;
             var canvasboard = new CanvasBoard( app.queue, { container: id, width: app.size.width, height: app.size.height } );
 
+            app.queue.trigger( app, 'canvasboard:created', canvasboard );
+
+            // the following should be triggered by canvasboard:created
+
             // triggers
 
-            app.queue.on( canvasboard, 'card:cloned', addCanvasCard);
+            app.queue.on( app, 'card:added', addCanvasCard);
 
-            app.queue.on( canvasboard, 'region:cloned', addCanvasRegion);
+            app.queue.on( app, 'region:added', addCanvasRegion);
 
             // handlers
 
             function addCanvasCard( data ) {
                 if ( data.card.links.board == id ) {
                     var canvascard = new CanvasCard( app.queue, data.card, app.wall.getPocketById( data.card.links.pocket ) );
+
+                    app.queue.trigger( app, 'canvascard:created', canvascard );
 
                     canvasboard.addCard( canvascard );
                 }
@@ -38,11 +44,11 @@ define([
                 if ( data.region.links.board == id ) {
                     var canvasregion = new CanvasRegion( app.queue, data.region );
 
+                    app.queue.trigger( app, 'canvasregion:created', canvasregion );
+
                     canvasboard.addRegion( canvasregion );
                 }
             }
-
-            app.queue.trigger( app, 'canvasboard:created', canvasboard );
         }
     }
 

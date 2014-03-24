@@ -6,7 +6,7 @@ require.config({
     },
 
     paths: {
-        jquery: 'vendor/jquery1.10.2.min'
+        jquery: 'vendor/jquery-2.1.0'
       , bootstrap: 'vendor/bootstrap.min'
       , kinetic: 'vendor/kinetic-v4.6.0.min'
       , socketio: '/socket.io/socket.io'
@@ -26,6 +26,8 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
         wall: {},
 
+        walls: [],
+
         initialize: function( resources ) {
             this.size = {
                 width: this.element.find('.tab-content').outerWidth(),
@@ -34,6 +36,8 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
             var walllist = [];
             $.each(resources, function() {
+                app.walls.push( this );
+
                 var wallLink = $('<a href="#" class="list-group-item">'+ (this.name || this.id) +'</a>').data( 'wall', this );
 
                 walllist.push( wallLink );

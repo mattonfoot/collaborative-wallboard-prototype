@@ -1,7 +1,7 @@
 
 // event <-- board:cloned
 
-// event --> 
+// event -->
 
 define(function() {
 
@@ -23,7 +23,7 @@ function initialize( app ) {
 }
 
 return {
-initialize: initialize
+    initialize: initialize
 };
 
 });

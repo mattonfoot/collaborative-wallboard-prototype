@@ -11,15 +11,21 @@ define(function() {
         function triggerAddBoard( ev ) {
           var key = prompt( 'Please provide a data key that this board represents', '' );
 
-          $.post('/boards/', { wall: app.wall, key: key })
-              .done(function() {
-              //  alert( "success" );
-              })
-              .fail(function() {
-                alert( "error" );
-              })
-              .always(function() {
-                alert( "finished" );
+          var data = {
+              boards: [
+                  {
+                      key: key,
+                      wall: app.wall.id
+                  }
+              ]
+          };
+
+          $.ajax({
+                  url: '/boards/',
+                  dataType: "json",
+                  contentType: "application/json;charset=utf-8",
+                  type: "POST",
+                  data: JSON.stringify( data )
               });
         }
 

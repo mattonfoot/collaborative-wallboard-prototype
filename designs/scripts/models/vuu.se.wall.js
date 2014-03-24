@@ -45,7 +45,7 @@ define(function() {
             };
 
             wall.addBoard = function( board ) {
-                if ( wall.getBoardById( data.id ) ) {
+                if ( wall.getBoardById( board.id ) ) {
                     return false; // we already have it
                 }
 

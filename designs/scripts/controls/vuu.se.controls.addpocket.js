@@ -11,15 +11,21 @@ define(function() {
         function triggerAddPocket( ev ) {
           var title = prompt( 'Please provide a title for this card', 'Sample Card' );
 
-          $.post('/pockets/', { wall: app.wall, title: title })
-              .done(function() {
-              //  alert( "success" );
-              })
-              .fail(function() {
-                alert( "error" );
-              })
-              .always(function() {
-                alert( "finished" );
+          var data = {
+              pockets: [
+                  {
+                      title: title,
+                      wall: app.wall.id
+                  }
+              ]
+          };
+
+          $.ajax({
+                  url: '/pockets/',
+                  dataType: "json",
+                  contentType: "application/json;charset=utf-8",
+                  type: "POST",
+                  data: JSON.stringify( data )
               });
         }
 

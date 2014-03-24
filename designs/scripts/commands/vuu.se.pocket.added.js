@@ -19,7 +19,7 @@ function initialize( app ) {
 
       // this should be done by the server
       boards.forEach(function( board ) {
-        $.get('/pockets/' + pocket.id + '/cards/', function( resources ) {
+        $.get('/pockets/' + pocket.id + '/cards', function( resources ) {
           resources.cards.forEach(function( card ) {
             if ( card.links.board == board.id ) {
                 queue.trigger( app, 'card:created', card ); // faked by this module

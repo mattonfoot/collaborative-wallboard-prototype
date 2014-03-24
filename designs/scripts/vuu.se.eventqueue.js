@@ -58,24 +58,24 @@ define(function() {
 
             EventQueue.prototype.trigger = function( source, action, data ) {
                 if ( this.options.debug ) {
-                  console.log( action, data, source );
+                  console.log( action, data );
                 }
 
-              if (events[source] && events[source][action]) {
-                events[source][action].forEach(function( react ) {
-                  react.reaction.call( react.reactive, data, source );
-                });
+                if (events[source] && events[source][action]) {
+                  events[source][action].forEach(function( react ) {
+                    react.reaction.call( react.reactive, data, source );
+                  });
+
+                  return this;
+                }
+
+                if (events[action]) {
+                  events[action].forEach(function( react ) {
+                    react.reaction.call( react.reactive, data, source );
+                  });
+                }
 
                 return this;
-              }
-
-              if (events[action]) {
-                events[action].forEach(function( react ) {
-                  react.reaction.call( react.reactive, data, source );
-                });
-              }
-
-              return this;
             };
 
             return new EventQueue( options );
