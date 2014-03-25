@@ -47,6 +47,20 @@ define(function() {
         socket.on( 'wall:updated', function( data ) {
           queue.trigger( app, 'wall:updated', data );
         });
+
+        // specific updates
+
+        socket.on( 'card:moved', function( data ) {
+          queue.trigger( app, 'card:moved', data );
+        });
+
+        socket.on( 'region:moved', function( data ) {
+          queue.trigger( app, 'region:moved', data );
+        });
+
+        socket.on( 'region:resized', function( data ) {
+          queue.trigger( app, 'region:resized', data );
+        });
     }
 
     return {

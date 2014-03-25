@@ -25,8 +25,6 @@ define(function() {
                 if ( card.id === data.card.id &&
                     ( card.x != data.x || card.y != data.y ) ) {
                   __moveTo( data.x, data.y );
-
-                  queue.trigger( card, 'card:moved', { card: card } );
                 }
               })
               .on( card, 'card:updated', function( data ) {

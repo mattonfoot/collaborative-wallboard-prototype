@@ -25,16 +25,12 @@ define(function() {
                 if ( region.id === data.region.id &&
                     ( region.x != data.x || region.y != data.y ) ) {
                   __moveTo( data.x, data.y );
-
-                  __broadcastEvent( 'moved' );
                 }
               })
               .on( region, 'canvasregion:resized', function( data ) {
                 if ( region.id === data.region.id &&
                     ( region.width != data.width || region.height != data.height ) ) {
                   __resizeTo( data.width, data.height );
-
-                  __broadcastEvent( 'resized' );
                 }
               })
               .on( region, 'region:updated', function( data ) {
@@ -47,11 +43,6 @@ define(function() {
 
 
             // private
-
-            function __broadcastEvent( ev ) {
-              queue.trigger( region, 'region:' + ev, { region: region } );
-            };
-
 
             function __moveTo( x, y ) {
               region.x = x;
@@ -73,26 +64,8 @@ define(function() {
               return region.links.board;
             };
 
-            region.moveTo = function( x, y ) {
-              __moveTo( x, y );
-
-              __broadcastEvent( 'moved' );
-
-              return region;
-            };
-
-            region.resizeTo = function( width, height ) {
-              __resizeTo( width, height );
-
-              __broadcastEvent( 'resized' );
-
-              return region;
-            };
-
             region.setValue = function( val ) {
               region.value = val;
-
-              __broadcastEvent( 'setvalue' );
 
               return region;
             };

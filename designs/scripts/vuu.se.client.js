@@ -20,7 +20,7 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
         socket: io.connect('http://localhost:5000'),
 
-        queue: new EventQueue({ debug: true }),
+      queue: new EventQueue({ debug: true }),
 
         element: $('#app'),
 
@@ -57,11 +57,6 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
         app.initialize( resources );
     });
 
-    // cardlocation:changed
-    app.queue.on( app, 'card:moved', function( data ) {
-        app.socket.emit( 'card:moved', data ); // should be put to server
-    });
-
     // pocket:tagged
     app.queue.on( app, 'card:tagged', function( data ) {
         app.socket.emit( 'card:tagged', data ); // should be put to server
@@ -72,14 +67,6 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
         app.socket.emit( 'card:untagged', data ); // should be put to server
     });
 
-    app.queue.on( app, 'region:moved', function( data ) {
-        app.socket.emit( 'region:moved', data ); // should be put to server
-    });
-
-    app.queue.on( app, 'region:resized', function( data ) {
-        app.socket.emit( 'region:resized', data ); // should be put to server
-    });
-
     [
       'vuu.se.monitor',
       'vuu.se.plugins',
@@ -87,6 +74,9 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'commands/vuu.se.board.created',
       'commands/vuu.se.canvas.card.opened',
       'commands/vuu.se.canvasboard.created',
+      'commands/vuu.se.canvascard.moved',
+      'commands/vuu.se.canvasregion.moved',
+      'commands/vuu.se.canvasregion.resized',
       'commands/vuu.se.card.created',
       'commands/vuu.se.card.moved',
       'commands/vuu.se.pocket.added',

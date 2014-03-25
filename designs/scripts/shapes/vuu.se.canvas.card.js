@@ -40,18 +40,18 @@ define(function() {
 
             queue
               .on( shape, 'card:moved', function( data ) {
-                if ( card.id === data.card.id &&
+                if ( card.id === data.id &&
                     ( shape.getX() != card.x || shape.getY() != card.y ) ) {
                   __moveTo( card.x, card.y );
                 }
               })
               .on( shape, 'card:tagged', function( data ) {
-                if ( card.id === data.card.id ) {
+                if ( card.id === data.id ) {
                   __tag( card.tagged );
                 }
               })
               .on( shape, 'card:untagged', function( data ) {
-                if ( card.id === data.card.id ) {
+                if ( card.id === data.id ) {
                   __untag();
                 }
               })
@@ -77,7 +77,7 @@ define(function() {
                 queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
               })
               .on('dblclick', function() {
-                queue.trigger( shape, 'canvascard:opened', { pocket: pocket } );
+                queue.trigger( shape, 'canvascard:opened', { card: card, pocket: pocket } );
               });
 
             // private methods

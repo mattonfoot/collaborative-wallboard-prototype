@@ -30,7 +30,7 @@ function initialize( app ) {
               $.get('/walls/' + app.wall.id + '/pockets')
                   .done(function( data ) {
                       data.pockets && data.pockets.forEach(function(pocket) {
-                          app.queue.trigger( app, 'board:created', pocket ); // fake the server event
+                          app.queue.trigger( app, 'pocket:added', pocket ); // fake the server event
                       });
                   })
                   .fail(function() {

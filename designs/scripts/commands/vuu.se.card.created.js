@@ -25,7 +25,7 @@ function initialize( app ) {
       if ( board.addCard( card ) ) {
           app.queue.trigger( board, 'card:added', { board: board, card: card } );
 
-          app.queue.trigger( card, 'card:moved', { card: card });
+          app.queue.trigger( card, 'card:moved', card);
       }
     }
 }

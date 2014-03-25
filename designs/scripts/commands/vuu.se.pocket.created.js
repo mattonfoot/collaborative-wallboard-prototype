@@ -22,7 +22,7 @@ define([ 'models/vuu.se.pocket' ], function( Pocket ) {
           app.queue.trigger( wall, 'pocket:cloned', { pocket: pocket } );
 
           if ( wall.addPocket( pocket ) ) {
-              app.queue.trigger( wall, 'pocket:added', { wall: wall, pocket: pocket } );
+              app.queue.trigger( wall, 'pocket:added', pocket );
           }
         }
     }

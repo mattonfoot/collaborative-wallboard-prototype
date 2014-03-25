@@ -12,6 +12,7 @@ define(function() {
 
             pocket.id = data.id;
             pocket.title = data.title;
+            pocket.links = data.links || {};
             pocket.cardnumber = data.cardnumber;
 
             var databag = {};
