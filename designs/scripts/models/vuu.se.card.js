@@ -27,6 +27,12 @@ define(function() {
                   __moveTo( data.x, data.y );
                 }
               })
+              .on( card, 'card:moved', function( data ) {
+                if ( card.id === data.card.id &&
+                    ( card.x != data.x || card.y != data.y ) ) {
+                  __moveTo( data.x, data.y );
+                }
+              })
               .on( card, 'card:updated', function( data ) {
                 if ( card.id === data.id &&
                     ( card.x != data.x || card.y != data.y ) ) {
