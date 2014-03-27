@@ -21,18 +21,6 @@ define(function() {
             // public
 
             PluginRegistry.prototype.register = function( pluginfactory ) {
-                // this can only be called when the app is initiated or app will be undefined
-                /*
-
-                  if ( !appinitiated ) {
-                    parked.push( pluginfactory );
-
-                    return;
-                  }
-
-                */
-
-
                 var plugin = pluginfactory( app, app.queue );
 
                 var name = plugin.name;
