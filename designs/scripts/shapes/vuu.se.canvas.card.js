@@ -41,13 +41,13 @@ define(function() {
             queue
               .on( shape, 'card:moved', function( data ) {
                 if ( card.id === data.id &&
-                    ( shape.getX() != card.x || shape.getY() != card.y ) ) {
-                  __moveTo( card.x, card.y );
+                    ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+                  __moveTo( data.x, data.y );
                 }
               })
               .on( shape, 'card:tagged', function( data ) {
                 if ( card.id === data.id ) {
-                  __tag( card.tagged );
+                  __tag( data.tagged );
                 }
               })
               .on( shape, 'card:untagged', function( data ) {
@@ -57,8 +57,8 @@ define(function() {
               })
               .on( shape, 'card:updated', function( data ) {
                 if ( card.id === data.id &&
-                    ( shape.getX() != card.x || shape.getY() != card.y ) ) {
-                  __moveTo( card.x, card.y );
+                    ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+                  __moveTo( data.x, data.y );
                 }
               });
 
