@@ -96,11 +96,12 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'commands/vuu.se.canvasregion.moved',
       'commands/vuu.se.canvasregion.resized',
       'commands/vuu.se.card.created',
-      'commands/vuu.se.card.moved',
       'commands/vuu.se.pocket.added',
       'commands/vuu.se.pocket.created',
       'commands/vuu.se.region.created',
       'commands/vuu.se.wall.opened',
+      
+      'commands/vuu.se.trackMovement',
 
       'controls/vuu.se.controls.addboard',
       'controls/vuu.se.controls.addpocket',

@@ -56,23 +56,23 @@ define([ 'kinetic' ], function() {
 
                       var mousePos = shape.getMousePosition();
 
-                      var smallCalc  = (e.pageX - Apos.x - cnvsPos.x)/scale;
+                      var smallCalcX  = (e.pageX - Apos.x - cnvsPos.x)/scale;
                       var smallCalcY = (e.pageY - Apos.y - cnvsPos.y)/scale;
 
-                      var endCalc = (e.pageX - cnvsPos.x) - cur_scale*smallCalc;
+                      var endCalcX = (e.pageX - cnvsPos.x) - cur_scale*smallCalcX;
                       var endCalcY = (e.pageY - cnvsPos.y) - cur_scale*smallCalcY;
 
                       scale = cur_scale;
 /*
-                      shape.setPosition( endCalc, endCalcY);
+                      shape.setPosition( endCalcX, endCalcY);
 
-                      shape.regions.setScale(cur_scale);
+                      shape.regions.setScale(scale);
                       shape.regions.batchDraw();
 
-                      shape.cards.setScale(cur_scale);
+                      shape.cards.setScale(scale);
                       shape.cards.batchDraw();
 */
-                      queue.trigger( shape, 'canvasboard:scaled', { canvasboard: shape });
+                      queue.trigger( shape, 'canvasboard:scaled', { canvasboard: shape, scale: scale });
                   }
               });
 

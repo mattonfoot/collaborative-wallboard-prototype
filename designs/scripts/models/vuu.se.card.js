@@ -28,7 +28,7 @@ define(function() {
                 }
               })
               .on( card, 'card:moved', function( data ) {
-                if ( card.id === data.card.id &&
+                if ( card.id === data.id &&
                     ( card.x != data.x || card.y != data.y ) ) {
                   __moveTo( data.x, data.y );
                 }
