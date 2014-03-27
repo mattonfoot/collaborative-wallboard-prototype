@@ -34,7 +34,6 @@ define([ 'kinetic' ], function() {
 
             $container
               .bind('mousewheel', function( e, delta ) {
-
                   delta = e.originalEvent.wheelDelta;
 
                   //prevent only the actual wheel movement
@@ -64,7 +63,7 @@ define([ 'kinetic' ], function() {
                       var endCalcY = (e.pageY - cnvsPos.y) - cur_scale*smallCalcY;
 
                       scale = cur_scale;
-
+/*
                       shape.setPosition( endCalc, endCalcY);
 
                       shape.regions.setScale(cur_scale);
@@ -72,11 +71,9 @@ define([ 'kinetic' ], function() {
 
                       shape.cards.setScale(cur_scale);
                       shape.cards.batchDraw();
-
+*/
                       queue.trigger( shape, 'canvasboard:scaled', { canvasboard: shape });
                   }
-
-
               });
 
             // private methods

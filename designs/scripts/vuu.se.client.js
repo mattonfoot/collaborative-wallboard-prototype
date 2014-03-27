@@ -20,7 +20,7 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
         socket: io.connect('http://localhost:5000'),
 
-      queue: new EventQueue({ debug: true }),
+        queue: new EventQueue({ debug: true }),
 
         element: $('#app'),
 
@@ -36,22 +36,40 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
             var walllist = [];
             $.each(resources, function() {
-                app.walls.push( this );
+                var data = this
+                  , newResource = true;
 
-                var wallLink = $('<a href="#" class="list-group-item">'+ (this.name || this.id) +'</a>').data( 'wall', this );
+                app.walls.forEach(function(wall) {
+                    if (data.id === wall.id) {
+                        newResource = false;
+                    }
+                });
 
-                walllist.push( wallLink );
+                if (newResource) {
+                    app.walls.push( data );
+
+                    var wallLink = $('<a href="#" class="list-group-item">'+ (data.name || data.id) +'</a>').data( 'wall', data );
+
+                    walllist.push( wallLink );
+                }
             });
 
             $('#wallList').append( walllist );
-
-            $('#wallModal').modal( 'show' );
 
             this.queue.trigger( this, 'app:initend', { app: this } );
         }
     };
 
     // triggers
+
+    app.socket.on('connect', function() {
+        console.log( 'You are connected to the server' );
+    });
+
+
+    app.socket.on('disconnect', function() {
+        console.log( 'You seem to have been disconected from the server.' );
+    });
 
     app.socket.on( 'app:init', function( resources ) {
         app.initialize( resources );

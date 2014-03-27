@@ -3,7 +3,6 @@ var fortune = require('fortune')
     socketio = require('socket.io'),
     http = require('http');
 
-
 var port = process.env.PORT || 5000,
     config = { db: 'vuu.se' },
     app = fortune( config ),
@@ -22,7 +21,11 @@ app.use( connect.static( __dirname + '/designs' ) );
 
 io.sockets
     .on( 'connection', function( socket ) {
-        app.hypermedia.wall.search( {} ).then(function( resources ) { socket.emit( 'app:init', resources ); });
+        app.hypermedia.wall
+            .search({})
+            .then(function( resources ) {
+                socket.emit( 'app:init', resources );
+            });
     });
 
 httpServer.listen( port );
