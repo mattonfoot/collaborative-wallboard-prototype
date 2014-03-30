@@ -2,64 +2,33 @@ define(function() {
 
     function initialize( app ) {
         var socket = app.socket
-          , queue = app.queue;
+          , queue = app.queue
+          , events = [
+              'card:created'
+            , 'card:updated'
+            , 'card:moved'
 
-        // creates
+            , 'pocket:created'
+            , 'pocket:updated'
+            , 'pocket:regionenter'
+            , 'pocket:regionexit'
 
-        socket.on( 'card:created', function( data ) {
-          queue.trigger( app, 'card:created', data );
-        });
+            , 'board:created'
+            , 'board:updated'
 
-        socket.on( 'pocket:created', function( data ) {
-          queue.trigger( app, 'pocket:created', data );
-        });
+            , 'region:created'
+            , 'region:updated'
+            , 'region:moved'
+            , 'region:resized'
+            
+            , 'wall:created'
+            , 'wall:updated'
+          ];
 
-        socket.on( 'board:created', function( data ) {
-          queue.trigger( app, 'board:created', data );
-        });
-
-        socket.on( 'region:created', function( data ) {
-          queue.trigger( app, 'region:created', data );
-        });
-
-        socket.on( 'wall:created', function( data ) {
-          queue.trigger( app, 'wall:created', data );
-        });
-
-        // updates
-
-        socket.on( 'card:updated', function( data ) {
-          queue.trigger( app, 'card:updated', data );
-        });
-
-        socket.on( 'pocket:updated', function( data ) {
-          queue.trigger( app, 'region:updated', data );
-        });
-
-        socket.on( 'board:updated', function( data ) {
-          queue.trigger( app, 'region:updated', data );
-        });
-
-        socket.on( 'region:updated', function( data ) {
-          queue.trigger( app, 'region:updated', data );
-        });
-
-        socket.on( 'wall:updated', function( data ) {
-          queue.trigger( app, 'wall:updated', data );
-        });
-
-        // specific updates
-
-        socket.on( 'card:moved', function( data ) {
-          queue.trigger( app, 'card:moved', data );
-        });
-
-        socket.on( 'region:moved', function( data ) {
-          queue.trigger( app, 'region:moved', data );
-        });
-
-        socket.on( 'region:resized', function( data ) {
-          queue.trigger( app, 'region:resized', data );
+        events.forEach(function( ev ) {
+            socket.on( ev, function( data ) {
+                queue.trigger( app, ev, data );
+            });
         });
     }
 

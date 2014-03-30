@@ -15,41 +15,27 @@ define(function() {
             pocket.links = data.links || {};
             pocket.cardnumber = data.cardnumber;
 
-            var databag = {};
+            var regions = pocket.links.regions;
 
             // public functions
 
             pocket.getId = function() {
-              return pocket.id;
+                return pocket.id;
             };
 
-            pocket.set = function( key, value ) {
-              var data = {
-                pocket: this,
-                key: key,
-                value: value
-              };
+            pocket.addRegion = function( regionid ) {
+                if ( regions.indexOf( regionid ) < 0 ) {
+                    regions.push( regionid );
 
-              databag[ data.key ] = data.value;
+                    return true;
+                }
 
-              queue.trigger( this, 'pocket:updated', data );
-
-              return pocket;
+                return false;
             };
 
-            pocket.get = function( key ) {
-              return databag[ key ];
-            };
-
-            pocket.getData = function() {
-              var d = {};
-
-              for ( var key in databag ) {
-                d[ key ] = databag[ key ];
-              }
-
-              return d;
-            };
+            pocket.getRegions = function() {
+                return regions;
+            }
 
             // instance
 

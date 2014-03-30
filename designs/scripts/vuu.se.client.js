@@ -87,7 +87,6 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
     [
       'vuu.se.monitor',
-      'vuu.se.plugins',
 
       'commands/vuu.se.board.created',
       'commands/vuu.se.canvas.card.opened',
@@ -100,8 +99,6 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'commands/vuu.se.pocket.created',
       'commands/vuu.se.region.created',
       'commands/vuu.se.wall.opened',
-      
-      'commands/vuu.se.trackMovement',
 
       'controls/vuu.se.controls.addboard',
       'controls/vuu.se.controls.addpocket',
@@ -109,9 +106,7 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'controls/vuu.se.controls.displayboard',
       'controls/vuu.se.controls.displaywall',
       'controls/vuu.se.controls.enable',
-      'controls/vuu.se.controls.tab.create',
-
-      'plugins/vuu.se.plugins.displayColorTag'
+      'controls/vuu.se.controls.tab.create'
     ].forEach(function( plugin ){
         require([ plugin ], function( command ) { command.initialize( app ); });
     });
