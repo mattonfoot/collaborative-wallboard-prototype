@@ -17,6 +17,8 @@ define(function() {
             region.width = data.width || 50;
             region.height = data.height || 50;
             region.value = data.value;
+            region.color = data.color;
+            region.name = data.name;
 
             // triggers
 

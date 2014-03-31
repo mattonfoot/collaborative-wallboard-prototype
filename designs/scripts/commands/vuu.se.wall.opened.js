@@ -20,7 +20,7 @@ function initialize( app ) {
       $.get('/walls/' + app.wall.id + '/boards')
           .done(function( data ) {
               data.boards && data.boards.forEach(function(board) {
-                  app.queue.trigger( app, 'board:created', board ); // fake the server event
+                  app.queue.trigger( app, 'board:opened', board );
               });
           })
           .fail(function() {

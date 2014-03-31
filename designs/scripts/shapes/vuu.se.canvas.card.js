@@ -76,8 +76,9 @@ define(function() {
               .on('dragend', function() {
                 queue.trigger( shape, 'canvascard:moved', { card: card, pocket: pocket, x: shape.getX(), y: shape.getY() } );
               })
-              .on('dblclick', function() {
+              .on('dblclick dbltap', function(evt) {
                 queue.trigger( shape, 'canvascard:opened', { card: card, pocket: pocket } );
+                evt.cancelBubble = true;
               });
 
             // private methods

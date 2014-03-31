@@ -7,6 +7,7 @@ define([ 'models/vuu.se.board' ], function( Board ) {
 
 function initialize( app ) {
     app.queue.on( app, 'board:created', cloneBoard );
+    app.queue.on( app, 'board:opened', cloneBoard );
 
     // handlers
 

@@ -14,8 +14,9 @@ define(function() {
             pocket.title = data.title;
             pocket.links = data.links || {};
             pocket.cardnumber = data.cardnumber;
-
-            var regions = pocket.links.regions;
+            pocket.content = data.content;
+            pocket.tags = data.tags;
+            pocket.mentions = pocket.mentions;
 
             // public functions
 
@@ -24,6 +25,8 @@ define(function() {
             };
 
             pocket.addRegion = function( regionid ) {
+                var regions = pocket.links.regions;
+
                 if ( regions.indexOf( regionid ) < 0 ) {
                     regions.push( regionid );
 
@@ -34,7 +37,7 @@ define(function() {
             };
 
             pocket.getRegions = function() {
-                return regions;
+                return pocket.links.regions;
             }
 
             // instance

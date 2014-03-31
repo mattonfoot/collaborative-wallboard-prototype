@@ -13,7 +13,7 @@ define([ 'kinetic' ], function() {
 
         // constructor
 
-        function CanvasBoard( queue, options ) {
+        function CanvasBoard( queue, board, options ) {
             var shape = new Kinetic.Stage({
                 container: options.container,
                 width: options.width,
@@ -28,6 +28,12 @@ define([ 'kinetic' ], function() {
             shape.add( shape.cards );
 
             // triggers
+
+            shape
+              .on('dblclick', function(evt) {
+                queue.trigger( shape, 'canvasboard:opened', { board: board } );
+                evt.cancelBubble = true;
+              })
 
             var $container = $( '#' + options.container );
             var scale = 1;

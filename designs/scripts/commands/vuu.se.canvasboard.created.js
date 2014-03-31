@@ -16,7 +16,7 @@ define([
 
         function createCanvasBoard( data ) {
             var id = data.board.id;
-            var canvasboard = new CanvasBoard( app.queue, { container: id, width: app.size.width, height: app.size.height } );
+            var canvasboard = new CanvasBoard( app.queue, data.board, { container: id, width: app.size.width, height: app.size.height } );
 
             app.queue.trigger( app, 'canvasboard:created', canvasboard );
 

@@ -33,12 +33,12 @@ define(function() {
                 y: region.y || 5,
                 draggable: true
             });
-            var color = __asColor( region.value );
+            var color = __asColor( region.color );
             var resizing = false;
 
             var background = __createBackground( region.width, region.height, color || colors.fill, shadow.color );
             var handle = __createHandle( region.width, region.height );
-            var title = __createTitleText( region.width, region.value );
+            var title = __createTitleText( region.width, region.name );
 
             shape.add( background );
             shape.add( title );
@@ -80,6 +80,10 @@ define(function() {
               })
               .on('dragend', function() {
                 queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
+              })
+              .on('dblclick dbltap', function(evt) {
+                queue.trigger( shape, 'canvasregion:opened', { region: region } );
+                evt.cancelBubble = true;
               });
 
             handle
