@@ -1,0 +1,43 @@
+<form class="modal-dialog form-horizontal editor-pocket" role="form">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+      <h4 class="modal-title">EDIT CARD: [{{cardnumber}}] {{title}}</h4>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="title" class="col-sm-2 control-label">Title</label>
+        <div class="col-sm-10">
+          <input class="form-control" id="title" name="title" placeholder="Title" value="{{title}}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="content" class="col-sm-12 control-label">Content</label>
+        <div class="col-sm-12">
+          <textarea class="form-control" id="content" name="content" placeholder="Content">{{content}}</textarea>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="tags" class="col-sm-2 control-label">Tags</label>
+        <div class="col-sm-10">
+          <input class="form-control" id="tags" name="tags" placeholder="Tags" value="{{tags}}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="mentions" class="col-sm-2 control-label">Mentions</label>
+        <div class="col-sm-10">
+          <input class="form-control" id="mentions" name="mentions" placeholder="Mentions" value="{{mentions}}">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-success">Save</button>
+      <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+    </div>
+  </div>
+</form>

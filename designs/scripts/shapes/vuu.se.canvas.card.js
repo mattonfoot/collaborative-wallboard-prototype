@@ -28,14 +28,15 @@ define(function() {
               y: card.y || 5,
               draggable: true
             });
-            var title = pocket.title;
 
             var cardback = __createCardback( card.width, card.height, colors.fill, shadow.color );
+            var cardnumber = __createIdText( pocket.cardnumber );
+            var cardtitle = __createTitleText( pocket.title );
             var tag = __createTag();
 
             shape.add( cardback );
-            shape.add( __createIdText( pocket.cardnumber ) );
-            shape.add( __createTitleText( pocket.title ) );
+            shape.add( cardnumber );
+            shape.add( cardtitle );
             shape.add( tag );
 
             queue
@@ -59,6 +60,11 @@ define(function() {
                 if ( card.id === data.id &&
                     ( shape.getX() != data.x || shape.getY() != data.y ) ) {
                   __moveTo( data.x, data.y );
+                }
+              })
+              .on( shape, 'pocket:updated', function( data ) {
+                if ( pocket.id === data.id ) {
+                    __UpdateDisplay( data );
                 }
               });
 
@@ -92,6 +98,13 @@ define(function() {
                 }
               } catch(e) {
               }
+            }
+
+            function __UpdateDisplay( data ) {
+              cardtitle.setText( data.title || "" );
+              cardnumber.setText( '#' + data.cardnumber );
+
+              __redrawLayer();
             }
 
             function __moveTo( x, y ) {

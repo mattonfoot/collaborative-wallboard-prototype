@@ -1,46 +1,45 @@
 
-// event <-- canvascard:opened
+// event <-- canvasregion:opened
 
 // event -->
 
 define(function() {
 
-function initialize( app ) {
-    app.queue.on( app, 'canvasregion:opened', displayRegionData);
+    function initialize( app ) {
+        var queue = app.queue;
 
-    function displayRegionData( data ) {
-        var region = data.region;
+        queue.on( app, 'canvasregion:opened', displayRegionData);
 
-        var name = region.name || "";
-        var value = region.value || "";
-        var color = region.color || "";
+        function displayRegionData( data ) {
+            var region = data.region;
 
-        $('<div class="modal fade"> \
-            <div class="modal-dialog"> \
-              <div class="modal-content"> \
-                <div class="modal-header"> \
-                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> \
-                  <h4 class="modal-title">REGION: ' + name + '</h4> \
-                </div> \
-                <div class="modal-body"> \
-                  <dl class="dl-horizontal"> \
-                      <dt>Value</dt> \
-                      <dd>' + value + '</dd> \
-                      <dt>Color</dt> \
-                      <dd>' + color + '</dd> \
-                  </dl> \
-                </div> \
-                <div class="modal-footer"> \
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> \
-                </div> \
-              </div> \
-            </div> \
-          </div>').appendTo('body').modal('show');
+            var $modal = $('<div class="modal fade"></div>')
+              .on('submit', '.editor-region', function( ev ) {
+                ev.preventDefault();
+
+                region.name = this.name.value;
+                region.value = this.value.value;
+                region.color = this.color.value;
+                region.board = region.links.board;
+                region.pockets = region.links.pockets;
+
+                $.ajax({
+                    url: '/regions/' + region.id,
+                    dataType: "json",
+                    contentType: "application/json;charset=utf-8",
+                    type: "PUT",
+                    data: JSON.stringify( { regions: [ region ] } )
+                });
+
+                $modal.modal('hide');
+              });
+
+            $modal.appendTo('body').modal({ remote: '/regions/' + region.id + '/edit' });
+        }
     }
-}
 
-return {
-  initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });

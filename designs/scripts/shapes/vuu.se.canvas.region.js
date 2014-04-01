@@ -48,22 +48,20 @@ define(function() {
 
             queue
               .on( shape, 'region:moved', function( data ) {
-                if ( region.id === data.id &&
-                    ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+                if ( region.id === data.id ) {
                   __moveTo( data.x, data.y );
                 }
               })
               .on( shape, 'region:resized', function( data ) {
-                if ( region.id === data.id &&
-                    ( shape.width != data.width || shape.height != data.height ) ) {
+                if ( region.id === data.id ) {
                   __resizeTo( data.width, data.height );
                 }
               })
               .on( shape, 'region:updated', function( data ) {
-                if ( region.id === data.id &&
-                    ( shape.width != data.width || shape.height != data.height || shape.getX() != data.x || shape.getY() != data.y ) ) {
+                if ( region.id === data.id ) {
                   __moveTo( data.x, data.y );
                   __resizeTo( data.width, data.height );
+                  __UpdateDisplay( data );
                 }
               });
 
@@ -159,6 +157,16 @@ define(function() {
                 }
               } catch(e) {
               }
+            }
+
+            function __UpdateDisplay( data ) {
+              title.setText( data.name || "" );
+
+              color = __asColor( data.color );
+
+              background.setFill( color || colors.fill );
+
+              __redrawLayer();
             }
 
             function __asColor( color ) {

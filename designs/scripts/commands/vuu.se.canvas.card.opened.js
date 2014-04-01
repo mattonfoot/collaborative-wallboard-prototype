@@ -5,65 +5,43 @@
 
 define(function() {
 
-function initialize( app ) {
-    var queue = app.queue;
+    function initialize( app ) {
+        var queue = app.queue;
 
-    queue.on( app, 'canvascard:opened', displayPocketData);
+        queue.on( app, 'canvascard:opened', displayPocketData);
 
-    function displayPocketData( data ) {
-        var pocket = data.pocket;
+        function displayPocketData( data ) {
+            var pocket = data.pocket;
 
-        var html = '';
-        var content = pocket.content || "";
-        var tags = pocket.tags || "";
-        var mentions = pocket.mentions || "";
+            var $modal = $('<div class="modal fade"></div>')
+              .on('submit', '.editor-pocket', function( ev ) {
+                ev.preventDefault();
 
-        $.get('/pockets/' + pocket.id + '/regions')
-            .done(function( data ) {
-                data.regions && data.regions.forEach(function( region ) {
-                    var board = app.wall.getBoardById( region.links.board );
+                pocket.title = this.title.value;
+                pocket.content = this.content.value;
+                pocket.tags = this.tags.value;
+                pocket.mentions = this.mentions.value;
+                pocket.wall = pocket.links.wall;
+                pocket.cards = pocket.links.cards;
+                pocket.regions = pocket.links.regions;
 
-                    html += '<dt>'+ board.getKey() + '</dt><dd>' + region.value + '</dd>';
+                $.ajax({
+                    url: '/pockets/' + pocket.id,
+                    dataType: "json",
+                    contentType: "application/json;charset=utf-8",
+                    type: "PUT",
+                    data: JSON.stringify( { pockets: [ pocket ] } )
                 });
-            })
-            .fail(function() {
-                alert( "error" );
-            })
-            .always(function() {
-                $('<div class="modal fade"> \
-                    <div class="modal-dialog"> \
-                      <div class="modal-content"> \
-                        <div class="modal-header"> \
-                          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> \
-                          <h4 class="modal-title">CARD: [#' + pocket.cardnumber + '] ' + pocket.title + '</h4> \
-                        </div> \
-                        <div class="modal-body"> \
-                          ' + content + ' \
-                          <hr/> \
-                          <h5>Additional data</h5> \
-                          <dl class="dl-horizontal"> \
-                              ' + html + ' \
-                          </dl> \
-                          <hr/> \
-                          <h5>Tags</h5> \
-                          <p>' + tags + '</p> \
-                          <hr/> \
-                          <h5>Mentions</h5> \
-                          <p>' + mentions + '</p> \
-                        </div> \
-                        <div class="modal-footer"> \
-                          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> \
-                        </div> \
-                      </div> \
-                    </div> \
-                  </div>').appendTo('body').modal('show');
 
-            });
+                $modal.modal('hide');
+              });
+
+            $modal.appendTo('body').modal({ remote: '/pockets/' + pocket.id + '/edit' });
+        }
     }
-}
 
-return {
-  initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });
