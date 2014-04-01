@@ -7,6 +7,7 @@ define(function() {
 
     function initialize( app ) {
         app.element.on( 'mouseup touchend', '.add-board', triggerAddBoard );
+        app.queue.on( app, 'wall:firsttime', triggerAddBoard );
 
         function triggerAddBoard( ev ) {
           var key = prompt( 'Please provide a data key that this board represents', '' );

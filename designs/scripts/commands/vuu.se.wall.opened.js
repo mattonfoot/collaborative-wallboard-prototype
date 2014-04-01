@@ -22,11 +22,7 @@ function initialize( app ) {
               data.boards && data.boards.forEach(function(board) {
                   app.queue.trigger( app, 'board:opened', board );
               });
-          })
-          .fail(function() {
-            alert( "error" );
-          })
-          .always(function() {
+
               $.get('/walls/' + app.wall.id + '/pockets')
                   .done(function( data ) {
                       data.pockets && data.pockets.forEach(function(pocket) {
@@ -36,6 +32,9 @@ function initialize( app ) {
                   .fail(function() {
                     alert( "error" );
                   });
+          })
+          .fail(function() {
+              app.queue.trigger( app, 'wall:firsttime', {} );
           });
     }
 }

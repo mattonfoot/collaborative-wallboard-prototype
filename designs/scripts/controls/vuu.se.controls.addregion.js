@@ -9,7 +9,7 @@ define(function() {
         app.element.on( 'mouseup touchend', '.add-region', triggerAddRegion );
 
         function triggerAddRegion( e ) {
-            var val = prompt( 'Please provide a value for this region', '' );
+            var name = prompt( 'Please provide a value for this region', '' );
 
             var data = {
                 regions: [
@@ -19,7 +19,9 @@ define(function() {
                         width: 250,
                         height: 150,
                         board: app.wall.getActiveBoard().id,
-                        value: val
+                        name: name,
+                        value: "",
+                        color: ""
                     }
                 ]
             };
