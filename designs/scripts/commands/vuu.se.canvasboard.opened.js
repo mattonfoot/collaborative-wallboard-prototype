@@ -1,5 +1,5 @@
 
-// event <-- canvascard:opened
+// event <-- canvasboard:opened
 
 // event -->
 

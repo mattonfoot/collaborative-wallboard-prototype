@@ -17,7 +17,7 @@ define([ 'models/vuu.se.wall' ], function( Wall ) {
 
             var wall = new Wall( app.queue, data );
 
-            app.queue.trigger( app, 'wall:opened', wall );
+            app.queue.trigger( app, 'wall:selected', wall );
 
             $('#wallModal').modal( 'hide' );
         }

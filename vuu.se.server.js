@@ -5,6 +5,7 @@ var fortune = require('fortune')
   , EventQueue = require('./lib/vuu.se.eventqueue.js');
 
 var port = process.env.PORT || 5000,
+    host = process.env.HOST || '0.0.0.0'
     config = {
         db: 'vuu.se'
       , baseUrl: 'http://0.0.0.0'
@@ -36,4 +37,4 @@ app.queue.on( 'connection', function( socket ) {
         });
 });
 
-httpServer.listen( port );
+httpServer.listen( port, host );

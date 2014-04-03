@@ -18,7 +18,7 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
 
     var app = {
 
-        socket: io.connect('http://localhost:5000'),
+        socket: io.connect('//:5000'),
 
         queue: new EventQueue({ debug: true }),
 
@@ -89,12 +89,12 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'vuu.se.monitor',
 
       'commands/vuu.se.board.created',
-      'commands/vuu.se.canvas.board.opened',
-      'commands/vuu.se.canvas.card.opened',
-      'commands/vuu.se.canvas.region.opened',
       'commands/vuu.se.canvasboard.created',
+      'commands/vuu.se.canvasboard.opened',
       'commands/vuu.se.canvascard.moved',
+      'commands/vuu.se.canvascard.opened',
       'commands/vuu.se.canvasregion.moved',
+      'commands/vuu.se.canvasregion.opened',
       'commands/vuu.se.canvasregion.resized',
       'commands/vuu.se.card.created',
       'commands/vuu.se.pocket.added',
@@ -103,6 +103,7 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'commands/vuu.se.region.created',
       'commands/vuu.se.region.updated',
       'commands/vuu.se.wall.opened',
+      'commands/vuu.se.wall.selected',
 
       'controls/vuu.se.controls.addboard',
       'controls/vuu.se.controls.addpocket',
