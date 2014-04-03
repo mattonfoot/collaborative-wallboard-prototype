@@ -96,15 +96,11 @@ define([ 'kinetic' ], function() {
             shape.addRegion = function( canvasregion ) {
                 shape.regions.add( canvasregion );
 
-                queue.trigger( shape, 'canvasregion:added', { canvasregion: canvasregion });
-
                 shape.regions.batchDraw();
             };
 
             shape.addCard = function( canvascard ) {
                 shape.cards.add( canvascard );
-
-                queue.trigger( shape, 'canvascard:added', { canvascard: canvascard });
 
                 shape.cards.batchDraw();
             };

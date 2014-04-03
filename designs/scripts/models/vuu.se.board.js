@@ -29,18 +29,6 @@ define(function() {
                 return board.key;
             };
 
-            board.activate = function() {
-                queue.trigger( board, 'board:activated', { board: board } );
-
-                return true;
-            };
-
-            board.deactivate = function() {
-                queue.trigger( board, 'board:deactivated', { board: board } );
-
-                return true;
-            };
-
             board.addRegion = function( region ) {
               if ( board.getRegionById( region.id ) ) {
                 return false; // we already have it

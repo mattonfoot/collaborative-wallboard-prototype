@@ -27,15 +27,13 @@ define(function() {
                     return false;
                 }
 
-                if ( activeboard && activeboard.id !== board.id && !activeboard.deactivate() ) {
-                    return false; // failed to deactive current active board
+                if ( activeboard && activeboard.id === board.id ) {
+                    return false; // board is already active one
                 }
 
-                if ( board.activate() ) {
-                    activeboard = board;
+                activeboard = board;
 
-                    return true;
-                }
+                return true;
             }
 
             // public functions
@@ -50,10 +48,6 @@ define(function() {
                 }
 
                 wall.links.boards.push( board );
-
-                if (!activeboard) {
-                    wall.setActiveBoard();
-                }
 
                 return true;
             };
@@ -82,9 +76,7 @@ define(function() {
                     return wall;
                 }
 
-                __activateBoard( wall.links.boards[ index ] );
-
-                return wall
+                return __activateBoard( wall.links.boards[ index ] );
             };
 
             wall.setActiveBoardById = function( id ) {
@@ -95,9 +87,7 @@ define(function() {
                     }
                 });
 
-                __activateBoard( board );
-
-                return wall;
+                return __activateBoard( board );
             };
 
             wall.getActiveBoard = function() {

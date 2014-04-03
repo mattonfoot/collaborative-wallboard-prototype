@@ -5,25 +5,21 @@
 
 define(function() {
 
-function initialize( app ) {
-    app.queue.on( app, 'board:cloned', addTab );
+    function initialize( app ) {
+        app.queue.on( app, 'board:cloned', addTab );
 
-    function addTab( data ) {
-      var tablist = app.element.find( '.add-board' ).parent()
-        , boardid = data.board.id;;
+        function addTab( data ) {
+          var $tablist = app.element.find( '.nav-tabs' );
 
-      tablist.find( 'li.active' ).removeClass('active');
+          $( '<li class="active"><a href="#'+ data.board.id +'" data-toggle="tab">' + data.board.getKey() + '</a></li>' )
+              .insertBefore( $tablist )
+              .tab('show');
+        }
 
-      $( '<li class="active"><a href="#'+ boardid +'" data-toggle="tab">' + data.board.getKey() + '</a></li>' )
-          .insertBefore( tablist );
-
-      app.wall.setActiveBoardById( boardid );
     }
 
-}
-
-return {
-    initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });

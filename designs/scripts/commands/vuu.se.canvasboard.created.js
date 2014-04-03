@@ -37,6 +37,8 @@ define([
                     app.queue.trigger( app, 'canvascard:created', canvascard );
 
                     canvasboard.addCard( canvascard );
+
+                    app.queue.trigger( app, 'canvascard:added', canvascard );
                 }
             }
 
@@ -47,6 +49,8 @@ define([
                     app.queue.trigger( app, 'canvasregion:created', canvasregion );
 
                     canvasboard.addRegion( canvasregion );
+
+                    app.queue.trigger( app, 'canvasregion:added', canvasregion );
                 }
             }
         }

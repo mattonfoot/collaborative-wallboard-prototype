@@ -9,10 +9,15 @@ define(function() {
         app.element.on( 'shown.bs.tab', '[data-toggle="tab"]', activateBoard );
 
         function activateBoard(e) {
-          var hash = e.target.hash
-            , boardid = hash.substr( 1, hash.length - 1 );
+            var hash = e.target.hash
+              , boardid = hash.substr( 1, hash.length - 1 )
+              , current = app.wall.getActiveBoard();
 
-          app.wall.setActiveBoardById( boardid );
+            if ( app.wall.setActiveBoardById( boardid ) ) {
+                app.trigger( app, 'board:deactivated', current );
+
+                app.trigger( app, 'board:activated', app.wall.getActiveBoard() );
+            }
         }
 
     }
