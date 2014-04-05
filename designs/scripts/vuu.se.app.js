@@ -30,29 +30,36 @@ define([
 ], function( $, bs, io, EventQueue, Board, Card, Pocket, Region, Wall ) {
 
     function Application() {
+        this.socket = io.connect('//:5000');
+        this.queue = new EventQueue({ debug: true });
+        this.element = $('#app');
+        this.walllist = $('#wallList');
+        this.tabs = $('#app .nav-tabs');
+        this.tabcontent = $('#app .tab-content');
+        this.controls = $('#app .add-pocket, #app .add-region');
+
         this.size = {
             width: this.tabcontent.outerWidth(),
             height: this.tabcontent.outerHeight()
         };
+
+        this.boards = {};
+        this.cards = {};
+        this.pockets = {};
+        this.regions = {};
+        this.walls = {};
+
     };
 
     Application.prototype = {
-        socket: io.connect('//:5000'),
-        queue: new EventQueue({ debug: true }),
-        element: $('#app'),
-        walllist: $('#wallList'),
-        tabs: $('#app .nav-tabs'),
-        tabcontent: $('#app .tab-content'),
-        controls: $('#app .add-pocket, #app .add-region'),
-
-        boards: {},
-
         addBoard: function( board ) {
             if ( this.boards[ board.id ] ) {
                 return false;
             }
 
             this.boards[board.id] = new Board( board );
+
+            this.tabcontent.append( '<div class="tab-pane" id="'+ board.id +'"></div>' );
 
             return true;
         },
@@ -70,8 +77,6 @@ define([
         getBoardById: function( id ) {
             return this.boards[ id ];
         },
-
-        cards: {},
 
         addCard: function( card ) {
             if ( this.cards[ card.id ] ) {
@@ -97,8 +102,6 @@ define([
             return this.cards[ id ];
         },
 
-        pockets: {},
-
         addPocket: function( pocket ) {
             if ( this.pockets[ pocket.id ] ) {
                 return false;
@@ -122,8 +125,6 @@ define([
         getPocketById: function( id ) {
             return this.pockets[ id ];
         },
-
-        regions: {},
 
         addRegion: function( region ) {
             if ( this.regions[ region.id ] ) {
@@ -149,8 +150,6 @@ define([
             return this.regions[ id ];
         },
 
-        walls: {},
-
         addWall: function( data ) {
             if ( this.walls[ data.id ] ) {
                 return false;
@@ -159,7 +158,7 @@ define([
             this.walls[ data.id ] = new Wall( data );
 
             var option = $('<a href="#" class="list-group-item">'+ ( data.name || data.id ) +'</a>').data( 'target', data.id );
-            app.walllist.append( option );
+            this.walllist.append( option );
 
             return true;
         },

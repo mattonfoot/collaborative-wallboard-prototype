@@ -17,11 +17,7 @@ function initialize( app ) {
         $.get('/walls/' + id + '/boards')
             .done(function( data ) {
                 data.boards && data.boards.forEach(function( resource ) {
-                    if ( app.addBoard( resource ) ) {
-                        var board = app.getBoardById( resource.id );
-
-                        app.queue.trigger( app, 'board:added', board );
-                    }
+                    app.queue.trigger( app, 'board:created', resource );
                 });
             })
             .fail(function( error ) {
@@ -31,11 +27,7 @@ function initialize( app ) {
         $.get('/walls/' + id + '/pockets')
             .done(function( data ) {
                 data.pockets && data.pockets.forEach(function( resource ) {
-                    if ( app.addPocket( resource ) ) {
-                        var pocket = app.getPocketById( resource.id );
-
-                        app.queue.trigger( app, 'pocket:added', pocket );
-                    }
+                    app.queue.trigger( app, 'pocket:created', resource );
                 });
             })
             .fail(function( error ) {

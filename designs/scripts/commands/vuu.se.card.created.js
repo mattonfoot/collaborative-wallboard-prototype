@@ -18,7 +18,7 @@ define(function() {
 
             var board = app.getBoardById( card.getBoard() );
 
-            if ( board.addCard( card ) ) {
+            if ( board && board.addCard( card ) ) {
                 app.queue.trigger( app, 'card:added', card );
             }
 

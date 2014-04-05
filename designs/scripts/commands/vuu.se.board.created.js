@@ -7,20 +7,25 @@ define(function() {
         // handlers
 
         function cloneBoard( data ) {
-            if ( app.addPocket( data ) ) {
-                var board = app.getBoardById( data.id )
-                  , wall = app.getWallById( board.wall );
+            var board = app.getBoardById( data.id );
 
-                app.tabcontent.append( '<div class="tab-pane" id="'+ board.id +'"></div>' );
-
-                app.queue.trigger( app, 'board:cloned', board );
-
-                if ( wall.addBoard( board ) ) {
-                    app.queue.trigger( app, 'board:added', board );
-
-                    app.tabs.find( '#' + board.id ).addClass( 'active' );
-                }
+            if ( !board && app.addBoard( data ) ) {
+                board = app.getBoardById( data.id );
             }
+
+            if ( !board ) {
+                throw( 'Failed to clone board <'+ data.id +'> from data' );
+            }
+
+            var wall = app.getWallById( board.getWall() );
+
+            if ( wall.addBoard( board ) ) {
+                app.queue.trigger( app, 'board:added', board );
+            }
+
+            app.tabs.find( '#' + board.id ).addClass( 'active' );
+
+            app.queue.trigger( app, 'board:cloned', board );
         }
     }
 
