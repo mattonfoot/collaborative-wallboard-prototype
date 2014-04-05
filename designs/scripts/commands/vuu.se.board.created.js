@@ -23,8 +23,6 @@ define(function() {
                 app.queue.trigger( app, 'board:added', board );
             }
 
-            app.tabs.find( '#' + board.id ).addClass( 'active' );
-
             app.queue.trigger( app, 'board:cloned', board );
         }
     }

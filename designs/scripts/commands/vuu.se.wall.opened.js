@@ -1,43 +1,38 @@
-
-// event <-- wall:opened
-
-// event --> wall:displayed, board:opened, pocket:added
-
 define(function() {
 
-function initialize( app ) {
-    app.queue.on( app, 'wall:opened', populateWall );
+    function initialize( app ) {
+        app.queue.on( app, 'wall:opened', populateWall );
 
-    // handlers
+        // handlers
 
-    function populateWall( data ) {
-        var wall = app.getWallById( data.id )
-          , id = wall.id;
+        function populateWall( data ) {
+            var wall = app.getWallById( data.id )
+              , id = wall.id;
 
-        $.get('/walls/' + id + '/boards')
-            .done(function( data ) {
-                data.boards && data.boards.forEach(function( resource ) {
-                    app.queue.trigger( app, 'board:created', resource );
+            $.get('/walls/' + id + '/boards')
+                .done(function( data ) {
+                    data.boards && data.boards.forEach(function( resource ) {
+                        app.queue.trigger( app, 'board:created', resource );
+                    });
+                })
+                .fail(function( error ) {
+                    throw( error );
                 });
-            })
-            .fail(function( error ) {
-                throw( error );
-            });
 
-        $.get('/walls/' + id + '/pockets')
-            .done(function( data ) {
-                data.pockets && data.pockets.forEach(function( resource ) {
-                    app.queue.trigger( app, 'pocket:created', resource );
+            $.get('/walls/' + id + '/pockets')
+                .done(function( data ) {
+                    data.pockets && data.pockets.forEach(function( resource ) {
+                        app.queue.trigger( app, 'pocket:created', resource );
+                    });
+                })
+                .fail(function( error ) {
+                  throw( error );
                 });
-            })
-            .fail(function( error ) {
-              throw( error );
-            });
+        }
     }
-}
 
-return {
-  initialize: initialize
-};
+    return {
+      initialize: initialize
+    };
 
 });

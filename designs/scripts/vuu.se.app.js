@@ -29,18 +29,16 @@ define([
 
 ], function( $, bs, io, EventQueue, Board, Card, Pocket, Region, Wall ) {
 
-    function Application() {
+    function UI() {
         this.socket = io.connect('//:5000');
         this.queue = new EventQueue({ debug: true });
         this.element = $('#app');
         this.walllist = $('#wallList');
-        this.tabs = $('#app .nav-tabs');
-        this.tabcontent = $('#app .tab-content');
         this.controls = $('#app .add-pocket, #app .add-region');
 
         this.size = {
-            width: this.tabcontent.outerWidth(),
-            height: this.tabcontent.outerHeight()
+            width: 1024, //this.element.outerWidth(),
+            height: 768 //this.element.outerHeight()
         };
 
         this.boards = {};
@@ -49,17 +47,30 @@ define([
         this.regions = {};
         this.walls = {};
 
+        this.constructor = UI;
+
     };
 
-    Application.prototype = {
+    UI.prototype = {
+
+        constructor: UI,
+
         addBoard: function( board ) {
             if ( this.boards[ board.id ] ) {
                 return false;
             }
 
-            this.boards[board.id] = new Board( board );
+            board = this.boards[board.id] = new Board( board );
 
-            this.tabcontent.append( '<div class="tab-pane" id="'+ board.id +'"></div>' );
+            var tabcontent = $('#' + board.getWall() + ' .tab-content');
+            var tabs = $('#' + board.getWall() + ' .nav-tabs');
+
+            tabcontent.append( '<div class="tab-pane" id="'+ board.getId() +'"></div>' );
+
+            $( '<li><a href="#'+ board.getId() +'" data-toggle="tab">' + board.getKey() + '</a></li>' )
+                .insertBefore( tabs.children().last() )
+                .find('> a')
+                .tab('show');
 
             return true;
         },
@@ -70,6 +81,8 @@ define([
             }
 
             this.boards[board.id] = new Board( board );
+
+            // update the tab text
 
             return true;
         },
@@ -160,6 +173,16 @@ define([
             var option = $('<a href="#" class="list-group-item">'+ ( data.name || data.id ) +'</a>').data( 'target', data.id );
             this.walllist.append( option );
 
+            var panel = $('<div class="wall" id="'+ data.id +'"> \
+                    <ul class="nav nav-tabs"> \
+                        <li><button type="button" class="btn btn-default add-board" title="Add Board"> \
+                            <i class="glyphicon glyphicon-plus"></i></button></li> \
+                    </ul> \
+                    <div class="tab-content"></div> \
+                </div>')
+
+            this.element.prepend( panel );
+
             return true;
         },
 
@@ -183,7 +206,7 @@ define([
 
     };
 
-    var app = new Application();
+    var app = new UI();
 
     // triggers
 
@@ -242,8 +265,7 @@ define([
       'controls/vuu.se.controls.addregion',
       'controls/vuu.se.controls.displayboard',
       'controls/vuu.se.controls.displaywall',
-      'controls/vuu.se.controls.enable',
-      'controls/vuu.se.controls.tab.create'
+      'controls/vuu.se.controls.enable'
     ].forEach(function( plugin ){
         require([ plugin ], function( command ) { command.initialize( app ); });
     });
