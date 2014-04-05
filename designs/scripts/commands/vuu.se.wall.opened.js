@@ -6,29 +6,40 @@
 define(function() {
 
 function initialize( app ) {
-    app.queue.on( app, 'wall:selected', cloneWall );
+    app.queue.on( app, 'wall:opened', populateWall );
 
     // handlers
 
-    function cloneWall( wall ) {
-        $.get('/walls/' + wall.id + '/boards')
+    function populateWall( data ) {
+        var wall = app.getWallById( data.id )
+          , id = wall.id;
+
+        $.get('/walls/' + id + '/boards')
             .done(function( data ) {
-                data.boards && data.boards.forEach(function(board) {
-                    app.queue.trigger( app, 'board:opened', board );
+                data.boards && data.boards.forEach(function( resource ) {
+                    if ( app.addBoard( resource ) ) {
+                        var board = app.getBoardById( resource.id );
+
+                        app.queue.trigger( app, 'board:added', board );
+                    }
                 });
             })
-            .fail(function() {
-                alert( "error" );
+            .fail(function( error ) {
+                throw( error );
             });
 
-        $.get('/walls/' + wall.id + '/pockets')
+        $.get('/walls/' + id + '/pockets')
             .done(function( data ) {
-                data.pockets && data.pockets.forEach(function(pocket) {
-                    app.queue.trigger( app, 'pocket:added', pocket ); // fake the server event
+                data.pockets && data.pockets.forEach(function( resource ) {
+                    if ( app.addPocket( resource ) ) {
+                        var pocket = app.getPocketById( resource.id );
+
+                        app.queue.trigger( app, 'pocket:added', pocket );
+                    }
                 });
             })
-            .fail(function() {
-              alert( "error" );
+            .fail(function( error ) {
+              throw( error );
             });
     }
 }

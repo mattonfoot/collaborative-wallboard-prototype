@@ -1,8 +1,3 @@
-
-// event <-- canvasregion:moved
-
-// event --> 
-
 define(function() {
 
     function initialize( app ) {

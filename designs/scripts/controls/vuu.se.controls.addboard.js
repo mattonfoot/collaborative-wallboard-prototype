@@ -1,8 +1,3 @@
-
-// event <-- .add-board:mouseup, .add-board:touchend
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {
@@ -16,7 +11,7 @@ define(function() {
               boards: [
                   {
                       key: key,
-                      wall: app.wall.id
+                      wall: app.activewall.id
                   }
               ]
           };

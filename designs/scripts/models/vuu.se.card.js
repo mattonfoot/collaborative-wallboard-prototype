@@ -1,103 +1,95 @@
-
-// event <-- canvascard:moved, card:updated
-
-// event --> card:moved, card:tagged, card:untagged
-
 define(function() {
 
-    var Card = (function() {
+    // factory
 
-        function Card( queue, data ) {
-            var card = this;
-
-            card.id = data.id;
-            card.links = data.links || {};
-            card.x = data.x;
-            card.y = data.y;
-            card.width = 100;
-            card.height = 65;
-            card.tagged = data.tagged || '';
-
-            // triggers
-
-            queue
-              .on( card, 'canvascard:moved', function( data ) {
-                if ( card.id === data.card.id &&
-                    ( card.x != data.x || card.y != data.y ) ) {
-                  __moveTo( data.x, data.y );
-                }
-              })
-              .on( card, 'card:moved', function( data ) {
-                if ( card.id === data.id &&
-                    ( card.x != data.x || card.y != data.y ) ) {
-                  __moveTo( data.x, data.y );
-                }
-              })
-              .on( card, 'card:updated', function( data ) {
-                if ( card.id === data.id &&
-                    ( card.x != data.x || card.y != data.y ) ) {
-                  __moveTo( data.x, data.y );
-                }
-              });
-
-            // private
-
-            function __moveTo( x, y ) {
-              card.x = x;
-              card.y = y;
-            }
-
-            // public functions
-
-            card.getId = function() {
-              return card.id;
-            };
-
-            card.getPocketId = function() {
-              return card.links.pocket;
-            };
-
-            card.getBoardId = function() {
-              return card.links.board;
-            };
-
-            card.getPosition = function() {
-              return {
-                board: card.getBoardId(),
-                x: card.x,
-                y: card.y
-              };
-            };
-
-            card.tag = function( color ) {
-                card.tagged = color;
-
-                queue.trigger( card, 'card:tagged', { card: card } );
-
-                return card;
-            };
-
-            card.untag = function() {
-                card.tagged = false;
-
-                queue.trigger( card, 'card:untagged', { card: card } );
-
-                return card;
-            };
-
-            // instance
-
-            return card;
+    function CardFactory( data, queue ) {
+        if ( data instanceof Card ) {
+            return data;
         }
 
-        // Factory
+        // instance
 
-        return Card;
+        return new Card( data, queue );
+    }
 
-    })();
+    // constructor
+
+    function Card( data, queue ) {
+        for ( var prop in data ) {
+            if ( prop === 'links' ) continue;
+
+            this[prop] = data[prop];
+        }
+
+        for ( var link in data.links ) {
+            this[link] = data.links[link];
+        }
+
+        this.constructor = Card;
+
+        var card = this;
+
+        queue
+          .on( this, 'canvascard:moved', function( data ) {
+            if ( card.id === data.card.id &&
+                ( card.x != data.x || card.y != data.y ) ) {
+              card.moveTo( data.x, data.y );
+            }
+          })
+          .on( this, 'card:moved', function( data ) {
+            if ( card.id === data.id &&
+                ( card.x != data.x || card.y != data.y ) ) {
+              card.moveTo( data.x, data.y );
+            }
+          })
+          .on( this, 'card:updated', function( data ) {
+            if ( card.id === data.id &&
+                ( card.x != data.x || card.y != data.y ) ) {
+              card.moveTo( data.x, data.y );
+            }
+          });
+    }
+
+    // prototype
+
+    Card.prototype = {
+
+        constructor: Card,
+
+        getId: function() {
+          return this.id;
+        },
+
+        getPocket: function() {
+          return this.pocket;
+        },
+
+        getBoard: function() {
+          return this.board;
+        },
+
+        getPosition: function() {
+            return {
+                board: this.board,
+                x: this.x,
+                y: this.y
+            };
+        },
+
+        moveTo: function( x, y ) {
+            if ( this.x === x && this.y === y ) {
+                return false;
+            }
+
+            this.x = x;
+            this.y = y;
+
+            return true;
+        }
+    };
 
     // export
 
-    return Card;
+    return CardFactory;
 
 });

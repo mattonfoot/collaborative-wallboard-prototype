@@ -1,8 +1,3 @@
-
-// event <-- .add-region:mouseup, .add-region:touchend
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {
@@ -18,7 +13,7 @@ define(function() {
                         y: 10,
                         width: 250,
                         height: 150,
-                        board: app.wall.getActiveBoard().id,
+                        board: app.activewall.getActiveBoard(),
                         name: name,
                         value: "",
                         color: ""

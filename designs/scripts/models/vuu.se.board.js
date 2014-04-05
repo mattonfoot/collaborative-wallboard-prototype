@@ -1,113 +1,110 @@
-
-// event <--
-
-// event --> board:activated, board:deactivated
-
 define(function() {
 
-    var Board = (function() {
+    // factory
 
-        // constructor
-
-        function Board( queue, data ) {
-            var board = this;
-
-            this.id = data.id;
-            this.key = data.key;
-
-            var regions = this.regions = [];
-            var cards = this.cards = [];
-            var shelf;
-
-            // public functions
-
-            board.getId = function() {
-                return board.id;
-            };
-
-            board.getKey = function() {
-                return board.key;
-            };
-
-            board.addRegion = function( region ) {
-              if ( board.getRegionById( region.id ) ) {
-                return false; // we already have it
-              }
-
-              regions.push( region );
-
-              return true;
-            };
-
-            board.getRegion = function( index ) {
-              return regions[ index ];
-            };
-
-            board.getRegionById = function( id ) {
-              var result;
-
-              regions.forEach(function( region ) {
-                if ( region.getId() == id ) {
-                  result = region;
-                }
-              });
-
-              return result;
-            };
-
-            board.addCard = function( card ) {
-              if ( board.getCardById( card.id ) ) {
-                return false; // we already have it
-              }
-
-              cards.push( card );
-
-              return true;
-            };
-
-            board.getCard = function( index ) {
-              return cards[ index ];
-            };
-
-            board.getCardById = function( id ) {
-              var result;
-
-              cards.forEach(function( card ) {
-                if ( card.getId() == id ) {
-                  result = card;
-                }
-              });
-
-              return result;
-            };
-
-            board.addShelf = function( s ) {
-              if ( board.getShelf() ) {
-                return false; // we already one
-              }
-
-              shelf = s;
-
-              return true;
-            };
-
-            board.getShelf = function( index ) {
-              return shelf;
-            };
-
-            // instance
-
-            return this;
+    function BoardFactory( data ) {
+        if ( data instanceof Board ) {
+            return data;
         }
 
-        // Factory
+        // instance
 
-        return Board;
+        return new Board( data );
+    }
 
-    })();
+    // constructor
 
-// export
+    function Board( data ) {
+        for ( var prop in data ) {
+            if ( prop === 'links' ) continue;
 
-return Board;
+            this[prop] = data[prop];
+        }
+
+        this.cards = [];
+        this.regions = [];
+
+        for ( var link in data.links ) {
+            this[link] = data.links[link];
+        }
+
+        this.shelf = {};
+
+        this.constructor = Board;
+    }
+
+    // prototype
+
+    Board.prototype = {
+
+        constructor: Board,
+
+        getId: function() {
+            return this.id;
+        },
+
+        getKey: function() {
+            return this.key;
+        },
+
+        getName: function() {
+            return this.name;
+        },
+
+        getTransform: function() {
+            return this.transform;
+        },
+
+        getWall: function() {
+            return this.wall;
+        },
+
+        getRegion: function( index ) {
+            return this.regions[ index ];
+        },
+
+        addRegion: function( region ) {
+            if ( ~this.regions.indexOf( region.id ) ) {
+                return false;
+            }
+
+            this.regions.push( region.id );
+
+            return true;
+        },
+
+        getCard: function( index ) {
+            return this.cards[ index ];
+        },
+
+        addCard: function( card ) {
+            if ( ~this.cards.indexOf( card.id ) ) {
+                return false;
+            }
+
+            this.cards.push( card.id );
+
+            return true;
+        },
+
+        getShelf: function() {
+          return this.shelf;
+        },
+
+        addShelf: function( shelf ) {
+            if ( this.shelf ) {
+                return false;
+            }
+
+            this.shelf = shelf;
+
+            return true;
+        }
+
+    };
+
+    // export
+
+    return BoardFactory;
 
 });

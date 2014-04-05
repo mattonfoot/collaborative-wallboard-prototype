@@ -1,8 +1,3 @@
-
-// event <-- board:cloned, card:cloned, region:cloned
-
-// event --> canvasboard:created
-
 define([
       'shapes/vuu.se.canvas.board',
       'shapes/vuu.se.canvas.card',
@@ -15,8 +10,9 @@ define([
         // handlers
 
         function createCanvasBoard( data ) {
-            var id = data.board.id;
-            var canvasboard = new CanvasBoard( app.queue, data.board, { container: id, width: app.size.width, height: app.size.height } );
+            var board = app.getBoardById( data.id )
+              , id = board.id
+              , canvasboard = new CanvasBoard( app.queue, board, { container: id, width: app.size.width, height: app.size.height } );
 
             app.queue.trigger( app, 'canvasboard:created', canvasboard );
 
@@ -24,15 +20,17 @@ define([
 
             // triggers
 
-            app.queue.on( app, 'card:added', addCanvasCard);
+            app.queue.on( app, 'card:cloned', addCanvasCard);
 
-            app.queue.on( app, 'region:added', addCanvasRegion);
+            app.queue.on( app, 'region:cloned', addCanvasRegion);
 
             // handlers
 
             function addCanvasCard( data ) {
-                if ( data.card.links.board == id ) {
-                    var canvascard = new CanvasCard( app.queue, data.card, app.wall.getPocketById( data.card.links.pocket ) );
+                var card = app.getCardById( data.id );
+
+                if ( card.getBoard() == id ) {
+                    var canvascard = new CanvasCard( app.queue, card, app.getPocketById( card.getPocket() ) );
 
                     app.queue.trigger( app, 'canvascard:created', canvascard );
 
@@ -43,8 +41,10 @@ define([
             }
 
             function addCanvasRegion( data ) {
-                if ( data.region.links.board == id ) {
-                    var canvasregion = new CanvasRegion( app.queue, data.region );
+                var region = app.getRegionById( data.id );
+
+                if ( region.getBoard() == id ) {
+                    var canvasregion = new CanvasRegion( app.queue, region );
 
                     app.queue.trigger( app, 'canvasregion:created', canvasregion );
 

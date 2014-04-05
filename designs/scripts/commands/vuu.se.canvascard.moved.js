@@ -1,8 +1,3 @@
-
-// event <-- canvascard:moved
-
-// event -->
-
 define(function() {
 
 function initialize( app ) {

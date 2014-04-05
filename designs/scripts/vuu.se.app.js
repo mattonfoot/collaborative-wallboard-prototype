@@ -14,51 +14,177 @@ require.config({
     }
 });
 
-define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io, EventQueue ) {
+define([
 
-    var app = {
+      'jquery',
+      'bootstrap',
+      'socketio',
+      'eventqueue',
 
-        socket: io.connect('//:5000'),
+      'models/vuu.se.board',
+      'models/vuu.se.card',
+      'models/vuu.se.pocket',
+      'models/vuu.se.region',
+      'models/vuu.se.wall'
 
-        queue: new EventQueue({ debug: true }),
+], function( $, bs, io, EventQueue, Board, Card, Pocket, Region, Wall ) {
 
-        element: $('#app'),
-
-        wall: {},
-
-        walls: [],
-
-        initialize: function( resources ) {
-            this.size = {
-                width: this.element.find('.tab-content').outerWidth(),
-                height: this.element.find('.tab-content').outerHeight()
-            };
-
-            var walllist = [];
-            $.each(resources, function() {
-                var data = this
-                  , newResource = true;
-
-                app.walls.forEach(function(wall) {
-                    if (data.id === wall.id) {
-                        newResource = false;
-                    }
-                });
-
-                if (newResource) {
-                    app.walls.push( data );
-
-                    var wallLink = $('<a href="#" class="list-group-item">'+ (data.name || data.id) +'</a>').data( 'wall', data );
-
-                    walllist.push( wallLink );
-                }
-            });
-
-            $('#wallList').append( walllist );
-
-            this.queue.trigger( this, 'app:initend', { app: this } );
-        }
+    function Application() {
+        this.size = {
+            width: this.tabcontent.outerWidth(),
+            height: this.tabcontent.outerHeight()
+        };
     };
+
+    Application.prototype = {
+        socket: io.connect('//:5000'),
+        queue: new EventQueue({ debug: true }),
+        element: $('#app'),
+        walllist: $('#wallList'),
+        tabs: $('#app .nav-tabs'),
+        tabcontent: $('#app .tab-content'),
+        controls: $('#app .add-pocket, #app .add-region'),
+
+        boards: {},
+
+        addBoard: function( board ) {
+            if ( this.boards[ board.id ] ) {
+                return false;
+            }
+
+            this.boards[board.id] = new Board( board );
+
+            return true;
+        },
+
+        updateBoard: function( board ) {
+            if ( !this.boards[ board.id ] ) {
+                return false;
+            }
+
+            this.boards[board.id] = new Board( board );
+
+            return true;
+        },
+
+        getBoardById: function( id ) {
+            return this.boards[ id ];
+        },
+
+        cards: {},
+
+        addCard: function( card ) {
+            if ( this.cards[ card.id ] ) {
+                return false;
+            }
+
+            this.cards[card.id] = new Card( card, app.queue );
+
+            return true;
+        },
+
+        updateCard: function( card ) {
+            if ( !this.cards[ card.id ] ) {
+                return false;
+            }
+
+            this.cards[card.id] = new Card( card, app.queue );
+
+            return true;
+        },
+
+        getCardById: function( id ) {
+            return this.cards[ id ];
+        },
+
+        pockets: {},
+
+        addPocket: function( pocket ) {
+            if ( this.pockets[ pocket.id ] ) {
+                return false;
+            }
+
+            this.pockets[pocket.id] = new Pocket( pocket );
+
+            return true;
+        },
+
+        updatePocket: function( pocket ) {
+            if ( !this.pockets[ pocket.id ] ) {
+                return false;
+            }
+
+            this.pockets[pocket.id] = new Pocket( pocket );
+
+            return true;
+        },
+
+        getPocketById: function( id ) {
+            return this.pockets[ id ];
+        },
+
+        regions: {},
+
+        addRegion: function( region ) {
+            if ( this.regions[ region.id ] ) {
+                return false;
+            }
+
+            this.regions[region.id] = new Region( region, app.queue );
+
+            return true;
+        },
+
+        updateRegion: function( region ) {
+            if ( !this.regions[ region.id ] ) {
+                return false;
+            }
+
+            this.regions[region.id] = new Region( region, app.queue );
+
+            return true;
+        },
+
+        getRegionById: function( id ) {
+            return this.regions[ id ];
+        },
+
+        walls: {},
+
+        addWall: function( data ) {
+            if ( this.walls[ data.id ] ) {
+                return false;
+            }
+
+            this.walls[ data.id ] = new Wall( data );
+
+            var option = $('<a href="#" class="list-group-item">'+ ( data.name || data.id ) +'</a>').data( 'target', data.id );
+            app.walllist.append( option );
+
+            return true;
+        },
+
+        updateWall: function( data ) {
+            if ( !this.walls[ data.id ] ) {
+                return false;
+            }
+
+            this.walls[ data.id ] = new Wall( data );
+
+            return true;
+        },
+
+        getWallById: function( id ) {
+            return this.walls[ id ];
+        },
+
+        enableControls: function( data ) {
+            this.controls.removeAttr( 'disabled' );
+        }
+
+    };
+
+    var app = new Application();
 
     // triggers
 
@@ -72,7 +198,11 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
     });
 
     app.socket.on( 'app:init', function( resources ) {
-        app.initialize( resources );
+        $.each(resources, function() {
+            app.addWall( this );
+        });
+
+        app.queue.trigger( app, 'app:initend', app );
     });
 
     // pocket:tagged
@@ -85,9 +215,12 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
         app.socket.emit( 'card:untagged', data ); // should be put to server
     });
 
+    // load plugins
+
     [
       'vuu.se.monitor',
 
+      'commands/vuu.se.board.cloned',
       'commands/vuu.se.board.created',
       'commands/vuu.se.canvasboard.created',
       'commands/vuu.se.canvasboard.opened',
@@ -100,8 +233,8 @@ define([ 'jquery', 'bootstrap', 'socketio', 'eventqueue' ], function( $, bs, io,
       'commands/vuu.se.pocket.added',
       'commands/vuu.se.pocket.created',
       'commands/vuu.se.pocket.updated',
-      'commands/vuu.se.region.created',
-      'commands/vuu.se.region.updated',
+      'commands/vuu.se.region.clone',
+      'commands/vuu.se.region.update',
       'commands/vuu.se.wall.opened',
       'commands/vuu.se.wall.selected',
 

@@ -1,9 +1,4 @@
-
-// event <-- pocket:created
-
-// event --> pocket:cloned, pocket:added
-
-define([ 'models/vuu.se.pocket' ], function( Pocket ) {
+define(function() {
 
     function initialize( app ) {
         app.queue.on( app, 'pocket:created', clonePocket );
@@ -11,19 +6,23 @@ define([ 'models/vuu.se.pocket' ], function( Pocket ) {
         // handlers
 
         function clonePocket( data ) {
-          var wall = app.wall;
+            var pocket = app.getPocketById( data.id );
 
-          if ( wall.getPocketById( data.id ) ) {
-              return; // we already have it ( should we check if it's fully synced? )
-          }
+            if ( !pocket && app.addPocket( data ) ) {
+                pocket = app.getPocketById( data.id );
+            }
 
-          var pocket = new Pocket( app.queue, data );
+            if ( !pocket ) {
+                throw( 'Failed to clone pocket <'+ data.id +'> from data' );
+            }
 
-          app.queue.trigger( wall, 'pocket:cloned', { pocket: pocket } );
+            var wall = app.getWallById( pocket.getWall() );
 
-          if ( wall.addPocket( pocket ) ) {
-              app.queue.trigger( wall, 'pocket:added', pocket );
-          }
+            if ( wall.addPocket( pocket ) ) {
+                app.queue.trigger( app, 'pocket:added', pocket );
+            }
+
+            app.queue.trigger( app, 'pocket:cloned', pocket );
         }
     }
 

@@ -1,8 +1,3 @@
-
-// event <-- [data-toggle="tab"]:shown.bs.tab
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {
@@ -10,13 +5,14 @@ define(function() {
 
         function activateBoard(e) {
             var hash = e.target.hash
-              , boardid = hash.substr( 1, hash.length - 1 )
-              , current = app.wall.getActiveBoard();
+              , wall = app.activewall
+              , previous = app.getBoardById( wall.getActiveBoard() )
+              , next = app.getBoardById( hash.substr( 1, hash.length - 1 ) );
 
-            if ( app.wall.setActiveBoardById( boardid ) ) {
-                app.trigger( app, 'board:deactivated', current );
+            if ( wall.setActiveBoardById( next.id ) ) {
+                app.queue.trigger( app, 'board:deactivated', previous );
 
-                app.trigger( app, 'board:activated', app.wall.getActiveBoard() );
+                app.queue.trigger( app, 'board:activated', next );
             }
         }
 

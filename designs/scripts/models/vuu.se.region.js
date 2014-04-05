@@ -1,90 +1,109 @@
-
-// event <-- canvasregion:moved, canvasregion:resized, canvasregion:updated
-
-// event --> card:moved, card:tagged, card:untagged
-
 define(function() {
 
-    var Region = (function() {
+    // factory
 
-        function Region( queue, data ) {
-            var region = this;
-
-            region.id = data.id;
-            region.links = data.links || {};
-            region.x = data.x;
-            region.y = data.y;
-            region.width = data.width || 50;
-            region.height = data.height || 50;
-            region.value = data.value;
-            region.color = data.color;
-            region.name = data.name;
-
-            // triggers
-
-            queue
-              .on( region, 'canvasregion:moved', function( data ) {
-                if ( region.id === data.region.id &&
-                    ( region.x != data.x || region.y != data.y ) ) {
-                  __moveTo( data.x, data.y );
-                }
-              })
-              .on( region, 'canvasregion:resized', function( data ) {
-                if ( region.id === data.region.id &&
-                    ( region.width != data.width || region.height != data.height ) ) {
-                  __resizeTo( data.width, data.height );
-                }
-              })
-              .on( region, 'region:updated', function( data ) {
-                if ( region.id === data.id &&
-                    ( region.width != data.width || region.height != data.height || region.x != data.x || region.y != data.y ) ) {
-                  __moveTo( data.x, data.y );
-                  __resizeTo( data.width, data.height );
-                }
-              });
-
-
-            // private
-
-            function __moveTo( x, y ) {
-              region.x = x;
-              region.y = y;
-            }
-
-            function __resizeTo( width, height ) {
-              region.width = width;
-              region.height = height;
-            }
-
-            // public functions
-
-            region.getId = function() {
-              return region.id;
-            };
-
-            region.getBoardId = function() {
-              return region.links.board;
-            };
-
-            region.setValue = function( val ) {
-              region.value = val;
-
-              return region;
-            };
-
-            // instance
-
-            return region;
+    function RegionFactory( data, queue ) {
+        if ( data instanceof Region ) {
+            return data;
         }
 
-        // Factory
+        // instance
 
-        return Region;
+        return new Region( data, queue );
+    }
 
-    })();
+    // constructor
+
+    function Region( data, queue ) {
+        for ( var prop in data ) {
+            if ( prop === 'links' ) continue;
+
+            this[prop] = data[prop];
+        }
+
+        this.pockets = [];
+
+        for ( var link in data.links ) {
+            this[link] = data.links[link];
+        }
+
+        this.constructor = Region;
+
+        var region = this;
+
+        queue
+          .on( this, 'canvasregion:moved', function( data ) {
+            if ( region.id === data.region.id &&
+                ( region.x != data.x || region.y != data.y ) ) {
+              region.moveTo( data.x, data.y );
+            }
+          })
+          .on( this, 'canvasregion:resized', function( data ) {
+            if ( region.id === data.region.id &&
+                ( region.width != data.width || region.height != data.height ) ) {
+              region.resizeTo( data.width, data.height );
+            }
+          })
+          .on( this, 'region:updated', function( data ) {
+            if ( region.id === data.id &&
+                ( region.width != data.width || region.height != data.height || region.x != data.x || region.y != data.y ) ) {
+              region.moveTo( data.x, data.y );
+              region.resizeTo( data.width, data.height );
+            }
+          });
+    }
+
+    // prototype
+
+    Region.prototype = {
+
+        constructor: Region,
+
+        getId: function() {
+          return this.id;
+        },
+
+        getName: function() {
+          return this.name;
+        },
+
+        getColor: function() {
+          return this.color;
+        },
+
+        getValue: function() {
+          return this.color;
+        },
+
+        getBoard: function() {
+          return this.board;
+        },
+
+        moveTo: function( x, y ) {
+            if ( this.x === x && this.y === y ) {
+                return false;
+            }
+
+            this.x = x;
+            this.y = y;
+
+            return true;
+        },
+
+        resizeTo: function( width, height ) {
+            if ( this.width === width && this.height === height ) {
+                return false;
+            }
+
+            this.width = width;
+            this.height = height;
+
+            return true;
+        }
+    };
 
     // export
 
-    return Region;
+    return RegionFactory;
 
 });

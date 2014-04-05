@@ -1,37 +1,33 @@
+define(function() {
 
-// event <-- card:created
+    function initialize( app ) {
+        app.queue.on( app, 'card:created', cloneCard );
 
-// event --> card:cloned, card:added, card:moved
+        // handlers
 
-define([ 'models/vuu.se.card' ], function( Card ) {
+        function cloneCard( data ) {
+            var card = app.getCardById( data.id );
 
-function initialize( app ) {
-    app.queue.on( app, 'card:created', cloneCard );
+            if ( !card && app.addCard( data ) ) {
+                card = app.getCardById( data.id );
+            }
 
-    // handlers
+            if ( !card ) {
+                throw( 'Failed to clone card <'+ data.id +'> from data' );
+            }
 
-    function cloneCard( data ) {
-      var boardid = (data.board ? data.board.id : data.links.board );
-      var board = app.wall.getBoardById( boardid );
+            var board = app.getBoardById( card.getBoard() );
 
-      if ( board.getCardById( data.id ) ) {
-        return; // we already have it ( should we check if it's fully synced? )
-      }
+            if ( board.addCard( card ) ) {
+                app.queue.trigger( app, 'card:added', card );
+            }
 
-      var card = new Card( app.queue, data );
-
-      app.queue.trigger( card, 'card:cloned', { card: card } );
-
-      if ( board.addCard( card ) ) {
-          app.queue.trigger( board, 'card:added', { board: board, card: card } );
-
-          app.queue.trigger( card, 'card:moved', card);
-      }
+            app.queue.trigger( app, 'card:cloned', card );
+        }
     }
-}
 
-return {
-    initialize: initialize
-};
+    return {
+        initialize: initialize
+    };
 
 });

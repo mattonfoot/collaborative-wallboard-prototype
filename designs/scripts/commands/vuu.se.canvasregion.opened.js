@@ -1,17 +1,10 @@
-
-// event <-- canvasregion:opened
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {
-        var queue = app.queue;
-
-        queue.on( app, 'canvasregion:opened', displayRegionData);
+        app.queue.on( app, 'canvasregion:opened', displayRegionData);
 
         function displayRegionData( data ) {
-            var region = data.region;
+            var region = app.getRegionById( data.region.id );
 
             var $modal = $('<div class="modal fade"></div>')
               .on('submit', '.editor-region', function( ev ) {
@@ -20,8 +13,6 @@ define(function() {
                 region.name = this.name.value;
                 region.value = this.value.value;
                 region.color = this.color.value;
-                region.board = region.links.board;
-                region.pockets = region.links.pockets;
 
                 $.ajax({
                     url: '/regions/' + region.id,

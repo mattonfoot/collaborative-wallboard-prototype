@@ -1,8 +1,3 @@
-
-// event <-- card:moved, card:tagged, card:untagged, card:updated, canvascard:mousedown, canvascard:touchstart, canvascard:mouseup, canvascard:touchend, canvascard:dragend, canvascard:dblclick
-
-// event --> canvascard:activated, canvascard:deactivated, canvascard:moved, canvascard:opened
-
 define(function() {
 
     var CanvasCard = (function() {
@@ -20,6 +15,11 @@ define(function() {
           blur: { active: 9, inactive: 5 }
         };
 
+        var size = {    // issue is that the server needs to know this as well
+          width: 100,
+          height: 65
+        };
+
         // constructor
 
         function CanvasCard( queue, card, pocket ) {
@@ -29,7 +29,7 @@ define(function() {
               draggable: true
             });
 
-            var cardback = __createCardback( card.width, card.height, colors.fill, shadow.color );
+            var cardback = __createCardback( size.width, size.height, colors.fill, shadow.color );
             var cardnumber = __createIdText( pocket.cardnumber );
             var cardtitle = __createTitleText( pocket.title );
             var tag = __createTag();

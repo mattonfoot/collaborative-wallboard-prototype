@@ -1,35 +1,40 @@
-
-// event <-- pocket:added
-
-// event --> card:created
-
 define(function() {
 
     function initialize( app ) {
         var queue = app.queue;
 
-        queue.on( app, 'pocket:added', cloneCards );
+        queue.on( app, 'pocket:cloned', cloneCards );
 
         // handlers
 
         function cloneCards( data ) {
-          var wall = app.wall
-            , boards = wall.links.boards
-            , pocket = data;
+            var pocket = app.getPocketById( data.id );
 
-          if (pocket.links.wall == wall.id) {
-              boards.forEach(function( board ) {
-                $.get('/pockets/' + pocket.id + '/cards', function( resources ) {
-                  resources.cards.forEach(function( card ) {
-                    if ( card.links.board == board.id ) {
-                        queue.trigger( app, 'card:created', card ); // faked by this module
-                    }
-                  });
+            $.get('/pockets/' + pocket.id + '/cards')
+                .done(function( data ) {
+                    data.cards && data.cards.forEach(function( resource ) {
+                        var card = app.getCardById( resource.id );
+
+                        if ( !card && app.addCard( resource ) ) {
+                            card = app.getCardById( resource.id );
+                        }
+
+                        if ( !card ) {
+                            throw( 'Failed to clone card <'+ resource.id +'> from data' );
+                        }
+
+                        var board = app.getBoardById( card.getBoard() );
+
+                        if ( board.addCard( card ) ) {
+                            app.queue.trigger( app, 'card:added', card );
+                        }
+
+                        app.queue.trigger( app, 'card:cloned', card );
+                    });
+                })
+                .fail(function( error ) {
+                    throw( error );
                 });
-              });
-          }
-
-          return pocket;
         }
     }
 

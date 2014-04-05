@@ -32,7 +32,9 @@ app:init                          --> app.js --> app:initend
 
 // commands
 
-board:created                     --> board.created.js --> board:cloned ?? do we have this wall already ?? board:added, region:created, pocket:created
+board:created                     --> board.created.js --> board:cloned ?? do we have this wall already ?? board:added,
+
+board:cloned                      --> board.cloned.js --> region:created, pocket:created
 
 canvasboard:opened                --> canvasboard.opened.js !-- POST
 

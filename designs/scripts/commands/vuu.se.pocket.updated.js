@@ -1,8 +1,3 @@
-
-// event <-- pocket:created
-
-// event --> 
-
 define(function() {
 
     function initialize( app ) {
@@ -11,11 +6,7 @@ define(function() {
         // handlers
 
         function updatePocket( data ) {
-          var pocket;
-
-          if ( pocket = app.wall.getPocketById( data.id ) ) {
-
-          }
+          app.updatePocket( data );
         }
     }
 

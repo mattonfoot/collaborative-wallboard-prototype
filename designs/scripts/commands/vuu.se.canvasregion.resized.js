@@ -1,8 +1,3 @@
-
-// event <-- canvasregion:resized
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {

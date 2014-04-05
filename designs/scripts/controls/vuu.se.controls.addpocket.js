@@ -15,7 +15,7 @@ define(function() {
               pockets: [
                   {
                       title: title,
-                      wall: app.wall.id
+                      wall: app.activewall.id
                   }
               ]
           };
