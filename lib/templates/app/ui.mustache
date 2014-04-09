@@ -25,7 +25,8 @@
             <button type="button" class="btn btn-default add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button><!-- Button trigger modal -->
             <button type="button" class="btn btn-default view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
             <button type="button" class="btn btn-default auth-login" title="Login to vuu.se" data-auth="login">Login</button>
-        </nav>
+            <span class="nav-text">Welcome {{user._json.displayName}}</span>
+      </nav>
 
         <div class="modal fade" id="wallModal" tabindex="-1" role="dialog" aria-labelledby="wallModalLabel" aria-hidden="true">
             <div class="modal-dialog">

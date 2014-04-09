@@ -36,6 +36,12 @@ define([
         this.walllist = $('#wallList');
         this.controls = $('#app .add-pocket, #app .add-region');
 
+        var auth = this.auth = new Auth0Widget({
+              domain: 'vuu-se.auth0.com',
+              clientID: 'X0n9ZaXJrJgeP9V4KAI7LXsiMsn6jN4G',
+              callbackURL: 'http://localhost:5000/callback'
+            });
+
         this.size = {
             width: 1024, //this.element.outerWidth(),
             height: 768 //this.element.outerHeight()
@@ -47,7 +53,12 @@ define([
         this.regions = {};
         this.walls = {};
 
-        this.constructor = UI;
+        this.constructor = UI
+
+        this.element
+            .on('click', '[data-auth="login"]', function() {
+                auth.signin();
+            });
 
     };
 
