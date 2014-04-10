@@ -49,7 +49,7 @@ app.router.get('/', function(req, res, next) {
             return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );
         }
 
-        var body = Mustache.render( data.toString(), { user : req.user } );
+        var body = Mustache.render( data.toString(), { user : req.user, raw: JSON.stringify( req.user, 0, 2) } );
 
         res.send( 200, body );
     });

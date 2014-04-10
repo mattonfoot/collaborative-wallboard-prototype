@@ -6,7 +6,7 @@
 define(function() {
 
     function initialize( app ) {
-        app.queue.on( app, 'board:added', enableControls );
+        app.queue.on( app, 'board:activated', enableControls );
 
         function enableControls() {
             app.enableControls();

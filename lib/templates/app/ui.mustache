@@ -20,12 +20,14 @@
   </head>
   <body>
     <div id="app">
-        <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
-            <button type="button" class="btn btn-default add-region" title="Create Region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
-            <button type="button" class="btn btn-default add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button><!-- Button trigger modal -->
-            <button type="button" class="btn btn-default view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
-            <button type="button" class="btn btn-default auth-login" title="Login to vuu.se" data-auth="login">Login</button>
-            <span class="nav-text">Welcome {{user._json.displayName}}</span>
+      <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+        <div class="container">
+            <button type="button" class="btn btn-default navbar-btn add-region" title="Create Region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
+            <button type="button" class="btn btn-default navbar-btn add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button>
+            <button type="button" class="btn btn-default navbar-btn view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
+            <a href="/logout" class="btn btn-default navbar-btn auth-logout" title="Logout of VUU.SE">Logout</a>
+            <p class="navbar-text navbar-right">Signed in as <strong>{{user.displayName}}</strong></p>
+        </div>
       </nav>
 
         <div class="modal fade" id="wallModal" tabindex="-1" role="dialog" aria-labelledby="wallModalLabel" aria-hidden="true">
