@@ -15,40 +15,67 @@ define([
               , canvasboard = new CanvasBoard( app.queue, board, { container: id, width: app.size.width, height: app.size.height } );
 
             app.queue.trigger( app, 'canvasboard:created', canvasboard );
+        }
 
-            // the following should be triggered by canvasboard:created
+        app.queue.on( app, 'canvasboard:created', createCanvasCard );
 
-            // triggers
+        // handlers
+
+        function createCanvasCard( canvasboard ) {
+            var cardsOnBoard = [];
 
             app.queue.on( app, 'card:cloned', addCanvasCard);
-
-            app.queue.on( app, 'region:cloned', addCanvasRegion);
 
             // handlers
 
             function addCanvasCard( data ) {
                 var card = app.getCardById( data.id );
 
-                if ( card.getBoard() == id ) {
+                if ( ~cardsOnBoard.indexOf( card.getId() ) ) {
+                    return false;
+                }
+
+                if ( card.getBoard() == canvasboard.id ) {
                     var canvascard = new CanvasCard( app.queue, card, app.getPocketById( card.getPocket() ) );
 
                     app.queue.trigger( app, 'canvascard:created', canvascard );
 
                     canvasboard.addCard( canvascard );
 
+                    cardsOnBoard.push( card.getId() );
+
                     app.queue.trigger( app, 'canvascard:added', canvascard );
                 }
             }
+        }
+
+
+        app.queue.on( app, 'canvasboard:created', createCanvasRegion );
+
+        // handlers
+
+        function createCanvasRegion( canvasboard ) {
+            var regionsOnBoard = [];
+
+            app.queue.on( app, 'region:cloned', addCanvasRegion);
+
+            // handlers
 
             function addCanvasRegion( data ) {
                 var region = app.getRegionById( data.id );
 
-                if ( region.getBoard() == id ) {
+                if ( ~regionsOnBoard.indexOf( region.getId() ) ) {
+                    return false;
+                }
+
+                if ( region.getBoard() == canvasboard.id ) {
                     var canvasregion = new CanvasRegion( app.queue, region );
 
                     app.queue.trigger( app, 'canvasregion:created', canvasregion );
 
                     canvasboard.addRegion( canvasregion );
+
+                    regionsOnBoard.push( region.getId() );
 
                     app.queue.trigger( app, 'canvasregion:added', canvasregion );
                 }

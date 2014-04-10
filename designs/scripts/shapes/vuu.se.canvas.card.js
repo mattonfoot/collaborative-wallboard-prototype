@@ -24,6 +24,7 @@ define(function() {
 
         function CanvasCard( queue, card, pocket ) {
             var shape = new Kinetic.Group({
+              id: card.id,
               x: card.x || 5,
               y: card.y || 5,
               draggable: true

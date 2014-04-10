@@ -16,6 +16,7 @@ define([ 'kinetic' ], function() {
         function CanvasBoard( queue, board, options ) {
             var shape = new Kinetic.Stage({
                 container: options.container,
+                id: board.id,
                 width: options.width,
                 height: options.height,
                 draggable: true

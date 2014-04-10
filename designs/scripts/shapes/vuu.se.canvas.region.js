@@ -29,6 +29,7 @@ define(function() {
 
         function CanvasRegion( queue, region ) {
             var shape = new Kinetic.Group({
+                id: region.id,
                 x: region.x || 5,
                 y: region.y || 5,
                 draggable: true
