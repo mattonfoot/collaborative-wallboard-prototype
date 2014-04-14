@@ -1,8 +1,3 @@
-
-// event <-- app:mousewheel
-
-// event --> canvasboard:scaled, canvascard:added, canvasregion:added
-
 define([ 'kinetic' ], function() {
 
     var CanvasBoard  = (function() {
@@ -31,10 +26,11 @@ define([ 'kinetic' ], function() {
             // triggers
 
             shape
-              .on('dblclick', function(evt) {
-                queue.trigger( shape, 'canvasboard:opened', { board: board } );
-                evt.cancelBubble = true;
-              })
+                .on( 'dblclick', function( ev ) {
+                    queue.trigger( shape, 'canvasboard:opened', { board: board } );
+
+                    ev.cancelBubble = true;
+                });
 
             var $container = $( '#' + options.container );
             var scale = 1;
@@ -85,11 +81,13 @@ define([ 'kinetic' ], function() {
 
             // private methods
 
-            function __getPos(el){
-            		for (var lx=0, ly=0;
-                     el != null;
-                     lx += el.offsetLeft, ly += el.offsetTop, el = el.offsetParent);
-                return {x: lx,y: ly};
+            function __getPos( el ){
+                var lx = 0
+                  , ly = 0;
+
+            		for (; el != null; lx += el.offsetLeft, ly += el.offsetTop, el = el.offsetParent );
+
+                return { x: lx, y: ly };
           	}
 
             // public methods
