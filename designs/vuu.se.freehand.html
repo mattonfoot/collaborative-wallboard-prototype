@@ -1,0 +1,138 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>VUU.SE UI Prototype</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <div id="board" class="well"></div>
+
+    <script src="./scripts/vendor/kinetic-v5.1.0.min.js"></script>
+    <script src="./scripts/vendor/simplify.js"></script>
+    <script>
+        function toCoordinates( points ) {
+            var output = []
+              , len = points.length
+              , i = 0;
+
+            while ( i < len ) {
+                output.push( { x: points[ i++ ], y: points[ i++ ] } );
+            }
+
+            return output;
+        }
+
+        function toPoints( coordinates ) {
+            var output = []
+              , len = coordinates.length
+              , i = 0;
+
+            while ( i < len ) {
+                output.push( coordinates[ i ].x );
+                output.push( coordinates[ i ].y );
+                i++;
+            }
+
+            return output;
+        }
+
+        window.onload = function() {
+            var layer = new Kinetic.Layer();
+            var stage = new Kinetic.Stage({
+                container: "board",
+                width: 1024,
+                height: 768
+            });
+
+            var background = new Kinetic.Rect({
+                x: 0,
+                y: 0,
+                width: stage.getWidth(),
+                height: stage.getHeight(),
+                fill: "white"
+            });
+
+            var lines = [], line;
+
+            layer.add( background );
+            stage.add( layer );
+
+            moving = false;
+
+            stage.on( "mousedown touchstart", function(){
+                if (moving) {
+                    moving = false;
+                    layer.draw();
+                } else {
+                    var mousePos = stage.getPointerPosition();
+
+                    line = {};
+
+                    line.outline = new Kinetic.Line({
+                        stroke: "lightgray",
+                        strokeWidth: 1,
+                        lineCap: 'round',
+                        //tension: 0.1,
+                    });
+
+                    line.background = new Kinetic.Line({
+                        fill:"red",
+                        opacity: 0.05,
+                        strokeWidth: 1,
+                        lineCap: 'round',
+                        //tension: 0.1,
+                        closed: true
+                    });
+
+                    lines.push( line );
+
+                    layer.add( line.outline );
+                    layer.add( line.background );
+
+                    var points = [ mousePos.x, mousePos.y ];
+
+                    line.outline.points( points );
+                    line.background.points( points );
+
+                    moving = true;
+                    layer.drawScene();
+                }
+
+            });
+
+            stage.on("mousemove touchmove", function(){
+                if (moving) {
+                    var mousePos = stage.getPointerPosition();
+
+                    var points = Array.prototype.slice.call( line.outline.points() ).concat( [ mousePos.x, mousePos.y ] );
+
+                    line.outline.points( points );
+                    line.background.points( points );
+
+                    moving = true;
+                    layer.drawScene();
+                }
+            });
+
+            stage.on("mouseup touchend", function(){
+                // simplify the resulting line
+                var points = line.outline.points();
+                var simplified = simplify( toCoordinates( points ), 2.5, true );
+                points = toPoints( simplified );
+
+                line.outline.points( points );
+                line.background.points( points );
+                layer.drawScene();
+
+                moving = false;
+            });
+
+        };
+    </script>
+  </body>
+</html>

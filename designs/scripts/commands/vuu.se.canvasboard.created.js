@@ -35,7 +35,7 @@ define([
                     return false;
                 }
 
-                if ( card.getBoard() == canvasboard.id ) {
+                if ( card.getBoard() == canvasboard.getId() ) {
                     var canvascard = new CanvasCard( app.queue, card, app.getPocketById( card.getPocket() ) );
 
                     app.queue.trigger( app, 'canvascard:created', canvascard );
@@ -68,7 +68,7 @@ define([
                     return false;
                 }
 
-                if ( region.getBoard() == canvasboard.id ) {
+                if ( region.getBoard() == canvasboard.getId() ) {
                     var canvasregion = new CanvasRegion( app.queue, region );
 
                     app.queue.trigger( app, 'canvasregion:created', canvasregion );

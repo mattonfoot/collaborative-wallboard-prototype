@@ -39,21 +39,19 @@ app.hypermedia = {
     user: require('./lib/vuu.se.hypermedia.user.js').init( app )
 };
 
-app.router.get('/', function(req, res, next) {
-    if (!req.user) {
-        return res.redirect('/login');
-    }
+app.router.get('/',
+    passport.authenticate('auth0', { failureRedirect: '/denied' }),
+    function(req, res, next) {
+        fs.readFile( __dirname + '/lib/templates/app/ui.mustache', function (error, data) {
+            if ( error ) {
+                return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );
+            }
 
-    fs.readFile( __dirname + '/lib/templates/app/ui.mustache', function (error, data) {
-        if ( error ) {
-            return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );
-        }
+            var body = Mustache.render( data.toString(), { user : req.user, raw: JSON.stringify( req.user, 0, 2) } );
 
-        var body = Mustache.render( data.toString(), { user : req.user, raw: JSON.stringify( req.user, 0, 2) } );
-
-        res.send( 200, body );
+            res.send( 200, body );
+        });
     });
-});
 
 require('./lib/vuu.se.trackMovement.js').init( app );
 

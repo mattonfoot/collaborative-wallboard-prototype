@@ -8,7 +8,7 @@ require.config({
     paths: {
         jquery: 'vendor/jquery-2.1.0'
       , bootstrap: 'vendor/bootstrap.min'
-      , kinetic: 'vendor/kinetic-v4.6.0.min'
+      , kinetic: 'vendor/kinetic-v5.1.0.min'
       , socketio: '/socket.io/socket.io'
       , eventqueue: 'vuu.se.eventqueue'
     }

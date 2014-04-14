@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VUU.SE UI Prototype</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+
+    <!-- Custom styles for this template -->
+    <style>
+        /* Move down content because we have a fixed navbar that is 50px tall */
+        body {
+          padding-top: 50px;
+          padding-bottom: 20px;
+        }
+    </style>
+  </head>
+
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">VUU<small>.SE</small></a>
+        </div>
+        <button type="button" class="btn btn-success navbar-btn navbar-right" onclick="widget.signin()">Sign in</button>
+      </div>
+    </div>
+
+    <div class="container">
+
+    <div class="page-header">
+      <h1>Users</h1>
+    </div>
+
+    <ul class="media-list">
+        {{#users}}
+        <li class="media">
+            <a class="pull-left" href="#">
+                <img class="media-object" src="{{picture}}" style="width: 64px; height: 64px;">
+            </a>
+
+          <div class="media-body">
+            <h4 class="media-title">{{name}} [{{nickname}}]
+                <span class="label label-info" title="Number of logins">{{loginsCount}}</span>
+            </h4>
+
+            <dl class="dl-horizontal">
+                <dt>Joined</dt>
+                <dd>{{created_at}}</dd>
+
+                <dt>Last logged in</dt>
+                <dd>{{lastLogin}}</dd>
+
+                <dt>email</dt>
+                <dd>
+                    {{email}}
+                    {{#email_verified}}
+                    <span class="label label-info">verified</span>
+                    {{/email_verified}}
+                </dd>
+
+                <dt>gender</dt>
+                <dd>{{gender}}</dd>
+            </dl>
+          </div>
+        </li>
+        {{/users}}
+    </ul>
+
+    <hr>
+
+    <footer>
+      <p>&copy; Company 2014</p>
+    </footer>
+    </div> <!-- /container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdn.auth0.com/w2/auth0-widget-3.0.8.min.js"></script>
+<script src="./scripts/vendor/jquery-2.1.0.js"></script>
+<script src="./scripts/vendor/bootstrap.min.js"></script>
+<script type="text/javascript">
+
+  var widget = new Auth0Widget({
+    domain:         'vuu-se.auth0.com',
+    clientID:       'X0n9ZaXJrJgeP9V4KAI7LXsiMsn6jN4G',
+    callbackURL:    'http://localhost:5000/callback'
+  });
+
+</script>
+</body>
+</html>
