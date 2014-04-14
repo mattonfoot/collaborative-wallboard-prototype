@@ -1,8 +1,3 @@
-
-// event <-- board:added
-
-// event --> controls:enabled
-
 define(function() {
 
     function initialize( app ) {
@@ -10,8 +5,6 @@ define(function() {
 
         function enableControls() {
             app.enableControls();
-
-            app.queue.trigger( app, 'controls:enabled', app );
         }
     }
 

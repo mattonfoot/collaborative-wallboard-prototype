@@ -34,7 +34,7 @@ define([
         this.queue = new EventQueue({ debug: true });
         this.element = $('#app');
         this.walllist = $('#wallList');
-        this.controls = $('#app .add-pocket, #app .add-region');
+        this.controls = $('#app .api-controls .control');
 
         var auth = this.auth = new Auth0Widget({
               domain: 'vuu-se.auth0.com',
@@ -213,6 +213,8 @@ define([
 
         enableControls: function( data ) {
             this.controls.removeAttr( 'disabled' );
+
+            app.queue.trigger( app, 'controls:enabled', app );
         }
 
     };
@@ -274,6 +276,7 @@ define([
       'controls/vuu.se.controls.addboard',
       'controls/vuu.se.controls.addpocket',
       'controls/vuu.se.controls.addregion',
+      'controls/vuu.se.controls.addwall',
       'controls/vuu.se.controls.displayboard',
       'controls/vuu.se.controls.displaywall',
       'controls/vuu.se.controls.enable'

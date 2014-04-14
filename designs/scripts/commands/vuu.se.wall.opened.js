@@ -28,6 +28,8 @@ define(function() {
                 .fail(function( error ) {
                   throw( error );
                 });
+
+            app.enableControls();
         }
     }
 

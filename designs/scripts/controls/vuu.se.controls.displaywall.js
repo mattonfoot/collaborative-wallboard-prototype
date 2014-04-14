@@ -10,9 +10,9 @@ define(function() {
             var target = $( e.target ).data( 'target' )
               , wall = app.activewall = app.getWallById( target );
 
-            app.queue.trigger( app, 'wall:selected', wall );
-
             $( '#wallModal' ).modal( 'hide' );
+
+            app.queue.trigger( app, 'wall:selected', wall );
         }
     }
 

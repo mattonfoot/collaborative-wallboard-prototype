@@ -1,27 +1,25 @@
 define(function() {
 
     function initialize( app ) {
-        app.element.on( 'mouseup touchend', '.add-board', triggerAddBoard );
-        app.queue.on( app, 'wall:firsttime', triggerAddBoard );
+        app.element.on( 'mouseup touchend', '.add-wall', triggerAddWall );
 
-        function triggerAddBoard( ev ) {
-          var key = prompt( 'Please provide a data key that this board represents', '' );
+        function triggerAddWall( ev ) {
+          var name = prompt( 'Please provide a name for this wall', '' );
 
-          if (key === '') {
+          if (name === '') {
               return;
           }
 
           var data = {
-              boards: [
+              walls: [
                   {
-                      key: key,
-                      wall: app.activewall.id
+                      name: name
                   }
               ]
           };
 
           $.ajax({
-                  url: '/boards/',
+                  url: '/walls/',
                   dataType: "json",
                   contentType: "application/json;charset=utf-8",
                   type: "POST",

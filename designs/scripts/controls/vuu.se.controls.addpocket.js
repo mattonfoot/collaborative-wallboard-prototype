@@ -1,8 +1,4 @@
 
-// event <-- .add-pocket:mouseup, .add-board:touchend
-
-// event -->
-
 define(function() {
 
     function initialize( app ) {
