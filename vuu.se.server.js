@@ -40,8 +40,11 @@ app.hypermedia = {
 };
 
 app.router.get('/',
-    passport.authenticate('auth0', { failureRedirect: '/denied' }),
     function(req, res, next) {
+        if (!req.user) {
+            res.redirect('/login');
+        }
+        
         fs.readFile( __dirname + '/lib/templates/app/ui.mustache', function (error, data) {
             if ( error ) {
                 return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );

@@ -1,64 +1,96 @@
-<!DOCTYPE HTML>
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>VUU.SE UI Prototype</title>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap -->
+    <!-- Bootstrap core CSS -->
     <link href="./css/vendor/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="./css/vendor/bootstrap-theme.min.css" rel="stylesheet" media="screen">
 
+    <!-- Custom styles for this template -->
     <style>
-      .tab-content {
-        width: 100%;
-        height: 600px;
-        border-bottom: 1px solid #ddd;
-        background: #f9f9f9;
-      }
+        /* Move down content because we have a fixed navbar that is 50px tall */
+        body {
+          padding-top: 50px;
+          padding-bottom: 20px;
+        }
+
+        .tab-content {
+          width: 100%;
+          height: 600px;
+          border-bottom: 1px solid #ddd;
+          background: #f9f9f9;
+        }
     </style>
   </head>
+
   <body>
-    <div id="app">
-      <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
-        <div class="container">
-            <div class="navbar-inner">
-
-            <div class="btn-group api-controls">
-                <button type="button" class="btn btn-default navbar-btn control add-region" title="Create Region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
-                <button type="button" class="btn btn-default navbar-btn control add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button>
-                <button type="button" class="btn btn-default navbar-btn control add-sketch" title="Create Sketch" disabled><i class="glyphicon glyphicon-pencil"></i> New sketch</button>
-            </div>
-
-            <div class="btn-group">
-                <button type="button" class="btn btn-default navbar-btn add-wall" title="Create Wall"><i class="glyphicon glyphicon-plus"></i> New wall</button>
-                <button type="button" class="btn btn-default navbar-btn view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
-            </div>
-
-            <p class="navbar-text navbar-right">Signed in as <strong>{{user.displayName}} | <a href="/logout" class="navbar-link auth-logout" title="Logout of VUU.SE">logout</a></strong></p>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/">VUU<small>.SE</small></a>
         </div>
-        </div>
-      </nav>
-
-        <div class="modal fade" id="wallModal" tabindex="-1" role="dialog" aria-labelledby="wallModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title" id="wallModalLabel">VUU.SE wall list</h4>
-                    </div>
-                    <div class="modal-body">
-                        <p>Choose a wall to view:</p>
-
-                        <div class="list-group" id="wallList">
-                        </div>
-                    </div>
-                </div><!-- /.modal-content -->
-            </div><!-- /.modal-dialog -->
-        </div><!-- /.modal -->
+      </div>
     </div>
 
-    <script src="https://cdn.auth0.com/w2/auth0-widget-3.0.8.min.js"></script>
+    <div id="app">
+      <div id="viewer"></div>
+
+      <footer>
+        <nav class="navbar navbar-default" role="navigation">
+          <div class="container">
+              <div class="navbar-inner">
+
+              <div class="btn-group api-controls">
+                  <button type="button" class="btn btn-default navbar-btn control add-region" title="Create Region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
+                  <button type="button" class="btn btn-default navbar-btn control add-pocket" title="Create Card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button>
+                  <!--
+                  <button type="button" class="btn btn-default navbar-btn control add-sketch" title="Create Sketch" disabled><i class="glyphicon glyphicon-pencil"></i> New sketch</button>
+                  -->
+              </div>
+
+              <div class="btn-group">
+                  <button type="button" class="btn btn-default navbar-btn add-wall" title="Create Wall"><i class="glyphicon glyphicon-plus"></i> New wall</button>
+                  <button type="button" class="btn btn-default navbar-btn view-walls" title="View walls" data-toggle="modal" data-target="#wallModal">View walls</button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div class="container">
+            <p class="pull-right">Signed in as <strong>{{user.displayName}} | <a href="/logout" class="auth-logout" title="Logout of VUU.SE">logout</a></strong></p>
+
+            <p>&copy; Company 2014</p>
+        </div>
+      </footer>
+
+      <div class="modal fade" id="wallModal" tabindex="-1" role="dialog" aria-labelledby="wallModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                      <h4 class="modal-title" id="wallModalLabel">VUU.SE wall list</h4>
+                  </div>
+                  <div class="modal-body">
+                      <p>Choose a wall to view:</p>
+
+                      <div class="list-group" id="wallList">
+                      </div>
+                  </div>
+              </div><!-- /.modal-content -->
+          </div><!-- /.modal-dialog -->
+      </div><!-- /.modal -->
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
     <script data-main="scripts/vuu.se.app" src="scripts/vendor/require.js"></script>
-  </body>
+</body>
 </html>

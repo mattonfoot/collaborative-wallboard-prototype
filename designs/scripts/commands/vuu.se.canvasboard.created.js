@@ -14,6 +14,8 @@ define([
               , id = board.id
               , canvasboard = new CanvasBoard( app.queue, board, { container: id, width: app.size.width, height: app.size.height } );
 
+            app.registerCanvasBoard( canvasboard );
+
             app.queue.trigger( app, 'canvasboard:created', canvasboard );
         }
 

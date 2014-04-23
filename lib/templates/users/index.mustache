@@ -26,58 +26,59 @@
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#">VUU<small>.SE</small></a>
+          <a class="navbar-brand" href="/">VUU<small>.SE</small></a>
         </div>
-        <button type="button" class="btn btn-success navbar-btn navbar-right" onclick="widget.signin()">Sign in</button>
       </div>
     </div>
 
     <div class="container">
 
-    <div class="page-header">
-      <h1>Users</h1>
-    </div>
+        <div class="page-header">
+          <h1>Users</h1>
+        </div>
 
-    <ul class="media-list">
-        {{#users}}
-        <li class="media">
-            <a class="pull-left" href="#">
-                <img class="media-object" src="{{picture}}" style="width: 64px; height: 64px;">
-            </a>
+        <ul class="media-list">
+            {{#users}}
+            <li class="media">
+                <a class="pull-left" href="#">
+                    <img class="media-object" src="{{picture}}" style="width: 64px; height: 64px;">
+                </a>
 
-          <div class="media-body">
-            <h4 class="media-title">{{name}} [{{nickname}}]
-                <span class="label label-info" title="Number of logins">{{loginsCount}}</span>
-            </h4>
+              <div class="media-body">
+                <h4 class="media-title">{{name}} [{{nickname}}]
+                    <span class="label label-info" title="Number of logins">{{loginsCount}}</span>
+                </h4>
 
-            <dl class="dl-horizontal">
-                <dt>Joined</dt>
-                <dd>{{created_at}}</dd>
+                <dl class="dl-horizontal">
+                    <dt>Joined</dt>
+                    <dd>{{created_at}}</dd>
 
-                <dt>Last logged in</dt>
-                <dd>{{lastLogin}}</dd>
+                    <dt>Last logged in</dt>
+                    <dd>{{lastLogin}}</dd>
 
-                <dt>email</dt>
-                <dd>
-                    {{email}}
-                    {{#email_verified}}
-                    <span class="label label-info">verified</span>
-                    {{/email_verified}}
-                </dd>
+                    <dt>email</dt>
+                    <dd>
+                        {{email}}
+                        {{#email_verified}}
+                        <span class="label label-info">verified</span>
+                        {{/email_verified}}
+                    </dd>
 
-                <dt>gender</dt>
-                <dd>{{gender}}</dd>
-            </dl>
-          </div>
-        </li>
-        {{/users}}
-    </ul>
+                    <dt>gender</dt>
+                    <dd>{{gender}}</dd>
+                </dl>
+              </div>
+            </li>
+            {{/users}}
+        </ul>
 
-    <hr>
+        <hr>
 
-    <footer>
-      <p>&copy; Company 2014</p>
-    </footer>
+        <footer>
+          <p class="pull-right">Signed in as <strong>{{user.displayName}} | <a href="/logout" class="auth-logout" title="Logout of VUU.SE">logout</a></strong></p>
+
+          <p>&copy; Company 2014</p>
+        </footer>
     </div> <!-- /container -->
 
 
