@@ -1,5 +1,5 @@
 
-define(function() {
+(function () { "use strict";
 
     function Factory( options ) {
 
@@ -84,6 +84,17 @@ define(function() {
 
     }
 
-    return Factory;
+    // export as AMD module / Node module / browser variable
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return Factory;
+        });
+    } else if (typeof module !== 'undefined') {
+        module.exports = Factory;
+    } else {
+        window.vuu = window.vuu || { se: {} };
 
-});
+        window.vuu.se.eventqueue = Factory;
+    }
+
+})();

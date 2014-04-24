@@ -1,7 +1,6 @@
--- wall add to list on create
--- cancel new board creates null board
--- resize region doesn't resize background
--- change background based on region color
--- change opacity based on height on a board
--- zoom board
--- flick board
+-- issue: cancel new board creates null board
+-- issue: resize region doesn't resize background
+-- feature: change background based on region color
+-- feature: change opacity based on height on a board
+-- feature: zoom board
+-- feature: flick board

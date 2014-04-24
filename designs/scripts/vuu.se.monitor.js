@@ -1,6 +1,6 @@
-define(function() {
+(function () { "use strict";
 
-    function initialize( app ) {
+    function monitorSocketIO( app ) {
         var socket = app.socket
           , queue = app.queue
           , events = [
@@ -20,7 +20,7 @@ define(function() {
             , 'region:updated'
             , 'region:moved'
             , 'region:resized'
-            
+
             , 'wall:created'
             , 'wall:updated'
           ];
@@ -32,8 +32,19 @@ define(function() {
         });
     }
 
-    return {
-        initialize: initialize
-    };
+    var monitor = { initialize: monitorSocketIO };
 
-});
+    // export as AMD module / Node module / browser variable
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return monitor;
+        });
+    } else if (typeof module !== 'undefined') {
+        module.exports = monitor;
+    } else {
+        window.vuu = window.vuu || { se: {} };
+
+        window.vuu.se.monitor = monitor;
+    }
+
+})();

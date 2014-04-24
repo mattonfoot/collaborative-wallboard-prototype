@@ -314,6 +314,7 @@ define([
       'commands/vuu.se.pocket.updated',
       'commands/vuu.se.region.clone',
       'commands/vuu.se.region.update',
+      'commands/vuu.se.wall.created',
       'commands/vuu.se.wall.opened',
       'commands/vuu.se.wall.selected',
 
