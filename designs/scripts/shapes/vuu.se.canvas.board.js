@@ -34,61 +34,36 @@ define([ 'kinetic' ], function() {
 
             var $container = $( '#' + options.container );
             var scale = 1;
+            var zoomFactor = 1.1;
+            var origin = { x: 0, y: 0 };
 
             $container
-              .bind('mousewheel', function( e, delta ) {
-                  delta = e.originalEvent.wheelDelta;
+              .bind('mousewheel', function( e ) {
+                  var evt = e.originalEvent,
+                      mx = evt.clientX /* - canvas.offsetLeft */,
+                      my = evt.clientY /* - canvas.offsetTop */,
+                      delta = evt.wheelDelta;
 
                   //prevent only the actual wheel movement
                   if (delta !== 0) {
                       e.preventDefault();
                   }
 
-                  var cur_scale;
-                  if (delta > 0) {
-                      cur_scale = scale + Math.abs(delta / 640);
-                  } else {
-                      cur_scale = scale - Math.abs(delta / 640);
-                  }
+                  var cur_scale = scale * (zoomFactor - (delta < 0 ? 0.2 : 0));
 
                   if (cur_scale > min_scale) {
+                      origin.x = mx / scale + origin.x - mx / cur_scale;
+                      origin.y = my / scale + origin.y - my / cur_scale;
 
-                      var cnvsPos = __getPos( $container );
-
-                      var Apos = shape.getAbsolutePosition();
-
-                      var mousePos = shape.getMousePosition();
-
-                      var smallCalcX  = (e.pageX - Apos.x - cnvsPos.x)/scale;
-                      var smallCalcY = (e.pageY - Apos.y - cnvsPos.y)/scale;
-
-                      var endCalcX = (e.pageX - cnvsPos.x) - cur_scale*smallCalcX;
-                      var endCalcY = (e.pageY - cnvsPos.y) - cur_scale*smallCalcY;
+                      shape.offset({ x: origin.x, y: origin.y });
+                      shape.scale( { x: cur_scale, y: cur_scale });
+                      shape.batchDraw();
 
                       scale = cur_scale;
-/*
-                      shape.setPosition( endCalcX, endCalcY);
 
-                      shape.regions.setScale(scale);
-                      shape.regions.batchDraw();
-
-                      shape.cards.setScale(scale);
-                      shape.cards.batchDraw();
-*/
                       queue.trigger( shape, 'canvasboard:scaled', { canvasboard: shape, scale: scale });
                   }
               });
-
-            // private methods
-
-            function __getPos( el ){
-                var lx = 0
-                  , ly = 0;
-
-            		for (; el != null; lx += el.offsetLeft, ly += el.offsetTop, el = el.offsetParent );
-
-                return { x: lx, y: ly };
-          	}
 
             // public methods
 
