@@ -6,7 +6,7 @@ define(function() {
         function triggerAddWall( ev ) {
           var name = prompt( 'Please provide a name for this wall', '' );
 
-          if (name === '') {
+          if (!name || name === '') {
               return;
           }
 

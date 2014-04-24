@@ -7,6 +7,10 @@ define(function() {
         function triggerAddPocket( ev ) {
           var title = prompt( 'Please provide a title for this card', 'Sample Card' );
 
+          if (!title || title === '') {
+              return;
+          }
+
           var data = {
               pockets: [
                   {

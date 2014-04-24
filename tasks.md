@@ -1,5 +1,5 @@
--- issue: cancel new board creates null board
 -- issue: resize region doesn't resize background
+-- feature: modal with add new form for all add controls
 -- feature: change background based on region color
 -- feature: change opacity based on height on a board
 -- feature: zoom board

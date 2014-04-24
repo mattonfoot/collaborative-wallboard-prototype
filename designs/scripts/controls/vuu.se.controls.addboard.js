@@ -7,7 +7,7 @@ define(function() {
         function triggerAddBoard( ev ) {
           var key = prompt( 'Please provide a data key that this board represents', '' );
 
-          if (key === '') {
+          if (!key || key === '') {
               return;
           }
 

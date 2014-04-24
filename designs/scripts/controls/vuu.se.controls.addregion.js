@@ -6,7 +6,7 @@ define(function() {
         function triggerAddRegion( e ) {
             var name = prompt( 'Please provide a value for this region', '' );
 
-            if (name === '') {
+            if (!name || name === '') {
                 return;
             }
 
