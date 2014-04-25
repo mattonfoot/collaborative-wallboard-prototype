@@ -214,7 +214,7 @@ define(function() {
             function __resizeTo( width, height ) {
               shape.moveToTop();
 
-              background.setSize( width, height );
+              background.size({ width: width, height: height });
               title.setWidth( width - 10 );
 
               __redrawLayer();

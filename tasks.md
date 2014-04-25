@@ -1,6 +1,5 @@
--- issue: resize region doesn't resize background
--- feature: modal with add new form for all add controls
+-- issue: dblclick to edit board not working
 -- feature: change background based on region color
 -- feature: change opacity based on height on a board
--- feature: zoom board
+-- feature: modal with add new form for all add controls
 -- feature: flick board
