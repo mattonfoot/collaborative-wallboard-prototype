@@ -1,5 +1,5 @@
--- issue: dblclick to edit board not working
 -- feature: change background based on region color
 -- feature: change opacity based on height on a board
 -- feature: modal with add new form for all add controls
+-- feature: board editor modal
 -- feature: flick board

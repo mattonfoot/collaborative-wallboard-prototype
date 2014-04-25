@@ -24,12 +24,13 @@ define([ 'kinetic' ], function() {
             shape.add( shape.cards );
 
             // triggers
-
             shape
-                .on( 'dblclick', function( ev ) {
-                    queue.trigger( shape, 'canvasboard:opened', { board: board } );
+                .on( 'contentDblclick contentDbltap', function( e ) {
+                    if (shape.preventEvents) {
+                        return shape.preventEvents = false;
+                    }
 
-                    ev.cancelBubble = true;
+                    queue.trigger( shape, 'canvasboard:opened', { board: board } );
                 });
 
             var $container = $( '#' + options.container );
@@ -38,7 +39,7 @@ define([ 'kinetic' ], function() {
             var origin = { x: 0, y: 0 };
 
             $container
-              .bind('mousewheel', function( e ) {
+              .on('mousewheel', function( e ) {
                   var evt = e.originalEvent,
                       mx = evt.clientX /* - canvas.offsetLeft */,
                       my = evt.clientY /* - canvas.offsetTop */,

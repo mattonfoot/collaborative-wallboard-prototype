@@ -80,9 +80,11 @@ define(function() {
               .on('dragend', function() {
                 queue.trigger( shape, 'canvasregion:moved', { region: region, x: shape.getX(), y: shape.getY() } );
               })
-              .on('dblclick dbltap', function(evt) {
+              .on('dblclick dbltap', function( e ) {
+                e.cancelBubble = true;
+                shape.getStage().preventEvents = true;
+
                 queue.trigger( shape, 'canvasregion:opened', { region: region } );
-                evt.cancelBubble = true;
               });
 
             handle
