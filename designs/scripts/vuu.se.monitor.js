@@ -4,31 +4,58 @@
         var socket = app.socket
           , queue = app.queue
           , events = [
-              'card:created'
-            , 'card:updated'
-            , 'card:moved'
+                'card:created'
+              , 'card:updated'
+              , 'card:moved'
 
-            , 'pocket:created'
-            , 'pocket:updated'
-            , 'pocket:regionenter'
-            , 'pocket:regionexit'
+              , 'pocket:created'
+              , 'pocket:updated'
+              , 'pocket:regionenter'
+              , 'pocket:regionexit'
 
-            , 'board:created'
-            , 'board:updated'
+              , 'board:created'
+              , 'board:updated'
 
-            , 'region:created'
-            , 'region:updated'
-            , 'region:moved'
-            , 'region:resized'
+              , 'region:created'
+              , 'region:updated'
+              , 'region:moved'
+              , 'region:resized'
 
-            , 'wall:created'
-            , 'wall:updated'
-          ];
+              , 'wall:created'
+              , 'wall:updated'
+            ]
+          , trackedEvents = [
+                'wall:opened'
+              , 'board:activated'
+              , 'board:sketchbegin'
+            ];
 
         events.forEach(function( ev ) {
             socket.on( ev, function( data ) {
                 queue.trigger( app, ev, data );
+
+                if (ga) {
+                    var  evArr = ev.split(':');
+
+                    ga( 'send', 'event', evArr[0], evArr[1] );
+                }
             });
+        });
+
+        trackedEvents.forEach(function( ev ) {
+            queue.on( app, ev, function( data ) {
+                if (ga) {
+                    var  evArr = ev.split(':');
+
+                    ga( 'send', 'event', evArr[0], evArr[1], data.id );
+                }
+            });
+        });
+
+        queue.on( app, 'canvasboard:scaled', function( data ) {
+            if (ga) {
+                ga( 'send', 'event', 'canvasboard', 'scaled', data.canvasboard.id(), data.scale );
+            }
         });
     }
 

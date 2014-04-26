@@ -38,7 +38,7 @@ define([
 
     function UI() {
         this.socket = io.connect('//:5000');
-        this.queue = new EventQueue({ debug: true });
+        this.queue = new EventQueue({ debug: false });
         this.element = $('#app');
         this.footer = this.element.find('footer');
         this.viewer = this.element.find('#viewer')
