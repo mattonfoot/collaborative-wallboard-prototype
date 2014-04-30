@@ -1,49 +1,102 @@
-/*
-
-set card color equal to board gender region color
-set card color equal to region color on board gender
-
-card( 'color' ).equal().to().region().color().on().board( 'gender' );
-card( 'color' ).equalTo().region().color().on().board( 'gender' );
-
-// code to run
-
-var intersections = intersect( card.regions, boards['gender'].regions );
-if ( intersections.length > 0 ) {
-    card.setColor( intersections );
+function Config( attr ) {
+  this.attr = attr;
 }
 
---------
+Config.prototype.from = function( attr, selector ) {
+  this.from = {
+    attr: attr,
+    selector: selector
+  };
 
-set card opacity equal to board story map vertical position
+  return this;
+};
 
-card( 'opacity' ).equal().to().board( 'story map' ).vertical();
-card( 'opacity' ).equal().board( 'story map' ).vertical();
+Config.prototype.when = function( relationship, filter ) {
+  this.when = {
+    relationship: relationship,
+    filter: filter
+  };
 
-// code to run
+  return this;
+};
 
-var cards = boards['story map'].cards
-  , opacity = (cards.indexOf( card.id ) / cards.length) * 100
-card.setOpacity( opacity );
 
---------
+function get( attr ) {
+  var config = new Config( attr );
 
-add card tag equal to red when card is in board current sprint region blocked
-
-card( 'tag' ).equal().to().color( 'red' ).when().card().is().in().board( 'current sprint' ).region( 'blocked' );
-card( 'tag' ).equal().color( 'red' ).when().card().in().board( 'current sprint' ).region( 'blocked' );
-
-// code to run
-
-var intersections = intersect( card.regions, boards['current sprint'].regions['blocked'] );
-if ( intersections.length > 0 ) {
-    card.addTag( 1, 'red' );
+  return config;
 }
 
---------
+function region( relationship, selector ) {
+    return {
+      relationship: relationship,
+      selector: selector,
+      node: region
+    };
+}
 
-// has internal flags object
-//   - each function switches a flag
-//   - action method then uses the flag object to run the macro
+function board( selector ) {
+    return {
+      selector: selector,
+      node: board
+    };
+}
 
-*/
+function parse( phrase ) {
+  var matches = phrase.match(/(get|from|when)/ig);
+  if (!matches || matches.length < 2) {
+    return {};
+  }
+
+  out = phrase.replace(/\sof\s/ig, ' ').replace(/board\s#([^\s]*)/ig, 'board(\'#$1\')').trim();
+  out = out.replace(/(board[^\(])\s/ig, '\'$1\' ').trim();
+  out = out.replace(/\sboard(?:\s|$)/ig, ' \'board\' ').trim();
+  out = out.replace(/region\s([^\s]*)\s([^\s]*)/ig, 'region(\'$1\',$2)').trim();
+  out = out.replace(/\sregion(?:\s|$)/ig, ' \'region\' ').trim();
+  out = out.replace(/get\s([^\s]*)/ig, 'get(\'$1\')').trim();
+  out = out.replace(/\sfrom\s([^\s]*)\s([^\s]*)/ig, '.from(\'$1\',$2)').trim();
+  out = out.replace(/\swhen\s([^\s]*?)\s([^\s]*)/ig, '.when(\'$1\',$2)').trim();
+
+  if (out === phrase) {
+    return {};
+  }
+
+  return new Function( 'return ' + out )();
+}
+
+
+// get color from color of region on board #{{id}} when within region
+
+window.configA =
+  get( 'color' ).from( 'color', /* of */ region( 'on', board( '#{{id}}' ) ) ).when( 'within', 'region' );
+
+// get tag from name of board when on board #{{id}}
+
+window.configB =
+  get( 'tag' ).from( 'name', /* of */ 'board' ).when( 'on', board( '#{{id}}' ) );
+
+// get opacity from vertical of board #{{id}}
+
+window.configC =
+  get( 'opacity' ).from( 'vertical', /* of */ board( '#{{id}}' ) );
+
+
+console.log(
+    "get color from color of region on board #{{id}} when within region",
+    parse( "get color from color of region on board #{{id}} when within region" )
+);
+
+console.log(
+    "get tag from name of board when on board #{{id}}",
+    parse( "get tag from name of board when on board #{{id}}" )
+);
+
+console.log(
+    "get opacity from vertical of board #{{id}}",
+    parse( "get opacity from vertical of board #{{id}}" )
+);
+
+console.log(
+    "alert('got ya!!')",
+    parse( "alert('got ya!!')" )
+);
