@@ -80,16 +80,21 @@ window.configB =
 window.configC =
   get( 'opacity' ).from( 'vertical', /* of */ board( '#{{id}}' ) );
 
+// when within region on board #{{id}} get color from color of region
 
 console.log(
     "get color from color of region on board #{{id}} when within region",
     parse( "get color from color of region on board #{{id}} when within region" )
 );
 
+// when on board #{{id}} get tag from name of board
+
 console.log(
     "get tag from name of board when on board #{{id}}",
     parse( "get tag from name of board when on board #{{id}}" )
 );
+
+// when moved on board #{{id}} get opacity from vertical rank
 
 console.log(
     "get opacity from vertical of board #{{id}}",

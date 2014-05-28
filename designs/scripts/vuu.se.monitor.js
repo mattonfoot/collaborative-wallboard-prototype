@@ -25,8 +25,6 @@
               , 'wall:updated'
             ]
           , trackedEvents = [
-                'wall:opened'
-              , 'board:activated'
               , 'board:sketchbegin'
             ];
 
@@ -55,6 +53,20 @@
         queue.on( app, 'canvasboard:scaled', function( data ) {
             if (ga) {
                 ga( 'send', 'event', 'canvasboard', 'scaled', data.canvasboard.id(), data.scale );
+            }
+        });
+
+        queue.on( app, 'wall:opened', function( data ) {
+            if (ga) {
+                ga( 'send', 'pageview', '/walls/' + data.id );
+                ga( 'send', 'event', 'wall', 'opened', data.id );
+            }
+        });
+
+        queue.on( app, 'board:activated', function( data ) {
+            if (ga) {
+                ga( 'send', 'pageview', '/walls/' + data.wall + '/board/' + data.id );
+                ga( 'send', 'event', 'board', 'activated', data.id );
             }
         });
     }

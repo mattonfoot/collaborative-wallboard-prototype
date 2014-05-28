@@ -271,7 +271,6 @@ define([
         console.log( 'You are connected to the server' );
     });
 
-
     app.socket.on('disconnect', function() {
         console.log( 'You seem to have been disconected from the server.' );
     });
@@ -282,16 +281,6 @@ define([
         });
 
         app.queue.trigger( app, 'app:initend', app );
-    });
-
-    // pocket:tagged
-    app.queue.on( app, 'card:tagged', function( data ) {
-        app.socket.emit( 'card:tagged', data ); // should be put to server
-    });
-
-    // pocket:untagged
-    app.queue.on( app, 'card:untagged', function( data ) {
-        app.socket.emit( 'card:untagged', data ); // should be put to server
     });
 
     // load plugins
