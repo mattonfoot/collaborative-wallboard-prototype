@@ -4,6 +4,9 @@ var fortune = require('fortune')
   , http = require('http')
   , EventQueue = require('./lib/vuu.se.eventqueue')
   , express = require('express')
+  , cookieParser = require('cookie-parser')
+  , session      = require('express-session')
+  , serveStatic = require('serve-static')
   , passport = require('passport')
   , strategy = require('./lib/vuu.se.passport.setup')
   , Mustache = require('mustache')
@@ -20,13 +23,13 @@ var port = process.env.PORT || 80,
     httpServer = http.createServer( app.router ),
     io = socketio.listen( httpServer );
 
-app.use( express.cookieParser() );
-app.use( express.session({ secret: 'shhhhhhhhh' }) );
+app.use( cookieParser() );
+app.use( session({ secret: 'shhhhhhhhh' }) );
 
 app.use( passport.initialize() );
 app.use( passport.session() );
 
-app.use( connect.static( __dirname + '/designs' ) );
+app.use( serveStatic( __dirname + '/designs' ) );
 
 app.queue = new EventQueue( io );
 
