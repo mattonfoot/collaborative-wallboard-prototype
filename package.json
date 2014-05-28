@@ -4,7 +4,7 @@
   "description": "A digital Wall Board Prototype for collaborative interactive boards",
   "main": "server.js",
   "scripts": {
-    "start": "node vuu.se.server.js",
+    "start": "PORT=5000 node vuu.se.server.js",
     "test": "node ./node_modules/mocha/bin/mocha"
   },
   "repository": {

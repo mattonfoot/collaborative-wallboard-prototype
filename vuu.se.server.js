@@ -9,7 +9,7 @@ var fortune = require('fortune')
   , Mustache = require('mustache')
   , fs = require('fs');
 
-var port = process.env.PORT || 5000,
+var port = process.env.PORT || 80,
     host = process.env.HOST || '0.0.0.0'
     config = {
         db: 'vuu.se'
@@ -44,7 +44,7 @@ app.router.get('/',
         if (!req.user) {
             res.redirect('/login');
         }
-        
+
         fs.readFile( __dirname + '/lib/templates/app/ui.mustache', function (error, data) {
             if ( error ) {
                 return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );
@@ -67,3 +67,5 @@ app.queue.on( 'connection', function( socket ) {
 });
 
 httpServer.listen( port, host );
+
+console.log('Server listening on ' + host + ':' + port);
