@@ -8,16 +8,25 @@ var fortune = require('fortune')
   , session      = require('express-session')
   , serveStatic = require('serve-static')
   , passport = require('passport')
-  , strategy = require('./lib/vuu.se.passport.setup')
+  , Auth0Strategy = require('passport-auth0')
   , Mustache = require('mustache')
   , fs = require('fs');
 
 var port = process.env.PORT || 80,
-    host = process.env.HOST || '0.0.0.0'
+    host = process.env.HOST || '0.0.0.0',
+    domain = process.env.DOMAIN || 'localhost',
+    environment = process.env.ENV || 'development',
     config = {
         db: 'vuu.se'
-      , baseUrl: 'http://0.0.0.0'
-      , production: true
+      , baseUrl: ( port === 443 ? 'https' : 'http' ) + '://' + domain + ( port !== 80 && port !== 433 ? ':' + port : '' )
+      , production: environment === 'production'
+    },
+    auth0config = {
+        domain:       'vuu-se.auth0.com',
+        clientID:     'X0n9ZaXJrJgeP9V4KAI7LXsiMsn6jN4G',
+        clientSecret: 'KaqyAODoqYM768jZJq8jnRCoQ2wYkwvpiJSgLV-5EUQlUexjpGi2HIFALivpbw2W',
+        callbackURL:  config.baseUrl + '/callback',
+        scriptUrl:    'https://cdn.auth0.com/w2/auth0-widget-3.1.min.js'
     },
     app = fortune( config ),
     httpServer = http.createServer( app.router ),
@@ -26,6 +35,7 @@ var port = process.env.PORT || 80,
 app.use( cookieParser() );
 app.use( session({ secret: 'shhhhhhhhh' }) );
 
+var strategy = require('./lib/vuu.se.passport.setup').init( passport, Auth0Strategy, auth0config );
 app.use( passport.initialize() );
 app.use( passport.session() );
 
@@ -39,7 +49,7 @@ app.hypermedia = {
     region: require('./lib/vuu.se.hypermedia.region.js').init( app ),
     pocket:  require('./lib/vuu.se.hypermedia.pocket.js').init( app ),
     card: require('./lib/vuu.se.hypermedia.card.js').init( app ),
-    user: require('./lib/vuu.se.hypermedia.user.js').init( app )
+    user: require('./lib/vuu.se.hypermedia.user.js').init( app, auth0config )
 };
 
 app.router.get('/',
@@ -53,7 +63,7 @@ app.router.get('/',
                 return next( new Error( error ? error.toString() : 'Failed to read app template from disk' ) );
             }
 
-            var body = Mustache.render( data.toString(), { user : req.user, raw: JSON.stringify( req.user, 0, 2) } );
+            var body = Mustache.render( data.toString(), { user : req.user, raw: JSON.stringify( req.user, 0, 2), auth0: auth0config } );
 
             res.send( 200, body );
         });
@@ -71,4 +81,4 @@ app.queue.on( 'connection', function( socket ) {
 
 httpServer.listen( port, host );
 
-console.log('Server listening on ' + host + ':' + port);
+console.log('Server listening on ' + config.baseUrl + ', ENV=' + environment + ', ROOT=' + config.baseUrl);
