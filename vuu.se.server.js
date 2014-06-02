@@ -79,4 +79,4 @@ app.queue.on( 'connection', function( socket ) {
 
 httpServer.listen( port, host );
 
-console.log('Server listening on ' + host + ':' + port + ', ENV=' + environment + ', ROOT=' + config.baseUrl);
+console.log('Server listening on ' + host + ':' + port + ', ENV=' + config.production + ', ROOT=' + config.baseUrl);
