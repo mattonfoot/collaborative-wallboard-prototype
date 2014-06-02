@@ -14,8 +14,8 @@ var fortune = require('fortune')
 
 var port = process.env.PORT || 80,
     host = process.env.HOST || '0.0.0.0',
-    domain = process.env.DOMAIN || 'localhost',
-    environment = process.env.ENV || 'development',
+    domain = process.env.DOMAIN || 'vuuse-mattonfoot.herokuapp.com',
+    environment = process.env.ENV || 'production',
     config = {
         db: 'vuu.se'
       , baseUrl: ( port === 443 ? 'https' : 'http' ) + '://' + domain + ( port !== 80 && port !== 433 ? ':' + port : '' )
