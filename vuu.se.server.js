@@ -12,14 +12,12 @@ var fortune = require('fortune')
   , Mustache = require('mustache')
   , fs = require('fs');
 
-var port = process.env.PORT || 80,
+var port = Number(process.env.PORT || 80),
     host = process.env.HOST || '0.0.0.0',
-    domain = process.env.DOMAIN || 'vuuse-mattonfoot.herokuapp.com',
-    environment = process.env.ENV || 'production',
     config = {
         db: 'vuu.se'
-      , baseUrl: ( port === 443 ? 'https' : 'http' ) + '://' + domain + ( port !== 80 && port !== 433 ? ':' + port : '' )
-      , production: environment === 'production'
+      , baseUrl: process.env.BASE_URL || 'http://vuuse-mattonfoot.herokuapp.com'
+      , production: process.env.NODE_ENV === 'production'
     },
     auth0config = {
         domain:       'vuu-se.auth0.com',
