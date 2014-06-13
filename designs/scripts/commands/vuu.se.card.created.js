@@ -1,4 +1,5 @@
-define(function() {
+(function () {
+    "use strict";
 
     function initialize( app ) {
         app.queue.on( app, 'card:created', cloneCard );
@@ -26,8 +27,23 @@ define(function() {
         }
     }
 
-    return {
+    var api = {
         initialize: initialize
     };
 
-});
+    // export as AMD module / Node module / browser variable
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return api;
+        });
+    } else if (typeof module !== 'undefined') {
+        module.exports = api;
+    } else {
+        window.vuu = window.vuu || {};
+        window.vuu.se = window.vuu.se || {};
+        window.vuu.se.card = window.vuu.se.card || {};
+
+        window.vuu.se.card.clone = api;
+    }
+
+})();

@@ -1,4 +1,5 @@
-define(function() {
+(function () {
+    "use strict";
 
     // factory
 
@@ -88,8 +89,18 @@ define(function() {
         }
     };
 
-    // export
+    // export as AMD module / Node module / browser variable
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return CardFactory;
+        });
+    } else if (typeof module !== 'undefined') {
+        module.exports = CardFactory;
+    } else {
+        window.vuu = window.vuu || {};
+        window.vuu.se = window.vuu.se || {};
 
-    return CardFactory;
+        window.vuu.se.card = CardFactory;
+    }
 
-});
+})();

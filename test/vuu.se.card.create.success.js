@@ -4,11 +4,12 @@ describe('Given that a new Card will be added to a specific board', function() {
 
     var EventQueue = require('../designs/scripts/vuu.se.eventqueue.js');
     var Card = require('../designs/scripts/models/vuu.se.card.js');
-    var Command = require('../designs/scripts/commands/vuu.se.card.create.js');
+    var Command = require('../designs/scripts/commands/vuu.se.card.created.js');
 
     var queue = new EventQueue();
 
     var app = {
+        queue: queue,
         wall: {
             getBoardById: function() {
                 return {
@@ -22,7 +23,7 @@ describe('Given that a new Card will be added to a specific board', function() {
 
     var outputs =[], events = [];
 
-    [ 'created', 'added', 'moved' ]
+    [ 'created', 'added', 'cloned' ]
         .forEach(function( ev ) {
             queue.on( {}, 'card:'+ ev, function( data ) {
                 outputs.push( data );
@@ -30,9 +31,9 @@ describe('Given that a new Card will be added to a specific board', function() {
             });
         });
 
-    Command.initialize( app, queue, Card );
+    Command.initialize( app );
 
-    describe('When the "card:create" event is triggered', function() {
+    describe('When the "card:created" event is triggered', function() {
 
          var cardId = 1
            , boardId = 2
@@ -51,10 +52,10 @@ describe('Given that a new Card will be added to a specific board', function() {
 
         };
 
-        queue.trigger( {}, 'card:create', data );
+        queue.trigger( {}, 'card:created', data );
 
         it('Then the correct series of events will be triggered', function() {
-            events.should.eql([ 'created', 'added', 'moved' ]);
+            events.should.eql([ 'created', 'added', 'cloned' ]);
         });
 
         it('And each event will receive the new Card object', function() {
@@ -80,11 +81,12 @@ describe('Given that a new Card will fail to be added to a specific board', func
 
     var EventQueue = require('../designs/lib/vuu.se.eventqueue.js');
     var Card = require('../designs/lib/models/vuu.se.card.js');
-    var Command = require('../designs/lib/commands/vuu.se.card.create.js');
+    var Command = require('../designs/lib/commands/vuu.se.card.created.js');
 
     var queue = new EventQueue();
 
     var app = {
+        queue: queue,
         wall: {
             getBoardById: function() {
                 return {
@@ -98,7 +100,7 @@ describe('Given that a new Card will fail to be added to a specific board', func
 
     var outputs = [], events = [];
 
-    [ 'created', 'added', 'moved' ]
+    [ 'created', 'added', 'cloned' ]
         .forEach(function( ev ) {
             queue.on( {}, 'card:'+ ev, function( data ) {
                 outputs.push( data );
@@ -106,9 +108,9 @@ describe('Given that a new Card will fail to be added to a specific board', func
             });
         });
 
-    Command.initialize( app, queue, Card );
+    Command.initialize( app );
 
-    describe('When the "card:create" event is triggered', function() {
+    describe('When the "card:created" event is triggered', function() {
 
          var cardId = 1
            , boardId = 2
@@ -127,7 +129,7 @@ describe('Given that a new Card will fail to be added to a specific board', func
 
         };
 
-        queue.trigger( {}, 'card:create', data );
+        queue.trigger( {}, 'card:created', data );
 
         it('Then the correct series of events will be triggered', function() {
             events.should.eql([ 'created' ]);
