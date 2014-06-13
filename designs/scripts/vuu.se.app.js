@@ -311,6 +311,7 @@ define([
       'controls/vuu.se.controls.addpocket',
       'controls/vuu.se.controls.addregion',
       'controls/vuu.se.controls.addwall',
+      'controls/vuu.se.controls.deletetransform',
       'controls/vuu.se.controls.displayboard',
       'controls/vuu.se.controls.displaywall',
       'controls/vuu.se.controls.enable'

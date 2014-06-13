@@ -16,9 +16,15 @@
         <input class="form-control" id="key" name="key" placeholder="Key" value="{{key}}">
       </div>
 
+      <ul class="unstyled transform-list">
+      {{#transforms}}
+          <li class="transform"><a href="#" class="pull-right close" data-delete="/transforms/{{id}}">&times;</a>{{phrase}}</li>
+      {{/transforms}}
+      </ul>
+
       <div class="form-group">
         <label for="transform" class="control-label">Transform</label>
-        <input class="form-control" id="transform" name="transform" placeholder="Transform" value="{{transform}}">
+        <input class="form-control" id="transform" name="transform" placeholder="Transform" value="">
       </div>
     </div>
 

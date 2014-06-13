@@ -47,6 +47,7 @@ app.hypermedia = {
     region: require('./lib/vuu.se.hypermedia.region.js').init( app ),
     pocket:  require('./lib/vuu.se.hypermedia.pocket.js').init( app ),
     card: require('./lib/vuu.se.hypermedia.card.js').init( app ),
+    transform: require('./lib/vuu.se.hypermedia.transform.js').init( app ),
     user: require('./lib/vuu.se.hypermedia.user.js').init( app, auth0config )
 };
 

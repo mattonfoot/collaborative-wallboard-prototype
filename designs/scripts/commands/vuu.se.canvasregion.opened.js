@@ -25,7 +25,7 @@ define(function() {
                 $modal.modal('hide');
               });
 
-            $modal.appendTo('body').modal({ remote: '/regions/' + region.id + '/edit' });
+            $modal.appendTo(app.element).modal({ remote: '/regions/' + region.id + '/edit' });
         }
     }
 
