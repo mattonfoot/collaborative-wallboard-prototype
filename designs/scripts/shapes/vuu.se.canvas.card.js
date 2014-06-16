@@ -30,7 +30,7 @@ define(function() {
               draggable: true
             });
 
-            var cardback = __createCardback( size.width, size.height, colors.fill, shadow.color );
+            var cardback = __createCardback( size.width, size.height, (pocket.color || colors.fill), shadow.color );
             var cardnumber = __createIdText( pocket.cardnumber );
             var cardtitle = __createTitleText( pocket.title );
             var tag = __createTag();
@@ -106,6 +106,7 @@ define(function() {
             function __UpdateDisplay( data ) {
               cardtitle.setText( data.title || "" );
               cardnumber.setText( '#' + data.cardnumber );
+              cardback.setFill( data.color || colors.fill );
 
               __redrawLayer();
             }

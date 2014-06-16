@@ -69,6 +69,7 @@ app.router.get('/',
     });
 
 require('./lib/vuu.se.trackMovement.js').init( app );
+require('./lib/vuu.se.transformManager.js').init( app );
 
 app.queue.on( 'connection', function( socket ) {
     app.hypermedia.wall
