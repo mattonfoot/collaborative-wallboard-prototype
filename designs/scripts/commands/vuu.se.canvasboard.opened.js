@@ -11,7 +11,6 @@ define(function() {
                 ev.preventDefault();
 
                 board.name = this.name.value;
-                board.key = this.key.value;
                 board.transform = this.transform.value;
 
                 $.ajax({

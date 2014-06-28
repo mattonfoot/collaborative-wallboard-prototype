@@ -43,10 +43,6 @@ define(function() {
             return this.id;
         },
 
-        getKey: function() {
-            return this.key;
-        },
-
         getName: function() {
             return this.name;
         },

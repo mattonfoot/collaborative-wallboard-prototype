@@ -9,21 +9,9 @@ define(function() {
         function cloneBoard( data ) {
             var board = app.getBoardById( data.id );
 
-            if ( !board && app.addBoard( data ) ) {
-                board = app.getBoardById( data.id );
-            }
-
             if ( !board ) {
-                throw( 'Failed to clone board <'+ data.id +'> from data' );
+                app.addBoard( data );
             }
-
-            var wall = app.getWallById( board.getWall() );
-
-            if ( wall.addBoard( board ) ) {
-                app.queue.trigger( app, 'board:added', board );
-            }
-
-            app.queue.trigger( app, 'board:cloned', board );
         }
     }
 

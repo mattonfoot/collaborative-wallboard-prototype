@@ -9,9 +9,8 @@ define([
 
         // handlers
 
-        function createCanvasBoard( data ) {
-            var board = app.getBoardById( data.id )
-              , id = board.id
+        function createCanvasBoard( board ) {
+            var id = board.id
               , canvasboard = new CanvasBoard( app.queue, board, { container: id, width: app.size.width, height: app.size.height } );
 
             app.registerCanvasBoard( canvasboard );

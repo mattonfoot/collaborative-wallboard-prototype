@@ -6,9 +6,7 @@ define(function() {
 
         // handlers
 
-        function cloneBoard( data ) {
-            var board = app.getBoardById( data.id );
-
+        function cloneBoard( board ) {
             $.get('/boards/' + board.id + '/regions')
                 .done(function( data ) {
                     data.regions && data.regions.forEach(function( resource ) {

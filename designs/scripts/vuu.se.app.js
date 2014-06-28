@@ -36,7 +36,7 @@ define([
         };
     }
 
-    function UI() {
+    function UI( repositories ) {
         this.socket = io.connect();
         this.queue = new EventQueue({ debug: false });
         this.element = $('#app');
@@ -45,15 +45,7 @@ define([
         this.walllist = $('#wallList');
         this.controls = $('#app .api-controls .control');
 
-
-        this.boards = {};
-        this.canvasboards = {};
-        this.cards = {};
-        this.canvascards = {};
-        this.pockets = {};
-        this.regions = {};
-        this.canvasregions = {};
-        this.walls = {};
+        this.hypermedia = repositories;
 
         this.constructor = UI;
 
@@ -91,43 +83,55 @@ define([
 
         constructor: UI,
 
+        // user interface
+
         resize: function() {
             var instance = this;
 
             instance.viewer.css( 'height', instance.size.height );
 
-            $.each( this.canvasboards, function () {
+            $.each( this.hypermedia.canvasboards, function () {
                 this.setWidth( instance.size.width );
                 this.setHeight( instance.size.height );
             });
         },
 
-        addBoard: function( board ) {
-            if ( this.boards[ board.id ] ) {
+        // boards
+
+        addBoard: function( data ) {
+            if ( this.hypermedia.boards[ data.id ] ) {
                 return false;
             }
 
-            board = this.boards[board.id] = new Board( board );
+            var board = this.hypermedia.boards[ data.id ] = new Board( data );
 
             var tabcontent = $('#' + board.getWall() + ' .tab-content');
             var tabs = $('#' + board.getWall() + ' .nav-tabs');
 
             tabcontent.append( '<div class="tab-pane" id="'+ board.getId() +'"></div>' );
 
-            $( '<li><a href="#'+ board.getId() +'" data-toggle="tab">' + board.getKey() + '</a></li>' )
+            $( '<li><a href="#'+ board.getId() +'" data-toggle="tab">' + board.getName() + '</a></li>' )
                 .insertBefore( tabs.children().last() )
                 .find('> a')
                 .tab('show');
+
+            var wall = this.getWallById( board.getWall() );
+
+            if ( wall.addBoard( board ) ) {
+                app.queue.trigger( app, 'board:added', board );
+            } else {
+                app.queue.trigger( app, 'board:cloned', board );
+            }
 
             return true;
         },
 
         updateBoard: function( board ) {
-            if ( !this.boards[ board.id ] ) {
+            if ( !this.hypermedia.boards[ board.id ] ) {
                 return false;
             }
 
-            this.boards[board.id] = new Board( board );
+            this.hypermedia.boards[board.id] = new Board( board );
 
             // update the tab text
 
@@ -135,106 +139,132 @@ define([
         },
 
         getBoardById: function( id ) {
-            return this.boards[ id ];
+            return this.hypermedia.boards[ id ];
         },
 
+        // canvasboards
+
         registerCanvasBoard: function( canvasboard ) {
-            if ( this.canvasboards[ canvasboard.id() ] ) {
+            if ( this.hypermedia.canvasboards[ canvasboard.id() ] ) {
                 return false;
             }
 
-            this.canvasboards[ canvasboard.id() ] = canvasboard;
+            this.hypermedia.canvasboards[ canvasboard.id() ] = canvasboard;
+
+            this.activateBoardById( canvasboard.id() );
 
             return true;
         },
 
         getCanvasBoardById: function( id ) {
-            return this.canvasboards[ id ];
+            return this.hypermedia.canvasboards[ id ];
         },
 
+        // cards
+
         addCard: function( card ) {
-            if ( this.cards[ card.id ] ) {
+            if ( this.hypermedia.cards[ card.id ] ) {
                 return false;
             }
 
-            this.cards[card.id] = new Card( card, app.queue );
+            this.hypermedia.cards[card.id] = new Card( card, app.queue );
 
             return true;
         },
 
         updateCard: function( card ) {
-            if ( !this.cards[ card.id ] ) {
+            if ( !this.hypermedia.cards[ card.id ] ) {
                 return false;
             }
 
-            this.cards[card.id] = new Card( card, app.queue );
+            this.hypermedia.cards[card.id] = new Card( card, app.queue );
 
             return true;
         },
 
         getCardById: function( id ) {
-            return this.cards[ id ];
+            return this.hypermedia.cards[ id ];
         },
 
+        // pockets
+
         addPocket: function( pocket ) {
-            if ( this.pockets[ pocket.id ] ) {
+            if ( this.hypermedia.pockets[ pocket.id ] ) {
                 return false;
             }
 
-            this.pockets[pocket.id] = new Pocket( pocket );
+            this.hypermedia.pockets[pocket.id] = new Pocket( pocket );
 
             return true;
         },
 
         updatePocket: function( pocket ) {
-            if ( !this.pockets[ pocket.id ] ) {
+            if ( !this.hypermedia.pockets[ pocket.id ] ) {
                 return false;
             }
 
-            this.pockets[pocket.id] = new Pocket( pocket );
+            this.hypermedia.pockets[pocket.id] = new Pocket( pocket );
 
             return true;
         },
 
         getPocketById: function( id ) {
-            return this.pockets[ id ];
+            return this.hypermedia.pockets[ id ];
         },
 
+        // regions
+
         addRegion: function( region ) {
-            if ( this.regions[ region.id ] ) {
+            if ( this.hypermedia.regions[ region.id ] ) {
                 return false;
             }
 
-            this.regions[region.id] = new Region( region, app.queue );
+            this.hypermedia.regions[region.id] = new Region( region, app.queue );
 
             return true;
         },
 
         updateRegion: function( region ) {
-            if ( !this.regions[ region.id ] ) {
+            if ( !this.hypermedia.regions[ region.id ] ) {
                 return false;
             }
 
-            this.regions[region.id] = new Region( region, app.queue );
+            this.hypermedia.regions[region.id] = new Region( region, app.queue );
 
             return true;
         },
 
         getRegionById: function( id ) {
-            return this.regions[ id ];
+            return this.hypermedia.regions[ id ];
         },
 
+        // walls
+
+        activateBoardById: function( boardid ) {
+            var wall = this.activewall
+              , previous = this.getBoardById( wall.getActiveBoard() )
+              , next = this.getBoardById( boardid );
+
+            if ( next ) {
+                if ( previous ) {
+                    app.queue.trigger( app, 'board:deactivated', previous );
+                }
+
+                app.queue.trigger( app, 'board:activated', next );
+            }
+        }
+
         addWall: function( data ) {
-            if ( this.walls[ data.id ] ) {
+            if ( this.hypermedia.walls[ data.id ] ) {
                 return false;
             }
 
-            this.walls[ data.id ] = new Wall( data );
+            var wall = this.hypermedia.walls[ data.id ] = new Wall( data );
 
-            var option = $('<a href="#" class="list-group-item">'+ ( data.name || data.id ) +'</a>').data( 'target', data.id );
+            var option = $('<a href="#" class="list-group-item">'+ ( wall.name || wall.id ) +'</a>').data( 'target', wall.id );
             this.walllist.append( option );
 
-            var panel = $('<div class="wall hidden" id="'+ data.id +'"> \
+            var panel = $('<div class="wall hidden" id="'+ wall.id +'"> \
                     <ul class="nav nav-tabs"> \
                         <li><button type="button" class="btn btn-default add-board" title="Add Board"> \
                             <i class="glyphicon glyphicon-plus"></i></button></li> \
@@ -244,22 +274,37 @@ define([
 
             this.viewer.prepend( panel );
 
+            this.queue.trigger( this, 'wall:cloned', wall );
+
             return true;
         },
 
         updateWall: function( data ) {
-            if ( !this.walls[ data.id ] ) {
+            if ( !this.hypermedia.walls[ data.id ] ) {
                 return false;
             }
 
-            this.walls[ data.id ] = new Wall( data );
+            this.hypermedia.walls[ data.id ] = new Wall( data );
 
             return true;
         },
 
-        getWallById: function( id ) {
-            return this.walls[ id ];
+        selectWall: function ( wall ) {
+            $('#app .wall').addClass('hidden');
+            $('#' + wall.getId() + '.wall').removeClass('hidden');
+
+            if ( wall.boards && wall.boards.length > 0 ) {
+                app.queue.trigger( app, 'wall:opened', wall );
+            } else {
+                app.queue.trigger( app, 'wall:firsttime', wall );
+            }
         },
+
+        getWallById: function( id ) {
+            return this.hypermedia.walls[ id ];
+        },
+
+        // controls
 
         enableControls: function( data ) {
             this.controls.removeAttr( 'disabled' );
@@ -269,7 +314,18 @@ define([
 
     };
 
-    var app = new UI();
+    var hypermedia = {
+        boards: {},
+        canvasboards: {},
+        cards: {},
+        canvascards: {},
+        pockets: {},
+        regions: {},
+        canvasregions: {},
+        walls: {}
+    }
+
+    var app = new UI( hypermedia );
 
     // triggers
 
@@ -321,7 +377,7 @@ define([
       'controls/vuu.se.controls.displayboard',
       'controls/vuu.se.controls.displaywall',
       'controls/vuu.se.controls.enable'
-    ].forEach(function( plugin ){
+    ].forEach(function( plugin ) {
         require([ plugin ], function( command ) { command.initialize( app ); });
     });
 

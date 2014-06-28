@@ -5,16 +5,16 @@ define(function() {
         app.queue.on( app, 'wall:firsttime', triggerAddBoard );
 
         function triggerAddBoard( ev ) {
-          var key = prompt( 'Please provide a data key that this board represents', '' );
+          var name = prompt( 'Please provide a name for this board', '' );
 
-          if (!key || key === '') {
+          if (!name || name === '') {
               return;
           }
 
           var data = {
               boards: [
                   {
-                      key: key,
+                      name: name,
                       wall: app.activewall.id
                   }
               ]

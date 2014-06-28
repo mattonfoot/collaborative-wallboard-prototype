@@ -1,21 +1,15 @@
-
 define(function( Wall ) {
 
     function initialize( app ) {
-        app.queue.on( app, 'wall:selected', cloneWall );
+        app.queue.on( app, 'wall:selected', selectWall );
 
         // handlers
 
-        function cloneWall( data ) {
+        function selectWall( data ) {
             var wall = app.getWallById( data.id );
 
-            $('#app .wall').addClass('hidden');
-            $('#' + wall.getId() + '.wall').removeClass('hidden');
-
-            if ( wall.boards && wall.boards.length > 0 ) {
-                app.queue.trigger( app, 'wall:opened', wall );
-            } else {
-                app.queue.trigger( app, 'wall:firsttime', wall );
+            if ( wall ) {
+                app.selectWall( wall );
             }
         }
     }
