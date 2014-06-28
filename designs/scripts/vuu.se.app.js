@@ -252,7 +252,7 @@ define([
 
                 app.queue.trigger( app, 'board:activated', next );
             }
-        }
+        },
 
         addWall: function( data ) {
             if ( this.hypermedia.walls[ data.id ] ) {
