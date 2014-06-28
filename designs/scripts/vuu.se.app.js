@@ -45,7 +45,6 @@ define([
         this.walllist = $('#wallList');
         this.controls = $('#app .api-controls .control');
 
-        this.size = calculateHeight( $(window), this.element, this.footer );
 
         this.boards = {};
         this.canvasboards = {};
@@ -72,11 +71,18 @@ define([
         }
 
         var instance = this;
+        instance.size = calculateHeight( $(window), instance.element, instance.footer );
 
         setInterval( function() {
-            instance.size = calculateHeight( $(window), instance.element, instance.footer);
+            var newSize = calculateHeight( $(window), instance.element, instance.footer);
 
-            instance.resize();
+            if ( newSize.width !== instance.resize.width ||
+                    newSize.height !== instance.resize.height ) {
+              instance.size = newSize;
+
+              instance.resize();
+            }
+
         }, 10);
 
     };
@@ -86,9 +92,9 @@ define([
         constructor: UI,
 
         resize: function() {
-            this.viewer.css( 'height', this.size.height );
-
             var instance = this;
+
+            instance.viewer.css( 'height', instance.size.height );
 
             $.each( this.canvasboards, function () {
                 this.setWidth( instance.size.width );
