@@ -1,9 +1,9 @@
 var should = require('chai').should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
-  , TestQueue = require('./lib/queue.extensions')
-  , Application = require('./lib/application')
-  , UI = require('./lib/interface');
+  , TestQueue = require('../lib/queue.extensions')
+  , Application = require('../lib/application')
+  , UI = require('../lib/interface');
 
 var debug = false;
 

@@ -1,13 +1,13 @@
 var should = require('chai').should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
-  , Belt = require('../lib/adapter')
-  , Queue = require('./lib/queue')
-  , Commands = require('./lib/commands')
-  , Queries = require('./lib/queries')
-  , Interface = require('./lib/interface')
-  , Services = require('./lib/services')
-  , Wall = require('./lib/models/wall');
+  , Belt = require('belt')
+  , Queue = require('../lib/queue')
+  , Commands = require('../lib/commands')
+  , Queries = require('../lib/queries')
+  , Interface = require('../lib/interface')
+  , Services = require('../lib/services')
+  , Wall = require('../lib/models/wall');
 
 describe('using an adapter', function() {
     var ids = {}

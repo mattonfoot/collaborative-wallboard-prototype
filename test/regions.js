@@ -1,17 +1,17 @@
 var should = require('chai').should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
-  , Belt = require('../lib/adapter')
-  , Queue = require('./lib/queue')
-  , Commands = require('./lib/commands')
-  , Queries = require('./lib/queries')
-  , Interface = require('./lib/interface')
-  , Services = require('./lib/services')
-  , Wall = require('./lib/models/wall')
-  , Board = require('./lib/models/board')
-  , Region = require('./lib/models/region')
-  , Pocket = require('./lib/models/pocket')
-  , CardLocation = require('./lib/models/cardlocation');
+  , Belt = require('belt')
+  , Queue = require('../lib/queue')
+  , Commands = require('../lib/commands')
+  , Queries = require('../lib/queries')
+  , Interface = require('../lib/interface')
+  , Services = require('../lib/services')
+  , Wall = require('../lib/models/wall')
+  , Board = require('../lib/models/board')
+  , Region = require('../lib/models/region')
+  , Pocket = require('../lib/models/pocket')
+  , CardLocation = require('../lib/models/cardlocation');
 
 describe('using an adapter', function() {
     var ids = {}
