@@ -1,1 +1,1 @@
-web: node vuu.se.server.js
+web: node ./lib/server.js
