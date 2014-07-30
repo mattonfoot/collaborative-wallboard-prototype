@@ -47,7 +47,6 @@
     "grunt-contrib-jshint": "*",
     "grunt-contrib-watch": "*",
     "grunt-coveralls": "*",
-    "grunt-mocha": "*",
     "grunt-mocha-test": "*",
     "load-grunt-tasks": "*",
     "memdown": "*",
