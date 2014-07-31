@@ -1,4 +1,5 @@
-var should = require('chai').should()
+var chai = require('chai')
+  , should = chai.should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
   , TestQueue = require('../lib/queue.extensions')
@@ -14,15 +15,15 @@ var belt = application.belt;
 var services = application.services;
 
 /*
-  WALL --> NEW, CREATE, DISPLAY, SELECT, EDIT, UPDATE
+  WALL --> NEW, CREATE, SELECT, DISPLAY, EDIT, UPDATE
 
-  BOARD --> NEW, CREATE, DISPLAY, SELECT, EDIT, UPDATE
+  BOARD --> NEW, CREATE, SELECT, DISPLAY, EDIT, UPDATE
 
   CARD --> NEW, CREATE, EDIT, UPDATE, MOVE
 
   REGION --> NEW, CREATE, EDIT, UPDATE, MOVE, UPDATE
 
-  TRANSFORM --> UNLINK
+  TRANSFORM --> CREATE, UNLINK
 */
 
 var _this = this;
@@ -30,25 +31,30 @@ var _this = this;
 var features = [
     'wall.new'
   , 'wall.create'
-  , 'wall.select'
-  , 'wall.display'
-  , 'wall.edit'
-  , 'wall.update'
-  , 'board.new'
-  , 'board.create'
+// , 'wall.select'
+//, 'wall.display'
+//, 'wall.edit'
+//, 'wall.update'
+//, 'board.new'
+//, 'board.create'
 //, 'board.select'
-  , 'board.display'
-  , 'board.edit'
-  , 'board.update'
-  , 'card.move'
+//, 'board.display'
+//, 'board.edit'
+//, 'board.update'
+//, 'card.move'
 ];
 
-describe('Features', function() {
+Fixture('Application service API Features', function() {
+    var fixture = {
+        debug: debug
+      , queue: queue
+      , application: application
+    };
 
     features.forEach(function( namespace ) {
         var feature = require( './features/' + namespace );
 
-        feature( should, RSVP, Promise, debug, queue, ui, application, belt, services );
+        Feature( feature.title, function() { feature.call( fixture ); } );
     });
 
     afterEach(function (done) {
@@ -89,3 +95,49 @@ describe('Features', function() {
     });
 
 });
+
+// helpers
+
+function Fixture( title, fn ) {
+    describe( underline( title, '=', 2, '\n' ), fn );
+}
+
+function Feature( title, fn ) {
+    describe( underline( title, '-', 4, '' ), fn );
+}
+
+function underline( title, format, indent, endWith ) {
+    return title + '\n' +
+        new Array( indent + 1 ).join( ' ' ) +
+        new Array( title.length + 1 ).join( format ) +
+        endWith;
+}
+
+
+
+
+// additional assertions
+
+chai.Assertion.addMethod('haveLogged', shouldHaveLogged);
+
+function shouldHaveLogged( events ) {
+    var queue = this._obj.getCalls();
+
+    var i = 0, len = events.length;
+
+    queue.length.should.equal( len, 'expected number of queued event to equal ' + len  );
+
+    for (; i < len; i++) {
+        queue[i].event.should.equal( events[i], 'expected queued event ' + i + ' to equal ' + events[i] );
+    }
+}
+
+chai.Assertion.addMethod('specificWallResource', shouldBeSpecificWallResource);
+
+function shouldBeSpecificWallResource( expectedName ) {
+    var resource = this._obj;
+
+    resource.should.respondTo( 'getId' );
+    resource.should.respondTo( 'getName' );
+    resource.getName().should.equal( expectedName );
+}

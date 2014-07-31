@@ -1,30 +1,44 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:New', function() {
+var resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the wall creator', function() {
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Displays a wall creator to capture new wall details', function(done) {
-                queue.once( 'wallcreator:displayed', onWallCreateDisplayed);
+    it('Emit a <wall:new> event - no data object is needed - to access an input control allowing you to enter details required to create a new Wall\n',
+        function(done) {
 
-                queue.trigger( 'wall:new' );
+            queue.trigger( 'wall:new' );
 
-                function onWallCreateDisplayed( data ) {
-                    should.not.exist( data );
+            queue.once( 'wallcreator:displayed', function( resource ) {
+                should.not.exist( resource );
 
-                    var calls = queue.getCalls();
+                resourceChecked = true;
+            });
 
-                    calls.length.should.be.equal( 2 );
+            queue.once( 'wallcreator:displayed', function() {
+                queue.should.haveLogged([
+                        'wall:new'
+                      , 'wallcreator:displayed'
+                    ]);
 
-                    calls[0].event.should.be.equal( 'wall:new' );
-                    calls[1].event.should.be.equal( 'wallcreator:displayed' );
+                queueChecked = true;
+            });
 
-                    done();
-                }
+            queue.once( 'wallcreator:displayed', function() {
+                resourceChecked.should.equal( true );
+                queueChecked.should.equal( true );
+
+                done();
             });
 
         });
-        
-    });
 
-};
+}
+
+features.title = 'Accessing the wall creator input control';
+
+module.exports = features;

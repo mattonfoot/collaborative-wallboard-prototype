@@ -1,37 +1,51 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:Create', function() {
+var storedName = 'new wall'
+  , resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the creation of a wall', function() {
-            var storedName = 'new wall';
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Creates and displays the chosen wall', function( done ) {
-                queue.once( 'wall:firsttime', onWallFirsttime);
+    it('Emit a <wall:create> event passing a data object with a name attribute to trigger the process of creating a new wall\n',
+        function( done ) {
 
-                queue.trigger( 'wall:create', { name: storedName } );
+            queue.trigger( 'wall:create', { name: storedName } );
 
-                function onWallFirsttime( wall ) {
-                    should.exist( wall );
+            queue.once( 'wall:created', function( resource ) {
+                should.exist( resource );
 
-                    wall.should.respondTo( 'getId' );
-                    wall.should.respondTo( 'getName' );
-                    wall.getName().should.be.equal( storedName );
+                resource.should.be.a.specificWallResource( storedName );
 
-                    var calls = queue.getCalls();
+                resourceChecked = true;
+            });
 
-                    calls.length.should.be.above( 3 );
+            queue.once( 'boardcreator:displayed', function() {
+                queue.should.haveLogged([
+                        'wall:create'
+                      , 'wall:created'
+                      , 'wall:displayed'
+                      , 'boardselector:displayed'
+                      , 'wall:firsttime'
+                      , 'boardcreator:displayed'
+                    ]);
 
-                    calls[0].event.should.be.equal( 'wall:create' );
-                    calls[1].event.should.be.equal( 'wall:created' );
-                    calls[2].event.should.be.equal( 'wall:displayed' );
-                    calls[3].event.should.be.equal( 'wall:firsttime' );
+                queueChecked = true;
+            });
 
-                    done();
-                }
+            queue.once( 'boardcreator:displayed', function() {
+                resourceChecked.should.equal( true );
+                queueChecked.should.equal( true );
+
+                done();
             });
 
         });
 
-    });
+}
 
-};
+features.title = 'Creating a wall';
+
+module.exports = features;

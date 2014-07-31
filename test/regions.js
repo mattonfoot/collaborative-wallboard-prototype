@@ -13,7 +13,7 @@ var should = require('chai').should()
   , Pocket = require('../lib/models/pocket')
   , CardLocation = require('../lib/models/cardlocation');
 
-describe('using an adapter', function() {
+describe.skip('using an adapter', function() {
     var ids = {}
       , opts = {};
 

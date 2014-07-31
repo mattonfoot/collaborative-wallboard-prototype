@@ -1,72 +1,61 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var storedId
+  , storedWall
+  , storedBoard
+  , storedPocket
+  , storedLocation
+  , storedTitle = 'card for moving'
+  , destination = { x: 200, y: 200 };
+
+module.exports = function( should, RSVP, Promise, debug, queue, ui, application ) {
+    var belt = application.belt
+      , services = application.services;
 
     describe('Card:Move', function() {
 
         describe('Moving a card on an empty board', function() {
-            var storedId, storedWallId, storedLocationId
-              , storedTitle = 'card for moving'
-              , destination = { x: 200, y: 200 };
 
             before(function(done) {
-                queue
-                    .once('board:created', function( wall ) {
-                        done();
-                    });
+                queue.clearCalls();
 
-                services.createWall( { name: 'card movement wall' } )
-                    .then( addBoardToNewWall );
+                queue.once('cardlocation:created', function() {
+                    storedLocation = location;
+                });
 
-                function addBoardToNewWall( wall ) {
-                    storedWallId = wall.getId();
+                queue.once('controls:enabled', function( location ) {
+                    setTimeout(function() {
+                        console.log( queue.getCalls() );
+                    }, 2000);
 
-                    return services.createBoard( { wall: storedWallId, name: 'card movement board' } );
-                }
-            });
+                    done();
+                });
 
-            it('Updates the location', function(done) {
-                application.pauseListenting();
-
-                services
-                    .displayWall( storedWallId )
-                    .then( addPocketToNewWall )
+                addWall( 'card movement wall' )
+                    .then( addBoardToWall )
+                    .then( addPocketToWall )
+                    .then( displayNewWall )
                     .catch( done );
 
-                function addPocketToNewWall() {
-                    application.startListening();
+            });
 
-                    queue.on('cardlocation:created', startFixture );
 
-                    return services
-                        .createPocket( { wall: storedWallId, title: storedTitle } )
-                        .then(function( pocket ) {
-                            storedId = pocket.getId();
-                        });
-                }
 
-                function startFixture( location ) {
+            it('Updates the location', function(done) {
+                queue.once( 'cardlocation:updated', complete);
+
+                console.log( storedLocation );
+
+                storedLocation.x = destination.x;
+                storedLocation.y = destination.y;
+
+                queue.trigger( 'cardlocation:move', storedLocation);
+
+
+
+                function complete( location ) {
                     should.exist( location );
 
                     location.should.respondTo( 'getId' );
-                    location.should.respondTo( 'getPocket' );
-                    location.getPocket().should.be.equal( storedId );
-
-                    storedLocationId = location.getId();
-
-                    queue.clearCalls();
-
-                    queue.once( 'cardlocation:updated', endFixture);
-
-                    location.x = destination.x;
-                    location.y = destination.y;
-
-                    queue.trigger( 'cardlocation:move', location);
-                }
-
-                function endFixture( location ) {
-                    should.exist( location );
-
-                    location.should.respondTo( 'getId' );
-                    location.getId().should.be.equal( storedLocationId );
+                    location.getId().should.be.equal( storedLocation.getId() );
                     location.should.respondTo( 'getX' );
                     location.getX().should.be.equal( destination.x );
                     location.should.respondTo( 'getY' );
@@ -85,5 +74,39 @@ module.exports = function( should, RSVP, Promise, debug, queue, ui, application,
 
         });
     });
+
+
+
+
+
+
+    function addWall( name ) {
+        return services
+            .createWall( { name: name } )
+            .then(function( wall ) {
+                storedWall = wall;
+            });
+    }
+
+    function addBoardToWall() {
+        return services
+            .createBoard( { wall: storedWall.getId(), name: 'card movement board' } )
+            .then(function( board ) {
+                storedBoard = board;
+            });
+    }
+
+    function addPocketToWall() {
+        return services
+            .createBoard( { wall: storedWall.getId(), name: storedTitle } )
+            .then(function( pocket ) {
+                storedPocket = pocket;
+            });
+    }
+
+    function displayNewWall( board ) {
+        return services
+            .displayWall( storedWall.getId() );
+    }
 
 };

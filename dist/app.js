@@ -1,4 +1,2800 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function (process){
+var Belt = require('belt')
+
+//  models
+  , Board = require('../lib/models/board')
+  , CardLocation = require('../lib/models/cardlocation')
+  , Pocket = require('../lib/models/pocket')
+  , Region = require('../lib/models/region')
+  , Transform = require('../lib/models/transform')
+  , Wall = require('../lib/models/wall')
+
+//  system
+  , Commands = require('../lib/commands')
+  , Queries = require('../lib/queries')
+  , Services = require('../lib/services')
+  , MovementTracker = require('../lib/trackMovement')
+  , TransformManager = require('../lib/transformManager');
+
+function Application( queue, ui, options ) {
+    this.options = options || {};
+    if ( !process.browser ) {
+        this.options.db = require('memdown');
+    }
+
+    var belt = this.belt = new Belt( 'vuu_se', this.options );
+
+    // initialize the services
+    var commands = new Commands( belt );
+    var queries = new Queries( belt );
+    var services = this.services = new Services( ui, commands, queries );
+    var movementTracker = this.movementTracker = new MovementTracker( queue, commands, queries );
+    var transformManager = this.transformManager = new TransformManager( queue, commands, queries );
+
+    this._listen = true;
+
+    var factories = {
+        "Board": Board
+      , "CardLocation": CardLocation
+      , "Pocket": Pocket
+      , "Region": Region
+      , "Transform": Transform
+      , "Wall": Wall
+    };
+
+    var listeners = [ 'created', 'updated', 'deleted' ];
+
+    for ( var key in factories ) {
+        var type = key.toLowerCase(), Model = factories[ key ];
+
+        // register model
+        belt.resource( type, Model.constructor )
+            .schema( Model.schema )
+            .validator( Model.validator )
+            .beforeCreate( Model.onBeforeCreate )
+            .beforeUpdate( Model.onBeforeUpdate );
+
+        // listen to db for events
+        attachListenersToDb( type );
+    }
+
+
+    function attachListenersToDb( type  ) {
+        listeners.forEach(function( listener ) {
+            belt.on( type + ':' + listener, function( data ) {
+                queue.trigger( type + ':' + listener, data );
+            });
+        });
+    }
+
+    this.constructor = Application;
+
+    var _this = this;
+
+    // setup events to trigger services
+
+    var listeners2 = [ 'new', 'create', 'edit', 'update', 'select', 'display', 'unlink', 'move', 'resize' ];
+
+    for ( var x in factories ) {
+        setUpEventListeners( x );
+    }
+
+    function setUpEventListeners( type ) {
+        listeners2.forEach(function( task ) {
+            queue.on( type.toLowerCase() + ':' + task, function( ev ) {
+                if (!_this._listen || !services[ task + type ]) return;
+
+                if (options.debug) {
+                    console.log( 'services.' + task + type + '()' );
+                }
+
+                services[ task + type ]( ev );
+            });
+        });
+    }
+
+    queue
+        .on('board:displayed', function( board ) {
+            if (!_this._listen) return;
+
+            services.displayCardLocations( board );
+            services.displayRegions( board );
+        })
+
+        .on('wall:firsttime', function( wall ) {
+            if (!_this._listen) return;
+
+            services.newBoard();
+        })
+
+        .on('wall:created', function( wall ) {
+            if (!_this._listen) return;
+
+            services.displayWall( wall.getId() );
+        })
+
+        .on('board:created', function( board ) {
+            if (!_this._listen) return;
+
+            services.displayBoard( board.getId() );
+        })
+
+        .on('region:created', function( region ) {
+            if (!_this._listen) return;
+
+            services.displayRegion( region.getId() );
+        })
+
+        .on('cardlocation:created', function( cardlocation ) {
+            if (!_this._listen) return;
+
+            services.displayCardLocation( cardlocation );
+        })
+
+        .on( 'cardlocation:updated', function( location ) {
+            if (!_this._listen) return;
+
+            movementTracker.trackCardMovement( location );
+        })
+
+        .on( 'region:updated', function( region ) {
+            if (!_this._listen) return;
+
+            movementTracker.trackRegionMovement( region );
+        })
+
+        .on( 'pocket:regionenter', function( data ) {
+            if (!_this._listen) return;
+
+            transformManager.checkTransforms( data );
+        })
+
+        .on( 'pocket:regionexit', function( data ) {
+            if (!_this._listen) return;
+
+            transformManager.checkTransforms( data );
+        })
+
+        ;
+}
+
+Application.prototype.pauseListenting = function() {
+    this._listen = false;
+};
+
+Application.prototype.startListening = function() {
+    this._listen = true;
+};
+
+module.exports = Application;
+
+}).call(this,require("JkpR2F"))
+},{"../lib/commands":2,"../lib/models/board":5,"../lib/models/cardlocation":6,"../lib/models/pocket":7,"../lib/models/region":8,"../lib/models/transform":9,"../lib/models/wall":10,"../lib/queries":11,"../lib/services":14,"../lib/trackMovement":18,"../lib/transformManager":19,"JkpR2F":31,"belt":22,"memdown":34}],2:[function(require,module,exports){
+var RSVP = require('rsvp')
+  , Promise = RSVP.Promise;
+
+// Commands
+
+function Commands( adapter ) {
+    this._db = adapter;
+}
+
+var models = [ 'Board', 'CardLocation', 'Pocket', 'Region', 'Transform', 'Wall' ];
+var commands = [ 'create', 'update' ];
+
+commands.forEach(function( command ) {
+    models.forEach(function( model ) {
+        Commands.prototype[ command + model ] = function( data ) {
+            var _this = this;
+            return new Promise(function(resolve, reject) {
+                if (!_this._db[command]) reject( new Error( '[' + command +'] is not a valid command for ['+ model +']' ) );
+
+                _this._db[command]( model.toLowerCase(), data) // --> model:commanded ( board:created, pocket:updated )
+                    .then( resolve, reject )
+                    .catch( reject );
+            });
+        };
+    });
+});
+
+Commands.prototype.addPocketsToBoard = function( board, pockets ) {
+    var _this = this;
+
+    var promises = pockets.map(function( pocket ) {
+        return _this.createCardLocation( { board: board.getId(), pocket: pocket.getId() } );
+    });
+
+    return RSVP.all( promises );
+};
+
+Commands.prototype.addPocketToBoards = function( boards, pocket ) {
+    var _this = this;
+
+    var promises = boards.map(function( board ) {
+        return _this.createCardLocation( { board: board.getId(), pocket: pocket.getId() } );
+    });
+
+    return RSVP.all( promises );
+};
+
+module.exports = Commands;
+
+},{"rsvp":93}],3:[function(require,module,exports){
+// Commands
+
+function Interface( queue, ui ) {
+    this._queue = queue;
+    this._ui = ui;
+}
+
+Interface.prototype.addBoard = function( board ) {
+    this.displayBoard( board );
+
+    if (this._ui) this._ui.displayBoardSelector( this._wall, board );
+
+    this._queue.trigger( 'board:added', board );
+};
+
+Interface.prototype.displayBoard = function( board ) {
+    if ( !this._wall || board.getWall() !== this._wall.getId() ) return;
+
+    this._board = board;
+    this._regions = [];
+    this._cardlocations = [];
+
+    if (this._ui) this._ui.displayBoard( board );
+
+    this._queue.trigger( 'board:displayed', board );
+
+    this.enableControls();
+};
+
+Interface.prototype.displayBoardCreator = function() {
+    if ( !this._wall ) return;
+
+    if (this._ui) this._ui.displayBoardCreator( this._wall );
+
+    this._queue.trigger( 'boardcreator:displayed' );
+};
+
+Interface.prototype.displayBoardEditor = function( board ) {
+    if (this._ui) this._ui.displayBoardEditor( board );
+
+    this._queue.trigger( 'boardeditor:displayed', board );
+};
+
+Interface.prototype.displayBoardSelector = function( boards ) {
+    if (this._ui) this._ui.displayBoardSelector( this._wall, boards );
+
+    this._queue.trigger( 'boardselector:displayed', boards );
+};
+
+// cardlocations
+
+Interface.prototype.displayCardLocation = function( location, pocket ) {
+    if ( !this._board || location.getBoard() !== this._board.getId() || ~this._cardlocations.indexOf( location.getId() )) return;
+
+    this._cardlocations.push( location.getId() );
+
+    if (this._ui) this._ui.displayCardLocation( location, pocket );
+
+    this._queue.trigger( 'cardlocation:displayed', location );
+};
+
+Interface.prototype.displayPocketCreator = function() {
+    if ( !this._wall ) return;
+
+    if (this._ui) this._ui.displayPocketCreator( this._wall );
+
+    this._queue.trigger( 'pocketcreator:displayed' );
+};
+
+Interface.prototype.displayPocketEditor = function( pocket ) {
+    if (this._ui) this._ui.displayPocketEditor( pocket );
+
+    this._queue.trigger( 'pocketeditor:displayed', pocket );
+};
+
+// regions
+
+Interface.prototype.displayRegion = function( region ) {
+    if ( !this._board || region.getBoard() !== this._board.getId() || ~this._regions.indexOf( region.getId() )) return;
+
+    this._regions.push( region.getId() );
+
+    if (this._ui) this._ui.displayRegion( region );
+
+    this._queue.trigger( 'region:displayed', region );
+};
+
+Interface.prototype.displayRegions = function( regions ) {
+    var _this = this;
+
+    regions.forEach(function( region ) {
+        _this.displayRegion( region );
+    });
+};
+
+Interface.prototype.displayRegionCreator = function() {
+    if ( !this._board ) return;
+
+    if (this._ui) this._ui.displayRegionCreator( this._board );
+
+    this._queue.trigger( 'regioncreator:displayed' );
+};
+
+Interface.prototype.displayRegionEditor = function( region ) {
+    if (this._ui) this._ui.displayRegionEditor( region );
+
+    this._queue.trigger( 'regioneditor:displayed', region );
+};
+
+// walls
+
+Interface.prototype.displayWall = function( wall ) {
+    this._wall = wall;
+    this._regions = [];
+    this._cardlocations = [];
+    delete this._board;
+
+    if (this._ui) this._ui.displayWall( wall );
+
+    this._queue.trigger( 'wall:displayed', wall );
+};
+
+Interface.prototype.displayWallCreator = function() {
+    if (this._ui) this._ui.displayWallCreator();
+
+    this._queue.trigger( 'wallcreator:displayed' );
+};
+
+Interface.prototype.displayWallEditor = function( wall ) {
+    if (this._ui) this._ui.displayWallEditor( wall );
+
+    this._queue.trigger( 'walleditor:displayed', wall );
+};
+
+Interface.prototype.displayWallSelector = function( walls ) {
+    if (this._ui) this._ui.displayWallSelector( walls );
+
+    this._queue.trigger( 'wallselector:displayed', walls );
+};
+
+Interface.prototype.notifyWallFirstTime = function( wall ) {
+    this._queue.trigger( 'wall:firsttime', wall );
+};
+
+Interface.prototype.enableControls = function( data ) {
+    if (this._ui) this._ui.enableControls( data );
+
+    this._queue.trigger( 'controls:enabled' );
+};
+
+module.exports = Interface;
+
+},{}],4:[function(require,module,exports){
+var $ = window.$
+  , Queue = require('./queue')
+  , Application = require('./application')
+  , Interface = require('./interface')
+  , UI = require('./ui');
+
+var $ = $ || function(){ console.log( 'jQuery not loaded.' ); };
+
+var queue = new Queue({ debug: true });
+var ui = new UI( queue, $('[data-provides="ui"]'), {}, $ );
+var interface = new Interface( queue, ui );
+var application = new Application( queue, interface, {} );
+
+module.exports = queue;
+
+},{"./application":1,"./interface":3,"./queue":13,"./ui":20}],5:[function(require,module,exports){
+
+
+function Board( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        this[prop] = data[prop];
+    }
+
+    this.cardlocations = [];
+    this.regions = [];
+    this.transforms = [];
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.shelf = {};
+
+    this.constructor = Board;
+}
+
+Board.prototype.getId = function() {
+    return this.id;
+};
+
+Board.prototype.getName = function() {
+    return this.name;
+};
+
+Board.prototype.getWall = function() {
+    return this.wall;
+};
+
+Board.prototype.getCardLocations = function() {
+    return this.cardlocations;
+};
+
+Board.prototype.addCardLocation = function( cardlocation ) {
+    if ( !~this.cardlocations.indexOf( cardlocation.id ) ) {
+        this.cardlocations.push( cardlocation.id );
+    }
+
+    return this;
+};
+
+Board.prototype.getRegions = function() {
+    return this.regions;
+};
+
+Board.prototype.addRegion = function( region ) {
+    if ( !~this.regions.indexOf( region.id ) ) {
+        this.regions.push( region.id );
+    }
+
+    return this;
+};
+
+Board.prototype.getTransforms = function() {
+    return this.transforms;
+};
+
+Board.prototype.addTransform = function( transform ) {
+    if ( !~this.transforms.indexOf( transform.id ) ) {
+        this.transforms.push( transform.id );
+    }
+
+    return this;
+};
+
+Board.constructor = function( data ) {
+    if ( data instanceof Board ) {
+        return data;
+    }
+
+    return new Board( data );
+};
+
+Board.schema = {
+    name: String
+  , wall: 'wall'
+  , cardlocations: ['cardlocation']
+  , regions: ['region']
+  , transforms: ['transform']
+  , createdBy: 'user'
+  , createdOn: Date
+  , lastModifiedBy: 'user'
+  , lastModifiedOn: Date
+  // , views: [ 'view' ] --> [ 'transform' ]
+  // , access: [ 'right' ] --> 'user', 'group'
+};
+
+Board.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.name || data.name === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Name is required' );
+    }
+
+    if ( !data.wall || data.wall === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Wall is required' );
+    }
+
+    return validator;
+};
+
+Board.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    return data;
+};
+
+Board.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    return data;
+};
+
+module.exports = Board;
+
+},{}],6:[function(require,module,exports){
+
+
+function CardLocation( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        this[prop] = data[prop];
+    }
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.constructor = CardLocation;
+}
+
+CardLocation.prototype.getId = function() {
+    return this.id;
+};
+
+CardLocation.prototype.getX = function() {
+    return this.x;
+};
+
+CardLocation.prototype.getY = function() {
+    return this.y;
+};
+
+CardLocation.prototype.getPocket = function() {
+    return this.pocket;
+};
+
+CardLocation.prototype.getBoard = function() {
+    return this.board;
+};
+
+CardLocation.prototype.getPosition = function() {
+    return {
+        id: this.id,
+        board: this.board,
+        x: this.x,
+        y: this.y
+    };
+};
+
+CardLocation.prototype.moveTo = function( x, y ) {
+    if ( this.x !== x || this.y !== y ) {
+        this.x = x;
+        this.y = y;
+    }
+
+    return this;
+};
+
+CardLocation.constructor = function( data ) {
+    if ( data instanceof CardLocation ) {
+        return data;
+    }
+
+    return new CardLocation( data );
+};
+
+CardLocation.schema = {
+    x: Number,
+    y: Number,
+    board: 'board',
+    pocket: 'pocket'
+  , createdBy: 'user'
+  , createdOn: Date
+  , lastModifiedBy: 'user'
+  , lastModifiedOn: Date
+};
+
+CardLocation.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.pocket || data.pocket === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Pocket is required' );
+    }
+
+    if ( !data.board || data.board === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Board is required' );
+    }
+
+    return validator;
+};
+
+CardLocation.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    return data;
+};
+
+CardLocation.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    data.x = data.x || 20;
+    data.y = data.y || 20;
+
+    return data;
+};
+
+module.exports = CardLocation;
+
+},{}],7:[function(require,module,exports){
+
+
+function Pocket( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        var value = data[prop];
+
+        this[prop] = (value === 'undefined' ? undefined : value);
+    }
+
+    this.cardlocations = [];
+    this.regions = [];
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.constructor = Pocket;
+}
+
+Pocket.prototype.getId = function() {
+    return this.id;
+};
+
+Pocket.prototype.getTitle = function() {
+    return this.title;
+};
+
+Pocket.prototype.getCardnumber = function() {
+    return this.cardnumber;
+};
+
+Pocket.prototype.getContent = function() {
+    return this.content;
+};
+
+Pocket.prototype.getTags = function() {
+    return this.tags;
+};
+
+Pocket.prototype.getMentions = function() {
+    return this.mentions;
+};
+
+Pocket.prototype.getWall = function() {
+    return this.wall;
+};
+
+Pocket.prototype.getCardLocations = function() {
+    return this.cardlocations;
+};
+
+Pocket.prototype.addCardLocation = function( cardlocation ) {
+    if ( !~this.cardlocations.indexOf( cardlocation.id ) ) {
+        this.cardlocations.push( cardlocation.id );
+    }
+
+    return this;
+};
+
+Pocket.prototype.getRegions = function() {
+    return this.regions;
+};
+
+Pocket.prototype.addRegion = function( region ) {
+    if ( !~this.regions.indexOf( region.id ) ) {
+        this.regions.push( region.id );
+    }
+
+    return this;
+};
+
+Pocket.prototype.removeRegion = function( region ) {
+    var loc = this.regions.indexOf( region.id );
+
+    if ( ~loc ) {
+        this.regions.splice( loc, 1 );
+    }
+
+    return this;
+};
+
+Pocket.constructor = function( data ) {
+    if ( data instanceof Pocket ) {
+        return data;
+    }
+
+    return new Pocket( data );
+};
+
+Pocket.schema = {
+    title: String,
+    cardnumber: Number,
+    content: String,     // [ 'fragment' ]
+    tags: String,        // [ 'tag' ]
+    mentions: String,    // [ 'mention' ] --> 'user', 'group'
+    color: String,
+    wall: 'wall',
+    cardlocation: ['cardlocation'],
+    regions: ['region']
+    , createdBy: 'user'
+    , createdOn: Date
+    , lastModifiedBy: 'user'
+    , lastModifiedOn: Date
+};
+
+Pocket.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.title || data.title === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Title is required' );
+    }
+
+    if ( !data.wall || data.wall === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Wall is required' );
+    }
+
+    return validator;
+};
+
+Pocket.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    return data;
+};
+
+Pocket.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    return data;
+};
+
+module.exports = Pocket;
+
+},{}],8:[function(require,module,exports){
+
+
+function Region( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        this[prop] = data[prop];
+    }
+
+    this.pockets = [];
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.constructor = Region;
+}
+
+Region.prototype.getId = function() {
+    return this.id;
+};
+
+Region.prototype.getLabel = function() {
+    return this.label;
+};
+
+Region.prototype.getColor = function() {
+    return this.color;
+};
+
+Region.prototype.getValue = function() {
+    return this.value;
+};
+
+Region.prototype.getX = function() {
+    return this.x;
+};
+
+Region.prototype.getY = function() {
+    return this.y;
+};
+
+Region.prototype.getWidth = function() {
+    return this.width;
+};
+
+Region.prototype.getHeight = function() {
+    return this.height;
+};
+
+Region.prototype.getBoard = function() {
+    return this.board;
+};
+
+Region.prototype.getPockets = function() {
+    return this.pockets;
+};
+
+Region.prototype.addPocket = function( pocket ) {
+    if ( !~this.pockets.indexOf( pocket.id ) ) {
+        this.pockets.push( pocket.id );
+    }
+
+    return this;
+};
+
+Region.prototype.moveTo = function( x, y ) {
+    if ( this.x !== x || this.y !== y ) {
+        this.x = x;
+        this.y = y;
+    }
+
+    return this;
+};
+
+Region.prototype.resizeTo = function( width, height ) {
+    if ( this.width !== width || this.height !== height ) {
+        this.width = width;
+        this.height = height;
+    }
+
+    return this;
+};
+
+Region.constructor = function( data ) {
+    if ( data instanceof Region ) {
+        return data;
+    }
+
+    return new Region( data );
+};
+
+Region.schema = {
+    label: String
+  , value: String
+  , color: String
+  , x: Number
+  , y: Number
+  , width: Number
+  , height: Number
+  , board: 'board'
+  , pockets: ['pocket']
+  , createdBy: 'user'
+  , createdOn: Date
+  , lastModifiedBy: 'user'
+  , lastModifiedOn: Date
+};
+
+Region.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.label || data.label === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Label is required' );
+    }
+
+    if ( !data.board || data.board === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Board is required' );
+    }
+
+    return validator;
+};
+
+Region.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    return data;
+};
+
+Region.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    data.width = data.width || 100;
+    data.height = data.height || 100;
+    data.x = data.x || 10;
+    data.y = data.y || 10;
+
+    return data;
+};
+
+module.exports = Region;
+
+},{}],9:[function(require,module,exports){
+var queryPhraseParser = require('../queryPhraseParser');
+
+
+function Transform( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        this[prop] = data[prop];
+    }
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.constructor = Transform;
+}
+
+Transform.prototype.getId = function() {
+    return this.id;
+};
+
+Transform.prototype.getPhrase = function() {
+    return this.phrase;
+};
+
+Transform.prototype.getRules = function() {
+    return this.rules;
+};
+
+Transform.prototype.getBoard = function() {
+    return this.board;
+};
+
+Transform.constructor = function( data ) {
+    if ( data instanceof Transform ) {
+        return data;
+    }
+
+    return new Transform( data );
+};
+
+Transform.schema = {
+    phrase: String
+  , rules: Object
+  , board: 'board'
+  , createdBy: 'user'
+  , createdOn: Date
+  , lastModifiedBy: 'user'
+  , lastModifiedOn: Date
+};
+
+Transform.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.phrase || data.phrase === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Phrase is required' );
+    }
+
+    if ( !data.board ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'Board is required' );
+    }
+
+    return validator;
+};
+
+Transform.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    data.rules = queryPhraseParser( data.phrase );
+
+    return data;
+};
+
+Transform.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    data.rules = queryPhraseParser( data.phrase );
+
+    return data;
+};
+
+module.exports = Transform;
+
+},{"../queryPhraseParser":12}],10:[function(require,module,exports){
+function Wall( data ) {
+    for ( var prop in data ) {
+        if ( prop === 'links' ) continue;
+
+        this[prop] = data[prop];
+    }
+
+    this.boards = [];
+    this.pockets = [];
+
+    for ( var link in data.links ) {
+        this[link] = data.links[link];
+    }
+
+    this.constructor = Wall;
+}
+
+Wall.prototype.getId = function() {
+    return this.id;
+};
+
+Wall.prototype.getName = function() {
+    return this.name;
+};
+
+Wall.prototype.getBoards = function() {
+    return this.boards;
+};
+
+Wall.prototype.addBoard = function( board ) {
+    if ( !~this.boards.indexOf( board.id ) ) {
+        this.boards.push( board.id );
+    }
+
+    return this;
+};
+
+Wall.prototype.getPockets = function() {
+    return this.pockets;
+};
+
+Wall.prototype.addPocket = function( pocket ) {
+    if ( !~this.pockets.indexOf( pocket.id ) ) {
+        this.pockets.push( pocket.id );
+    }
+
+    return this;
+};
+
+Wall.constructor = function( data ) {
+    if ( data instanceof Wall ) {
+        return data;
+    }
+
+    return new Wall( data );
+};
+
+Wall.schema = {
+    name: String
+  , boards: ['board']
+  , pockets: ['pocket']
+  , createdBy: 'user'
+  , createdOn: Date
+  , lastModifiedBy: 'user'
+  , lastModifiedOn: Date
+  // , access: [ 'right' ] --> 'user', 'group'
+};
+
+Wall.validator = function( data ) {
+    var validator = {
+        validForUpdate: true
+      , validForCreate: true
+      , issues: []
+    };
+
+    if ( !data.id ) {
+        validator.validForUpdate = false;
+        validator.issues.push( 'ID is required' );
+    }
+
+    if ( !data.name || data.name === '' ) {
+        validator.validForUpdate = validator.validForCreate = false;
+        validator.issues.push( 'Name is required' );
+    }
+
+    return validator;
+};
+
+Wall.onBeforeUpdate = function ( data ) {
+    // data.lastModifiedBy = app.getCurrentUser()._id;
+    data.lastModifiedOn = new Date();
+
+    return data;
+};
+
+Wall.onBeforeCreate = function( data ) {
+    // data.createdBy = app.getCurrentUser()._id;
+    data.createdOn = new Date();
+
+    return data;
+};
+
+module.exports = Wall;
+
+},{}],11:[function(require,module,exports){
+var RSVP = require('rsvp')
+  , Promise = RSVP.Promise;
+
+// Commands
+
+function Queries( adapter ) {
+    this._db = adapter;
+}
+
+Queries.prototype.getBoard = function( boardid ) {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.find( 'board', boardid )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getBoardsForWall = function( wall ) {
+    var _this = this
+      , boardids = wall.getBoards();
+
+    return new Promise(function( resolve, reject ) {
+        if (!boardids.length) {
+            resolve([]);
+        }
+
+        _this._db.findMany( 'board', boardids )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getCardLocation = function( id ) {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.find( 'cardlocation', id )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getCardLocationsForBoard = function( board ) {
+    var _this = this
+      , ids = board.getCardLocations();
+
+    return new Promise(function( resolve, reject ) {
+        if (!ids.length) {
+            resolve([]);
+        }
+
+        _this._db.findMany( 'cardlocation', ids )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getPocket = function( pocketid ) {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.find( 'pocket', pocketid )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getPocketsForWall = function( wall ) {
+    var _this = this
+      , pocketids = wall.getPockets();
+
+    return new Promise(function( resolve, reject ) {
+        if (!pocketids.length) {
+            resolve([]);
+        }
+
+        _this._db.findMany( 'pocket', pocketids )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getRegion = function( regionid ) {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.find( 'region', regionid )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getRegionsForBoard = function( board ) {
+    var _this = this
+      , regionids = board.getRegions();
+
+    return new Promise(function( resolve, reject ) {
+        if (!regionids.length) {
+            resolve([]);
+        }
+
+        _this._db.findMany( 'region', regionids )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getTransformsForBoard = function( board ) {
+    var _this = this
+      , transformids = board.getTransforms();
+
+    return new Promise(function( resolve, reject ) {
+        if (!transformids.length) {
+            resolve([]);
+        }
+
+        _this._db.findMany( 'transform', transformids )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getAllTransforms = function() {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.findMany( 'transforms' )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getWall = function( wallid ) {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.find( 'wall', wallid )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+Queries.prototype.getAllWalls = function() {
+    var _this = this;
+
+    return new Promise(function( resolve, reject ) {
+        _this._db.findMany( 'wall' )
+            .then( resolve )
+            .catch( reject );
+    });
+};
+
+module.exports = Queries;
+
+},{"rsvp":93}],12:[function(require,module,exports){
+// query phrase config object
+
+function Config( attr ) {
+  this.attr = attr;
+}
+
+Config.prototype.from = function( attr, selector ) {
+  this.from = {
+    attr: attr,
+    selector: selector
+  };
+
+  return this;
+};
+
+Config.prototype.when = function( relationship, filter ) {
+  this.when = {
+    relationship: relationship,
+    filter: filter
+  };
+
+  return this;
+};
+
+// parser factory
+
+function get( attr ) {
+  var config = new Config( attr );
+
+  return config;
+}
+
+function region( relationship, selector ) {
+    return {
+      relationship: relationship,
+      selector: selector,
+      node: 'region'
+    };
+}
+
+function board( selector ) {
+    return {
+      selector: selector,
+      node: 'board'
+    };
+}
+
+function Parser( phrase ) {
+  var matches = phrase.match(/(get|from|when)/ig);
+  if (!matches || matches.length < 2) {
+    return {};
+  }
+
+  var out = phrase.replace(/\sof\s/ig, ' ').replace(/board\s#([^\s]*)/ig, 'this.board(\'#$1\')').trim();
+  out = out.replace(/(board[^\(])\s/ig, '\'$1\' ').trim();
+  out = out.replace(/\sboard(?:\s|$)/ig, ' \'board\' ').trim();
+  out = out.replace(/region\s([^\s]*)\s([^\s]*)/ig, 'this.region(\'$1\',$2)').trim();
+  out = out.replace(/\sregion(?:\s|$)/ig, ' \'region\' ').trim();
+  out = out.replace(/get\s([^\s]*)/ig, 'this.get(\'$1\')').trim();
+  out = out.replace(/\sfrom\s([^\s]*)\s([^\s]*)/ig, '.from(\'$1\',$2)').trim();
+  out = out.replace(/\swhen\s([^\s]*?)\s([^\s]*)/ig, '.when(\'$1\',$2)').trim();
+
+  if (out === phrase) {
+    return {};
+  }
+
+  /*jslint evil: true */
+  return (new Function( 'return ' + out )).call({
+      get: get,
+      region: region,
+      board: board
+  });
+}
+
+module.exports = Parser;
+
+},{}],13:[function(require,module,exports){
+function EventQueue( options ) {
+    this.options = options || {};
+
+    this.events = {};
+}
+
+EventQueue.prototype.on = function( ev, reaction, once ) {
+    if (!this.events[ev]) {
+        this.events[ev] = [];
+    }
+
+    this.events[ev].push( { reaction: reaction, once: !!once } );
+
+    return this;
+};
+
+EventQueue.prototype.once = function( ev, reaction ) {
+    return this.on( ev, reaction, true );
+};
+
+EventQueue.prototype.emit = function( ev, data ) {
+    var options = this.options;
+
+    if (options.debug) {
+        console.log( 'EventQueue.emit('+ ev +')', !!this.events[ev] );
+    }
+
+    if (this.events[ev]) {
+        var cleansed = [];
+
+        this.events[ev].forEach(function( react ) {
+            if (options.debug) {
+                console.log( 'this.events['+ ev + '].call()' );
+            }
+
+            setTimeout(function() {
+                react.reaction( data );
+            }, 0);
+
+            if (!react.once) {
+                cleansed.push( react );
+            }
+        });
+
+        this.events[ev] = cleansed;
+    }
+
+    return this;
+};
+
+EventQueue.prototype.clearAll = function() {
+    this.events = {};
+};
+
+EventQueue.prototype.trigger = function( ev, data ) {
+    this.emit( ev, data );
+};
+
+module.exports = EventQueue;
+
+},{}],14:[function(require,module,exports){
+var RSVP = require('rsvp')
+  , Promise = RSVP.Promise;
+
+// Application
+
+function Services( interface, commands, queries ) {
+    this._commands = commands;
+    this._queries = queries;
+    this._interface = interface;
+}
+
+// board:new
+Services.prototype.newBoard = function() {
+    return this._interface.displayBoardCreator();
+};
+
+// board:create
+Services.prototype.createBoard = function( data ) {
+    var _this = this, board, phrase;
+
+    if (data.transform) {
+        phrase = data.transform;
+
+        delete data.transform;
+    }
+
+    return this._commands
+        .createBoard( data )  // --> board:created
+        .then(function( resource ) {
+            board = resource;
+
+            return board;
+        })
+        .then(function( board ) {
+            if (phrase && phrase !== '') {
+                return _this.createTransform({
+                        board: board.getId(),
+                        phrase: phrase
+                    })
+                    .then(function( transform ) {
+                        board.transforms.push( transform.getId() );
+
+                        return board;
+                    });
+            }
+
+            return board;
+        })
+        .then(function( board ) {
+            _this._interface.addBoard( board );
+
+            return _this._queries.getWall( board.getWall() );
+        })
+        .then(function( wall ) {
+            return _this._queries.getPocketsForWall( wall );
+        })
+        .then(function( pockets ) {
+            _this._commands.addPocketsToBoard( board, pockets );  // --> cardlocation:created
+
+            return board;
+        });
+};
+
+// board:edit
+Services.prototype.editBoard = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getBoard( id )
+        .then(function( board ) {
+            _this._interface.displayBoardEditor( board );
+
+            return board;
+        });
+};
+
+// board:update
+Services.prototype.updateBoard = function( data ) {
+    var _this = this, phrase;
+
+    if (data.transform) {
+        phrase = data.transform;
+
+        delete data.transform;
+    }
+
+    return this._commands.updateBoard( data )  // --> board:updated
+        .then(function( board ) {
+            if (phrase && phrase !== '') {
+                return _this.createTransform({
+                        board: board.getId(),
+                        phrase: phrase
+                    })
+                    .then(function( transform ) {
+                        board.transforms.push( transform.getId() );
+
+                        return board;
+                    });
+            }
+
+            return board;
+        });
+
+};
+
+// board:display
+// board:created
+Services.prototype.displayBoard = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getBoard( id )
+        .then(function( board ) {
+            _this._interface.displayBoard( board );  // --> board:displayed
+
+            return board;
+        });
+};
+
+// board:select
+Services.prototype.selectBoard = function( wall ) {
+    var _this = this;
+
+    return this._queries
+        .getBoardsForWall( wall )
+        .then(function( boards ) {
+            _this._interface.displayBoardSelector( boards );  // --> boardselector:displayed
+
+            return boards;
+        })
+        .then(function( boards ) {
+            if (boards.length) {
+                _this._interface.displayBoard( boards[0] );  // --> board:displayed
+            }
+
+            return wall;
+        });
+};
+
+
+
+
+
+// cardlocations
+
+// cardlocation:created
+Services.prototype.displayCardLocation = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getCardLocation( id )
+        .then(function( location ) {
+            return callDisplayCardLocationWithPocket.call( _this, location );
+        });
+};
+
+// board:displayed
+Services.prototype.displayCardLocations = function( board ) {
+    var _this = this;
+
+    return this._queries
+        .getCardLocationsForBoard( board )
+        .then(function( locations ) {
+            var promises = locations.map(function( location ) {
+                return callDisplayCardLocationWithPocket.call( _this, location );
+            });
+
+            return RSVP.all( promises );
+        });
+};
+
+function callDisplayCardLocationWithPocket( location ) {
+    var _this = this;
+
+    return this._queries.getPocket( location.getPocket() )
+        .then(function( pocket ) {
+            _this._interface.displayCardLocation( location, pocket );  // --> cardlocation:displayed
+
+            return location;
+        });
+}
+
+// cardlocation:move
+Services.prototype.moveCardLocation = function( info ) {
+    var _this = this;
+
+    return this._queries
+        .getCardLocation( info.id )
+        .then(function( cardlocation ) {
+            if ( cardlocation.x != info.x || cardlocation.y != info.y ) {
+              cardlocation.x = info.x;
+              cardlocation.y = info.y;
+
+              return _this._commands.updateCardLocation( cardlocation );  // --> cardlocation:updated
+            }
+        });
+};
+
+
+
+
+
+
+// pockets
+
+// pocket:new
+Services.prototype.newPocket = function() {
+    return this._interface.displayPocketCreator();
+};
+
+// pocket:create
+Services.prototype.createPocket = function( data ) {
+    var _this = this, pocket;
+
+    return this._commands
+        .createPocket( data )  // --> pocket:created
+        .then(function( resource ) {
+            pocket = resource;
+
+            return _this._queries.getWall( pocket.getWall() );
+        })
+        .then(function( wall ) {
+            return _this._queries.getBoardsForWall( wall );
+        })
+        .then(function( boards ) {
+            _this._commands.addPocketToBoards( boards, pocket );  // --> cardlocation:created
+
+            return pocket;
+        });
+};
+
+// pocket:edit
+Services.prototype.editPocket = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getPocket( id )
+        .then(function( pocket ) {
+            _this._interface.displayPocketEditor( pocket );
+
+            return pocket;
+        });
+};
+
+// pocket:update
+Services.prototype.updatePocket = function( data ) {
+    return this._commands.updatePocket( data );  // --> pocket:updated
+};
+
+
+
+
+
+
+// regions
+
+// region:created
+Services.prototype.displayRegion = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getRegion( id )
+        .then(function( region ) {
+            _this._interface.displayRegion( region );  // --> region:displayed
+
+            return region;
+        });
+};
+
+// board:displayed
+Services.prototype.displayRegions = function( board ) {
+    var _this = this;
+
+    return this._queries
+        .getRegionsForBoard( board )
+        .then(function( regions ) {
+            _this._interface.displayRegions( regions );  // --> region:displayed
+
+            return regions;
+        });
+};
+// region:new
+Services.prototype.newRegion = function() {
+    return this._interface.displayRegionCreator();
+};
+
+// region:create
+Services.prototype.createRegion = function( data ) {
+    return this._commands.createRegion( data );  // --> region:created
+};
+
+// region:edit
+Services.prototype.editRegion = function( id ) {
+    var _this = this;
+
+    return this._queries.getRegion( id )
+        .then(function( region ) {
+            _this._interface.displayRegionEditor( region );
+
+            return region;
+        });
+};
+
+// region:move
+Services.prototype.moveRegion = function( info ) {
+  var _this = this;
+
+  return this._queries
+      .getRegion( info.id )
+      .then(function( region ) {
+          if ( region.x != info.x || region.y != info.y ) {
+            region.x = info.x;
+            region.y = info.y;
+
+            return _this._commands.updateRegion( region );  // --> region:updated
+          }
+      });
+};
+
+// region:resize
+Services.prototype.resizeRegion = function( info ) {
+  var _this = this;
+
+  return this._queries
+      .getRegion( info.id )
+      .then(function( region ) {
+          if ( region.height != info.height || region.width != info.width ) {
+            region.height = info.height;
+            region.width = info.width;
+
+            return _this._commands.updateRegion( region );  // --> region:updated
+          }
+      });
+};
+
+// region:update
+Services.prototype.updateRegion = function( data ) {
+    return this._commands.updateRegion( data );  // --> region:updated
+};
+
+
+
+
+
+
+// transforms
+
+Services.prototype.createTransform = function( data ) {
+    return this._commands.createTransform( data );  // --> region:created
+};
+
+// transform:unlink
+Services.prototype.unlinkTransform = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getTransform( id )
+        .then(function( transform ) {
+            return _this._commands.unlinkTransform( id );  // --> transform:unlinked
+        })
+        .then(function( transform ) {
+            _this._interface.removeTransform( transform );
+
+            return transform;
+        });
+};
+
+
+
+
+
+// walls
+
+// wall:new
+Services.prototype.newWall = function() {
+    this._interface.displayWallCreator();
+};
+
+// wall:create
+Services.prototype.createWall = function( data ) {
+    return this._commands.createWall( data ); // --> wall:created
+};
+
+// wall:edit
+Services.prototype.editWall = function( id ) {
+    var _this = this;
+
+    return this._queries
+        .getWall( id )
+        .then(function( wall ) {
+            _this._interface.displayWallEditor( wall );
+
+            return wall;
+        });
+};
+
+// wall:update
+Services.prototype.updateWall = function( data ) {
+    return this._commands.updateWall( data );  // --> wall:updated
+};
+
+// wall:select
+Services.prototype.selectWall = function( id ) {
+    var _this = this;
+
+    return this._queries.getAllWalls()
+        .then(function( walls ) {
+            _this._interface.displayWallSelector( walls );
+
+            return walls;
+        });
+};
+
+// wall:display
+// wall:created
+Services.prototype.displayWall = function( id ) {
+    var _this = this, wall;
+
+    return this._queries.getWall( id )
+        .then(function( resource ) {
+            wall = resource;
+
+            _this._interface.displayWall( wall );  // --> wall:displayed
+
+            return _this.selectBoard( wall )
+                .then(function( wall ) {
+                    if ( !wall.boards.length ) {
+                        return _this._interface.notifyWallFirstTime( wall );  // --> wall:firsttime
+                    }
+
+                    return wall;
+                });
+        });
+};
+
+module.exports = Services;
+
+},{"rsvp":93}],15:[function(require,module,exports){
+// defaults
+
+var min_scale = 0.1;
+
+// constructor
+
+function CanvasBoard( queue, board, options ) {
+    var shape = new Kinetic.Stage({
+        container: board.getId(),
+        width: options.width,
+        height: options.height,
+        draggable: true
+    });
+
+    shape.regions = new Kinetic.Layer();
+    shape.add( shape.regions );
+
+    shape.cards = new Kinetic.Layer();
+    shape.add( shape.cards );
+
+    // triggers
+    shape
+        .on( 'contentDblclick contentDbltap', function( e ) {
+            if (shape.preventEvents) {
+                shape.preventEvents = false;
+
+                return ;
+            }
+
+            queue.trigger( 'board:edit', board.getId() );
+        });
+
+    var $container = $( '#' + options.container );
+    var scale = 1;
+    var zoomFactor = 1.1;
+    var origin = { x: 0, y: 0 };
+
+    $container
+      .on('mousewheel', function( e ) {
+          var evt = e.originalEvent,
+              mx = evt.clientX /* - canvas.offsetLeft */,
+              my = evt.clientY /* - canvas.offsetTop */,
+              delta = evt.wheelDelta;
+
+          //prevent only the actual wheel movement
+          if (delta !== 0) {
+              e.preventDefault();
+          }
+
+          var cur_scale = scale * (zoomFactor - (delta < 0 ? 0.2 : 0));
+
+          if (cur_scale > min_scale) {
+              origin.x = mx / scale + origin.x - mx / cur_scale;
+              origin.y = my / scale + origin.y - my / cur_scale;
+
+              scale = cur_scale;
+
+              queue.trigger( 'board:scale', { id: board.getId(), scale: scale });
+
+              shape.offset({ x: origin.x, y: origin.y });
+              shape.scale( { x: cur_scale, y: cur_scale });
+              shape.batchDraw();
+
+              queue.trigger( 'board:scaled', { id: board.getId(), scale: scale });
+          }
+      });
+
+    // public methods
+
+    shape.addRegion = function( canvasregion ) {
+        shape.regions.add( canvasregion );
+
+        shape.regions.batchDraw();
+    };
+
+    shape.addCard = function( canvascard ) {
+        shape.cards.add( canvascard );
+
+        shape.cards.batchDraw();
+    };
+
+    // instance
+
+    return shape;
+}
+
+module.exports = CanvasBoard;
+
+},{}],16:[function(require,module,exports){
+// defaults
+
+var colors = {
+  fill: '#f6f6f6',
+  stroke: { active: '#aaa', inactive: '#e5e5e5' }
+};
+
+var shadow = {
+  color: 'black',
+  offset: { active: 2, inactive: 1 },
+  blur: { active: 9, inactive: 5 }
+};
+
+var size = {    // issue is that the server needs to know this as well
+  width: 100,
+  height: 65
+};
+
+// constructor
+
+function CanvasCard( queue, location, pocket ) {
+    var shape = new Kinetic.Group({
+      id: location.id,
+      x: location.x || 5,
+      y: location.y || 5,
+      draggable: true
+    });
+
+    var cardback = __createCardback( size.width, size.height, (pocket.color || colors.fill), shadow.color );
+    var cardnumber = __createIdText( pocket.cardnumber );
+    var cardtitle = __createTitleText( pocket.getTitle() );
+
+    shape.add( cardback );
+    shape.add( cardnumber );
+    shape.add( cardtitle );
+
+    queue
+      .on( 'cardlocation:updated', function( data ) {
+        if ( location.id === data.id &&
+            ( shape.getX() != data.x || shape.getY() != data.y ) ) {
+          __moveTo( data.x, data.y );
+        }
+      })
+      .on( 'pocket:updated', function( data ) {
+        if ( pocket.id === data.id ) {
+            __UpdateDisplay( data );
+        }
+      })
+      .on( 'pocket:transformed', function( data ) {
+        if ( pocket.id === data.id ) {
+            __UpdateDisplay( data );
+        }
+      });
+
+    shape
+      .on('mousedown touchstart', function() {
+        __displayActiveState();
+
+        queue.trigger( 'cardlocation:activate', location );
+      })
+      .on('mouseup touchend', function() {
+        __displayInactiveState();
+
+        queue.trigger( 'cardlocation:deactivate', location );
+      })
+      .on('dragend', function() {
+        queue.trigger( 'cardlocation:move', { id: location.getId(), x: shape.getX(), y: shape.getY() } );
+      })
+      .on('dblclick dbltap', function( e ) {
+        e.cancelBubble = true;
+        shape.getStage().preventEvents = true;
+
+        queue.trigger( 'pocket:edit', pocket.getId() );
+      });
+
+    // private methods
+
+    function __redrawLayer() {
+      try {
+        var layer = shape.getLayer();
+
+        if (layer) {
+          layer.batchDraw();
+        }
+      } catch(e) {
+      }
+    }
+
+    function __UpdateDisplay( data ) {
+      cardtitle.setText( data.title || "" );
+      cardnumber.setText( '#' + data.cardnumber );
+      cardback.setFill( data.color || colors.fill );
+
+      __redrawLayer();
+    }
+
+    function __moveTo( x, y ) {
+      shape.moveToTop();
+
+      shape.setX( x );
+      shape.setY( y );
+
+      __redrawLayer();
+    }
+
+    function __displayActiveState() {
+      cardback.setStroke( colors.stroke.active );
+      cardback.setShadowBlur( shadow.blur.active );
+      cardback.setShadowOffset( shadow.offset.active );
+
+      shape.moveToTop();
+
+      __redrawLayer();
+    }
+
+    function __displayInactiveState() {
+      cardback.setStroke( colors.stroke.inactive );
+      cardback.setShadowBlur( shadow.blur.inactive );
+      cardback.setShadowOffset( shadow.offset.inactive );
+
+      __redrawLayer();
+    }
+
+    // initialise
+
+    __displayInactiveState();
+
+    // instance
+
+    return shape;
+}
+
+  // private methods
+
+function __createCardback( w, h, fill, shadow ) {
+  return new Kinetic.Rect({
+    x: 0,
+    y: 0,
+    width: w,
+    height: h,
+    cornerRadius: 5,
+    fill: fill,
+    strokeWidth: 1,
+    shadowOpacity: 0.5,
+    shadowColor: shadow,
+  });
+}
+
+function __createIdText( id ) {
+  return new Kinetic.Text({
+    x: 5,
+    y: 2,
+    text: '#' + id,
+    fontSize: 15,
+    fontFamily: 'Calibri',
+    fill: '#666'
+  });
+}
+
+function __createTitleText( title ) {
+  return new Kinetic.Text({
+    x: 5,
+    y: 22,
+    width: 85,
+    height: 36,
+    text: title,
+    fontSize: 11,
+    fontFamily: 'Calibri',
+    fill: '#666'
+  });
+}
+
+module.exports = CanvasCard;
+
+},{}],17:[function(require,module,exports){
+// defaults
+
+var handleSize = 20;
+
+var colors = {
+  fill: '#aaa'
+};
+
+var shadow = {
+  color: '#eee',
+  offset: { active: 1, inactive: 0 },
+  blur: { active: 5, inactive: 0 }
+};
+
+// constructor
+
+function CanvasRegion( queue, region ) {
+    var shape = new Kinetic.Group({
+        id: region.getId(),
+        x: region.getX() || 5,
+        y: region.getY() || 5,
+        draggable: true
+    });
+    var color = __asColor( region.getColor() );
+    var resizing = false;
+
+    var background = __createBackground( region.getWidth(), region.getHeight(), color || colors.fill, shadow.color );
+    var handle = __createHandle( region.getWidth(), region.getHeight() );
+    var title = __createTitleText( region.getWidth(), region.getLabel() );
+
+    shape.add( background );
+    shape.add( title );
+    shape.add( handle );
+
+    // triggers
+
+    queue
+      .on( 'region:updated', function( data ) {
+        if ( region.id === data.id ) {
+          __moveTo( data.x, data.y );
+          __resizeTo( data.width, data.height );
+          __UpdateDisplay( data );
+        }
+      });
+
+    shape
+      .on('mousedown touchstart', function() {
+        __displayActiveState();
+
+        queue.trigger( 'region:activate', region );
+      })
+      .on('mouseup touchend', function() {
+        __displayInactiveState();
+
+        queue.trigger( 'region:deactivate', region );
+      })
+      .on('dragend', function() {
+        queue.trigger( 'region:move', { id: region.getId(), x: shape.getX(), y: shape.getY() } );
+      })
+      .on('dblclick dbltap', function( e ) {
+        e.cancelBubble = true;
+        shape.getStage().preventEvents = true;
+
+        queue.trigger( 'region:edit', region.getId() );
+      });
+
+    handle
+      .on('mousedown touchstart', function() {
+        resizing = true;
+      })
+      .on('mouseup touchend', function() {
+        resizing = false;
+      })
+      .on('dragmove', function( evt ) {
+        evt.cancelBubble = true;
+
+        var width = handle.getX() + ( handleSize / 2 );
+        var height = handle.getY() + ( handleSize / 2 );
+
+        __resizeTo( width, height );
+      })
+      .on('dragend', function( evt ) {
+        evt.cancelBubble = true;
+
+        queue.trigger( 'region:resize', { id: region.getId(), width: background.getWidth(), height: background.getHeight() } );
+      });
+
+    // private methods
+
+    function __createBackground( w, h, fill, shadow ) {
+      return new Kinetic.Rect({
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        fill: fill,
+        opacity: 0.1,
+        shadowOpacity: 0.5,
+        shadowColor: shadow
+      });
+    }
+
+    function __createTitleText( w, title ) {
+      return new Kinetic.Text({
+        x: 5,
+        y: 5,
+        width: w - 10,
+        text: title,
+        fontSize: 16,
+        fontFamily: 'Calibri',
+        fontWeight: 600,
+        fill: '#666',
+        align: 'center'
+      });
+    }
+
+    function __createHandle( w, h ) {
+      return new Kinetic.Rect({
+        x: w - ( handleSize / 2 ),
+        y: h - ( handleSize / 2 ),
+        width: handleSize,
+        height: handleSize,
+        stroke: '#ddd',
+        strokeWidth: 2,
+        cornerRadius: ( handleSize / 2 ),
+        opacity: 0,
+        draggable: true
+      });
+    }
+
+    function __redrawLayer() {
+      try {
+        var layer = shape.getLayer();
+
+        if (layer) {
+          layer.batchDraw();
+        }
+      } catch(e) {
+      }
+    }
+
+    function __UpdateDisplay( data ) {
+      title.setText( data.label || "" );
+
+      color = __asColor( data.color );
+
+      background.setFill( color || colors.fill );
+
+      __redrawLayer();
+    }
+
+    function __asColor( color ) {
+      if ( color ) {
+        return color;
+      }
+
+      return;
+    }
+
+    function __displayActiveState() {
+      background.setShadowBlur( shadow.blur.active );
+      background.setShadowOffset( shadow.offset.active );
+
+      handle.setOpacity( 1 );
+
+      shape.moveToTop();
+
+      __redrawLayer();
+
+      return shape;
+    }
+
+    function __displayInactiveState() {
+      background.setShadowBlur( shadow.blur.inactive );
+      background.setShadowOffset( shadow.offset.inactive );
+
+      handle.setOpacity( 0 );
+
+      __redrawLayer();
+
+      return shape;
+    }
+
+    function __moveTo( x, y ) {
+      shape.moveToTop();
+
+      shape.setX( x );
+      shape.setY( y );
+
+      __redrawLayer();
+    }
+
+    function __resizeTo( width, height ) {
+      shape.moveToTop();
+
+      background.size({ width: width, height: height });
+      title.setWidth( width - 10 );
+
+      __redrawLayer();
+    }
+
+    __displayInactiveState();
+
+    // instance
+
+    return shape;
+}
+
+module.exports = CanvasRegion;
+
+},{}],18:[function(require,module,exports){
+
+var cardHeight = 65;
+var cardWidth = 100;
+
+function MovementTracker( queue, commands, queries ) {
+    this._queue = queue;
+    this._commands = commands;
+    this._queries = queries;
+
+    this._regionalcards = {};
+}
+
+MovementTracker.prototype.trackCardMovement = function( location ) {
+    var _this = this
+      , patch = {
+            in: []
+          , out: []
+        }
+      , card;
+
+    this._queries
+        .getPocket( location.getPocket() )
+        .then(function( resource ) {
+            card = resource;
+
+            return _this._queries.getBoard( location.getBoard() );
+        })
+        .then(function( board ) {
+            return _this._queries.getRegionsForBoard( board );
+        })
+        .then(function( regions ) {
+            var update = [];
+
+            regions.forEach(function( region ) {
+                var regionid = region.getId()
+                  , isInRegion = cardIsInRegion.call( _this, location, region )
+                  , areLinked = ~card.getRegions().indexOf( regionid );
+
+                if ( isInRegion ) {
+                    if (!areLinked) {
+                        patch.in.push( region ); // mark region going in
+                    }
+
+                    update.push( regionid );
+
+                    return;
+                }
+
+                if ( areLinked ) {
+                    patch.out.push( region ); // mark region comming out
+                }
+            });
+
+            if ( !patch.in.length && !patch.out.length ) return card;
+
+            card.regions = update;
+
+            return _this._commands
+                .updatePocket( card )
+                .then(function( card ) {
+                    patch.out.forEach(function( region ) {
+                        _this._queue.emit( 'pocket:regionexit', { pocket: card, region: region } );
+                    });
+
+                    patch.in.forEach(function( region ) {
+                        _this._queue.emit( 'pocket:regionenter', { pocket: card, region: region } );
+                    });
+
+                    return card;
+                });
+        });
+};
+
+MovementTracker.prototype.trackRegionMovement = function( region ) {
+    var _this = this;
+
+    this._queries
+        .getBoard( region.getBoard() )
+        .then(function( board ) {
+            return _this._queries.getCardLocationsForBoard( board );
+        })
+        .then(function( cards ) {
+            cards.forEach(function( card ) {
+                if ( !cardIsInRegion.call( _this, card, region ) ) {
+                    markPocketAsNotInRegion.call( _this, card.getPocket(), region );
+                }
+            });
+
+            return regions;
+        })
+        .then(function( cards ) {
+            cards.forEach(function( card ) {
+                if ( cardIsInRegion.call( _this, card, region ) ) {
+                    markPocketAsInRegion.call( _this, card.getPocket(), region );
+                }
+            });
+        });
+};
+
+function cardIsInRegion( card, region ) {
+    var cardX = (card.x + (cardHeight / 2))
+      , cardY = (card.y + (cardWidth / 2))
+      , inLeft = cardX > region.x
+      , inRight = cardX < (region.x + region.width)
+      , inTop = cardY > region.y
+      , inBase = cardY < (region.y + region.height);
+
+    return ( inLeft && inRight && inTop && inBase );
+}
+
+
+function markPocketAsInRegion( pocketid, region ) {
+    var _this = this;
+
+    return this._queries
+        .getPocket( pocketid )
+        .then(function( pocket ) {
+            var numregions = pocket.getRegions().length;
+
+            pocket.addRegion( region );
+
+            if (pocket.getRegions().length > numregions) {
+                return _this._commands
+                    .updatePocket( pocket )
+                    .then(function() {
+                        _this._queue.emit( 'pocket:regionenter', { pocket: pocket, region: region } );
+                    });
+
+            }
+        });
+}
+
+function markPocketAsNotInRegion( pocketid, region ) {
+    var _this = this;
+
+    return this._queries
+        .getPocket( pocketid )
+        .then(function( pocket ) {
+            var numregions = pocket.getRegions().length;
+
+            pocket.removeRegion( region );
+
+            if (pocket.getRegions().length < numregions) {
+                return _this._commands
+                    .updatePocket( pocket )
+                    .then(function() {
+                        app.queue.emit( 'pocket:regionexit', { pocket: pocket, region: region } );
+                    });
+            }
+        });
+}
+
+module.exports = MovementTracker;
+
+},{}],19:[function(require,module,exports){
+
+function TransformManager( queue, commands, queries ) {
+    this._queue = queue;
+    this._commands = commands;
+    this._queries = queries;
+
+    this._regionalcards = {};
+}
+
+TransformManager.prototype.checkTransforms = function( data ) {
+    var pocket = data.pocket
+      , region = data.region;
+
+    return this._queries.getAllTransforms()
+        .then(function( resources ) {
+            resources.forEach(function( transform ) {
+                processTransform.call( this, transform, pocket, region );
+            });
+        });
+};
+
+function processTransform( transform, pocket, region ) {
+    var rules = transform.rules
+      , attr = rules.attr
+      , when = rules.when
+      , from = rules.from
+      , canApply = checkCanApplyTransform( region, when, from.selector );
+
+    if ( canApply ) {
+        pocket[attr] = region[from.attr];
+
+        // this._queue.emit( 'pocket:transformed', pocket );
+
+        this._commands.updatePocket( pocket );
+    }
+}
+
+function checkCanApplyTransform( region, when, filter ) {
+    if ( when.relationship === 'within' && when.filter === 'region' && filter.node === 'region' ) {
+        return filterMethods[typeof filter.selector]( region, filter );
+    }
+
+    return false;
+}
+
+var filterMethods = {
+    'string': function( region, filter ) {
+        return region.getId() === filter.selector.replace('#', '');
+    }
+  , 'object': function( region, filter ) {
+        var f = filter.selector;
+
+        return region[f.node] === f.selector.replace('#', '');
+    }
+};
+
+module.exports = TransformManager;
+
+},{}],20:[function(require,module,exports){
+var CanvasBoard = require('./shapes/board')
+  , CanvasCard = require('./shapes/card')
+  , CanvasRegion = require('./shapes/region');
+
+
+function UI( queue, $element, options, $ ) {
+    this._queue = queue;
+
+    this._$element = $element;
+
+    this._size = {
+        height: $(window).innerHeight(),
+        width: $(window).innerWidth()
+    };
+
+    this.constructor = UI;
+
+    var clicks = [ 'new', 'edit', 'select', 'display', 'unlink' ];
+
+    // e.g. on click or touch for [data-new="wall"] trigger 'wall:new' with id
+    // e.g. on click or touch for [data-edit="board"] trigger 'board:edit' with id
+
+    clicks.forEach(function( task ) {
+        $element.on( 'click touch', '[data-'+ task +']', function( ev ) {
+            ev.preventDefault();
+
+            var type = $(this).data( task );
+
+            var target = $(this).data( type ) || $(this).data('parent') || ( $(this).attr('href') || '' ).replace('#', '');
+
+            queue.trigger( type + ':' + task, target );
+        });
+    });
+
+    var submits = [ 'create', 'update' ];
+
+    // e.g. on submit for [data-create="wall"] trigger 'wall:new' with ev
+
+    submits.forEach(function( task ) {
+        $element.on( 'submit', '[data-'+ task +']', function( ev ) {
+            ev.preventDefault();
+
+            var data = {};
+            var a = $(this).serializeArray();
+            a.forEach(function( pair ) {
+                var key = pair.name, value = pair.value;
+
+                if (data[key] !== undefined) {
+                    if (!data[key].push) {
+                        data[key] = [data[key]];
+                    }
+                    data[key].push(value || '');
+                } else {
+                    data[key] = value || '';
+                }
+            });
+
+            queue.trigger( $(this).data( task ) + ':' + task, data );
+        });
+    });
+}
+
+UI.prototype.displayBoard = function( board ) {
+    var viewer = '<div id="'+ board.getId() +'" class="tab-content" data-viewer="board"></div>';
+
+    this._$element.find('[data-viewer="board"]').replaceWith( viewer );
+
+    this._canvasboard = new CanvasBoard( this._queue, board, this._size );
+    this._canvascards = [];
+    this._canvasregions = [];
+};
+
+UI.prototype.displayBoardCreator = function( wall ) {
+    this._boardcreator = this._boardcreator || this._$element.find('[data-create="board"]');
+
+    this._boardcreator[0].reset();
+    this._boardcreator.find('[name="wall"]').val( wall.getId() );
+
+    this._boardcreator.modal( 'show' );
+};
+
+UI.prototype.displayBoardEditor = function( board ) {
+    this._boardeditor = this._boardeditor || this._$element.find('[data-update="board"]');
+
+    this._boardeditor[0].reset();
+    this._boardeditor.find('[name="id"]').val( board.getId() );
+    this._boardeditor.find('[name="name"]').val( board.getName() );
+    this._boardeditor.find('[name="transform"]').val( board.getWall() );
+    this._boardeditor.find('[name="wall"]').val( board.getWall() );
+
+    this._boardeditor.modal( 'show' );
+};
+
+UI.prototype.displayBoardSelector = function( wall, boards ) {
+    var selector = this._$element.find('[data-selector="board"]');
+
+    var options = boards.map(function( board ) {
+        return '<li><a href="#'+ board.getId() +'" data-display="board">'+ board.getName() +'</a></li>';
+    });
+
+    options.push('<li><button type="button" class="btn btn-default" data-new="board" data-parent="'+ wall.getId() +'" title="Add Board"><i class="glyphicon glyphicon-plus"></i></button></li>');
+
+    selector.empty().append( options.join('') );
+};
+
+UI.prototype.updateBoardSelector = function( board ) {
+    var selector = this._$element.find('[data-selector="board"]');
+
+    selector.find('.active').removeClass('active');
+
+    $('<li><a href="#'+ board.getId() +'" data-display="board">'+ board.getName() +'</a></li>')
+        .appendBefore( selector.children().last() );
+};
+
+// cardlocations
+
+UI.prototype.displayCardLocation = function( cardlocation, pocket ) {
+    var canvascard = new CanvasCard( this._queue, cardlocation, pocket );
+
+    this._canvasboard.addCard( canvascard );
+};
+
+UI.prototype.displayPocketCreator = function( wall ) {
+    this._pocketcreator = this._pocketcreator || this._$element.find('[data-create="pocket"]');
+
+    this._pocketcreator[0].reset();
+    this._pocketcreator.find('[name="wall"]').val( wall.getId() );
+
+    this._pocketcreator.modal( 'show' );
+};
+
+UI.prototype.displayPocketEditor = function( pocket ) {
+    this._pocketeditor = this._pocketeditor || this._$element.find('[data-update="pocket"]');
+
+    this._pocketeditor[0].reset();
+    this._pocketeditor.find('[name="id"]').val( pocket.getId() );
+    this._pocketeditor.find('[name="title"]').val( pocket.getTitle() );
+    this._pocketeditor.find('[name="content"]').val( pocket.getContent() );
+    this._pocketeditor.find('[name="tags"]').val( pocket.getTags() );
+    this._pocketeditor.find('[name="mentions"]').val( pocket.getMentions() );
+    this._pocketeditor.find('[name="wall"]').val( pocket.getWall() );
+
+    this._pocketeditor.modal( 'show' );
+};
+
+// regions
+
+UI.prototype.displayRegion = function( region ) {
+    var canvasregion = new CanvasRegion( this._queue, region );
+
+    this._canvasboard.addRegion( canvasregion );
+};
+
+UI.prototype.displayRegionCreator = function( board ) {
+    this._regioncreator = this._regioncreator || this._$element.find('[data-create="region"]');
+
+    this._regioncreator[0].reset();
+    this._regioncreator.find('[name="board"]').val( board.getId() );
+
+    this._regioncreator.modal( 'show' );
+};
+
+UI.prototype.displayRegionEditor = function( region ) {
+    this._regioneditor = this._regioneditor || this._$element.find('[data-update="region"]');
+
+    this._regioneditor[0].reset();
+    this._regioneditor.find('[name="id"]').val( region.getId() );
+    this._regioneditor.find('[name="label"]').val( region.getLabel() );
+    this._regioneditor.find('[name="value"]').val( region.getValue() );
+    this._regioneditor.find('[name="color"]').val( region.getColor() );
+    this._regioneditor.find('[name="board"]').val( region.getBoard() );
+
+    this._regioneditor.modal( 'show' );
+};
+
+// walls
+
+UI.prototype.displayWall = function( wall ) {
+    var viewer = $('<div id="'+ wall.getId() +'" class="container" data-viewer="wall"> \
+            <ul data-selector="board" class="nav nav-tabs"></ul> \
+            <div class="tab-content" data-viewer="board"></div> \
+        </div>');
+
+    this._$element.find('[data-viewer="wall"]').replaceWith( viewer );
+};
+
+UI.prototype.displayWallCreator = function() {
+    this._wallcreator = this._wallcreator || this._$element.find('[data-create="wall"]');
+
+    this._wallcreator[0].reset();
+
+    this._wallcreator.modal( 'show' );
+};
+
+UI.prototype.displayWallEditor = function( wall ) {
+    this._walleditor = this._walleditor || this._$element.find('[data-update="wall"]');
+
+    this._walleditor[0].reset();
+    this._walleditor.find('[name="id"]').val( wall.getId() );
+    this._walleditor.find('[name="name"]').val( wall.getName() );
+
+    this._walleditor.modal( 'show' );
+};
+
+UI.prototype.displayWallSelector = function( walls ) {
+    this._wallselector = this._wallselector || this._$element.find('[data-selector="wall"]');
+
+    var options = walls.map(function( wall ) {
+        return '<a href="#'+ wall.getId() +'" class="list-group-item" data-display="wall" data-dismiss="modal">'+ wall.getName() +'</a>';
+    });
+
+    this._wallselector.find('[data-options="list"]').empty().append( options.join('') );
+
+    this._wallselector.modal( 'show' );
+};
+
+// controls
+
+UI.prototype.enableControls = function() {
+    this._$element.find('[data-new]:disabled').removeAttr( 'disabled' );
+};
+
+module.exports = UI;
+
+},{"./shapes/board":15,"./shapes/card":16,"./shapes/region":17}],21:[function(require,module,exports){
 var util = require("util")
   , events = require("events")
   , RSVP = require('rsvp')
@@ -240,7 +3036,12 @@ function _onBeforeTransforms( transforms, data ) {
 
 module.exports = Adapter;
 
-},{"./repository":3,"events":8,"rsvp":72,"util":12}],2:[function(require,module,exports){
+},{"./repository":24,"events":29,"rsvp":93,"util":33}],22:[function(require,module,exports){
+var Belt = require('./adapter');
+
+module.exports = Belt;
+
+},{"./adapter":21}],23:[function(require,module,exports){
 
 /*
   TODO: if model had access to the shema it could store optimised views for quickly finding related documents
@@ -444,7 +3245,7 @@ Model.prototype = {
 
 module.exports = Model;
 
-},{}],3:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 var util = require("util")
   , events = require("events")
   , PouchDB = require('pouchdb')
@@ -586,7 +3387,7 @@ Repository.prototype.update = function( model, id, update ) {
     return new Promise(function (resolve, reject) {
         // have to do a get to find the latest revision
         model.get( id, function( err, resource ) {
-            if ( err ) return cb( err );
+            if ( err ) return reject( err );
 
             update._id = id;
             update._rev = resource._rev;
@@ -1138,9 +3939,9 @@ function _isObject( o ) {
 
 module.exports = Repository;
 
-},{"./model":2,"events":8,"pouchdb":34,"rsvp":72,"util":12}],4:[function(require,module,exports){
+},{"./model":23,"events":29,"pouchdb":55,"rsvp":93,"util":33}],25:[function(require,module,exports){
 
-},{}],5:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -1157,22 +3958,35 @@ exports.INSPECT_MAX_BYTES = 50
 Buffer.poolSize = 8192
 
 /**
- * If `Buffer._useTypedArrays`:
+ * If `TYPED_ARRAY_SUPPORT`:
  *   === true    Use Uint8Array implementation (fastest)
- *   === false   Use Object implementation (compatible down to IE6)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Note:
+ *
+ * - Implementation must support adding new properties to `Uint8Array` instances.
+ *   Firefox 4-29 lacked support, fixed in Firefox 30+.
+ *   See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *  - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *  - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *    incorrect length in some situations.
+ *
+ * We detect these buggy browsers and set `TYPED_ARRAY_SUPPORT` to `false` so they will
+ * get the Object implementation, which is slower but will work correctly.
  */
-Buffer._useTypedArrays = (function () {
-  // Detect if browser supports Typed Arrays. Supported browsers are IE 10+, Firefox 4+,
-  // Chrome 7+, Safari 5.1+, Opera 11.6+, iOS 4.2+. If the browser does not support adding
-  // properties to `Uint8Array` instances, then that's the same as no `Uint8Array` support
-  // because we need to be able to add all the node Buffer API methods. This is an issue
-  // in Firefox 4-29. Now fixed: https://bugzilla.mozilla.org/show_bug.cgi?id=695438
+var TYPED_ARRAY_SUPPORT = (function () {
   try {
     var buf = new ArrayBuffer(0)
     var arr = new Uint8Array(buf)
     arr.foo = function () { return 42 }
-    return 42 === arr.foo() &&
-        typeof arr.subarray === 'function' // Chrome 9-10 lack `subarray`
+    return 42 === arr.foo() && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        new Uint8Array(1).subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
   } catch (e) {
     return false
   }
@@ -1205,14 +4019,14 @@ function Buffer (subject, encoding, noZero) {
       subject = base64clean(subject)
     length = Buffer.byteLength(subject, encoding)
   } else if (type === 'object' && subject !== null) { // assume object is array-like
-    if (subject.type === 'Buffer' && Array.isArray(subject.data))
+    if (subject.type === 'Buffer' && isArray(subject.data))
       subject = subject.data
     length = +subject.length > 0 ? Math.floor(+subject.length) : 0
   } else
     throw new Error('First argument needs to be a number, array or string.')
 
   var buf
-  if (Buffer._useTypedArrays) {
+  if (TYPED_ARRAY_SUPPORT) {
     // Preferred: Return an augmented `Uint8Array` instance for best performance
     buf = Buffer._augment(new Uint8Array(length))
   } else {
@@ -1223,7 +4037,7 @@ function Buffer (subject, encoding, noZero) {
   }
 
   var i
-  if (Buffer._useTypedArrays && typeof subject.byteLength === 'number') {
+  if (TYPED_ARRAY_SUPPORT && typeof subject.byteLength === 'number') {
     // Speed optimization -- use set if we're copying from a typed array
     buf._set(subject)
   } else if (isArrayish(subject)) {
@@ -1237,7 +4051,7 @@ function Buffer (subject, encoding, noZero) {
     }
   } else if (type === 'string') {
     buf.write(subject, 0, encoding)
-  } else if (type === 'number' && !Buffer._useTypedArrays && !noZero) {
+  } else if (type === 'number' && !TYPED_ARRAY_SUPPORT && !noZero) {
     for (i = 0; i < length; i++) {
       buf[i] = 0
     }
@@ -1544,7 +4358,7 @@ Buffer.prototype.copy = function (target, target_start, start, end) {
 
   var len = end - start
 
-  if (len < 100 || !Buffer._useTypedArrays) {
+  if (len < 100 || !TYPED_ARRAY_SUPPORT) {
     for (var i = 0; i < len; i++) {
       target[i + target_start] = this[i + start]
     }
@@ -1638,7 +4452,7 @@ Buffer.prototype.slice = function (start, end) {
   if (end < start)
     end = start
 
-  if (Buffer._useTypedArrays) {
+  if (TYPED_ARRAY_SUPPORT) {
     return Buffer._augment(this.subarray(start, end))
   } else {
     var sliceLen = end - start
@@ -2097,7 +4911,7 @@ Buffer.prototype.inspect = function () {
  */
 Buffer.prototype.toArrayBuffer = function () {
   if (typeof Uint8Array !== 'undefined') {
-    if (Buffer._useTypedArrays) {
+    if (TYPED_ARRAY_SUPPORT) {
       return (new Buffer(this)).buffer
     } else {
       var buf = new Uint8Array(this.length)
@@ -2298,7 +5112,7 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-},{"base64-js":6,"ieee754":7}],6:[function(require,module,exports){
+},{"base64-js":27,"ieee754":28}],27:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -2420,7 +5234,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],7:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -2506,7 +5320,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],8:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2811,7 +5625,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],9:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -2836,7 +5650,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],10:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -2901,14 +5715,14 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],11:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],12:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -3498,7 +6312,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":11,"JkpR2F":10,"inherits":9}],13:[function(require,module,exports){
+},{"./support/isBuffer":32,"JkpR2F":31,"inherits":30}],34:[function(require,module,exports){
 (function (process,global,Buffer){
 var inherits          = require('inherits')
   , AbstractLevelDOWN = require('abstract-leveldown').AbstractLevelDOWN
@@ -3646,7 +6460,7 @@ MemDOWN.prototype._isBuffer = function (obj) {
 module.exports = MemDOWN
 
 }).call(this,require("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"JkpR2F":10,"abstract-leveldown":16,"buffer":5,"inherits":18,"ltgt":19}],14:[function(require,module,exports){
+},{"JkpR2F":31,"abstract-leveldown":37,"buffer":26,"inherits":39,"ltgt":40}],35:[function(require,module,exports){
 (function (process){
 /* Copyright (c) 2013 Rod Vagg, MIT License */
 
@@ -3730,7 +6544,7 @@ AbstractChainedBatch.prototype.write = function (options, callback) {
 
 module.exports = AbstractChainedBatch
 }).call(this,require("JkpR2F"))
-},{"JkpR2F":10}],15:[function(require,module,exports){
+},{"JkpR2F":31}],36:[function(require,module,exports){
 (function (process){
 /* Copyright (c) 2013 Rod Vagg, MIT License */
 
@@ -3783,7 +6597,7 @@ AbstractIterator.prototype.end = function (callback) {
 module.exports = AbstractIterator
 
 }).call(this,require("JkpR2F"))
-},{"JkpR2F":10}],16:[function(require,module,exports){
+},{"JkpR2F":31}],37:[function(require,module,exports){
 (function (process,Buffer){
 /* Copyright (c) 2013 Rod Vagg, MIT License */
 
@@ -4045,7 +6859,7 @@ module.exports.AbstractIterator     = AbstractIterator
 module.exports.AbstractChainedBatch = AbstractChainedBatch
 
 }).call(this,require("JkpR2F"),require("buffer").Buffer)
-},{"./abstract-chained-batch":14,"./abstract-iterator":15,"JkpR2F":10,"buffer":5,"xtend":17}],17:[function(require,module,exports){
+},{"./abstract-chained-batch":35,"./abstract-iterator":36,"JkpR2F":31,"buffer":26,"xtend":38}],38:[function(require,module,exports){
 module.exports = extend
 
 function extend() {
@@ -4064,9 +6878,9 @@ function extend() {
     return target
 }
 
-},{}],18:[function(require,module,exports){
-module.exports=require(9)
-},{}],19:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
+module.exports=require(30)
+},{}],40:[function(require,module,exports){
 (function (Buffer){
 
 exports.compare = function (a, b) {
@@ -4165,7 +6979,7 @@ exports.filter = function (range, compare) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":5}],20:[function(require,module,exports){
+},{"buffer":26}],41:[function(require,module,exports){
 "use strict";
 
 var utils = require('./utils');
@@ -4898,7 +7712,7 @@ AbstractPouchDB.prototype.registerDependentDatabase =
   });
 });
 
-},{"./changes":25,"./deps/errors":29,"./deps/upsert":30,"./merge":35,"./utils":40,"events":8}],21:[function(require,module,exports){
+},{"./changes":46,"./deps/errors":50,"./deps/upsert":51,"./merge":56,"./utils":61,"events":29}],42:[function(require,module,exports){
 "use strict";
 
 var utils = require('../utils');
@@ -5906,7 +8720,7 @@ HttpPouch.valid = function () {
 
 module.exports = HttpPouch;
 
-},{"../deps/errors":29,"../utils":40}],22:[function(require,module,exports){
+},{"../deps/errors":50,"../utils":61}],43:[function(require,module,exports){
 (function (process,global){
 'use strict';
 
@@ -6962,9 +9776,9 @@ IdbPouch.Changes = new utils.Changes();
 module.exports = IdbPouch;
 
 }).call(this,require("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../deps/errors":29,"../merge":35,"../utils":40,"JkpR2F":10}],23:[function(require,module,exports){
+},{"../deps/errors":50,"../merge":56,"../utils":61,"JkpR2F":31}],44:[function(require,module,exports){
 module.exports = ['idb', 'websql'];
-},{}],24:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -7972,7 +10786,7 @@ WebSqlPouch.Changes = new utils.Changes();
 module.exports = WebSqlPouch;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../deps/errors":29,"../merge":35,"../utils":40}],25:[function(require,module,exports){
+},{"../deps/errors":50,"../merge":56,"../utils":61}],46:[function(require,module,exports){
 'use strict';
 var utils = require('./utils');
 var merge = require('./merge');
@@ -8235,7 +11049,7 @@ Changes.prototype.filterChanges = function (opts) {
     });
   }
 };
-},{"./deps/errors":29,"./evalFilter":32,"./evalView":33,"./merge":35,"./utils":40,"events":8}],26:[function(require,module,exports){
+},{"./deps/errors":50,"./evalFilter":53,"./evalView":54,"./merge":56,"./utils":61,"events":29}],47:[function(require,module,exports){
 (function (global){
 /*globals cordova */
 "use strict";
@@ -8396,7 +11210,7 @@ function PouchDB(name, opts, callback) {
 module.exports = PouchDB;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./adapter":20,"./taskqueue":39,"./utils":40}],27:[function(require,module,exports){
+},{"./adapter":41,"./taskqueue":60,"./utils":61}],48:[function(require,module,exports){
 "use strict";
 
 var createBlob = require('./blob.js');
@@ -8635,7 +11449,7 @@ function ajax(options, adapterCallback) {
 
 module.exports = ajax;
 
-},{"../utils":40,"./blob.js":28,"./errors":29}],28:[function(require,module,exports){
+},{"../utils":61,"./blob.js":49,"./errors":50}],49:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -8667,7 +11481,7 @@ module.exports = createBlob;
 
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],29:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 
 function PouchError(opts) {
@@ -8798,7 +11612,7 @@ exports.error = function (error, reason, name) {
   return new CustomPouchError(reason);
 };
 
-},{}],30:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 'use strict';
 var Promise = require('../utils').Promise;
 
@@ -8849,7 +11663,7 @@ module.exports = function (db, docId, diffFun, cb) {
   }
 };
 
-},{"../utils":40}],31:[function(require,module,exports){
+},{"../utils":61}],52:[function(require,module,exports){
 "use strict";
 
 // BEGIN Math.uuid.js
@@ -8934,7 +11748,7 @@ function uuid(len, radix) {
 module.exports = uuid;
 
 
-},{}],32:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 'use strict';
 
 module.exports = evalFilter;
@@ -8946,7 +11760,7 @@ function evalFilter(input) {
     ' })()'
   ].join(''));
 }
-},{}],33:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 'use strict';
 
 module.exports = evalView;
@@ -8968,7 +11782,7 @@ function evalView(input) {
     '})()'
   ].join('\n'));
 }
-},{}],34:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 (function (process){
 "use strict";
 
@@ -8998,7 +11812,7 @@ if (!process.browser) {
 }
 
 }).call(this,require("JkpR2F"))
-},{"./adapters/http":21,"./adapters/idb":22,"./adapters/leveldb":4,"./adapters/websql":24,"./deps/ajax":27,"./deps/errors":29,"./replicate":36,"./setup":37,"./sync":38,"./utils":40,"./version":41,"JkpR2F":10,"pouchdb-extend":62,"pouchdb-mapreduce":65}],35:[function(require,module,exports){
+},{"./adapters/http":42,"./adapters/idb":43,"./adapters/leveldb":25,"./adapters/websql":45,"./deps/ajax":48,"./deps/errors":50,"./replicate":57,"./setup":58,"./sync":59,"./utils":61,"./version":62,"JkpR2F":31,"pouchdb-extend":83,"pouchdb-mapreduce":86}],56:[function(require,module,exports){
 'use strict';
 var extend = require('pouchdb-extend');
 
@@ -9274,7 +12088,7 @@ PouchMerge.rootToLeaf = function (tree) {
 
 module.exports = PouchMerge;
 
-},{"pouchdb-extend":62}],36:[function(require,module,exports){
+},{"pouchdb-extend":83}],57:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -9857,7 +12671,7 @@ function replicateWrapper(src, target, opts, callback) {
 
 exports.replicate = replicateWrapper;
 
-},{"./index":34,"./utils":40,"events":8}],37:[function(require,module,exports){
+},{"./index":55,"./utils":61,"events":29}],58:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -10011,7 +12825,7 @@ PouchDB.plugin = function (obj) {
 module.exports = PouchDB;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./adapters/preferredAdapters.js":23,"./constructor":26,"./utils":40,"events":8}],38:[function(require,module,exports){
+},{"./adapters/preferredAdapters.js":44,"./constructor":47,"./utils":61,"events":29}],59:[function(require,module,exports){
 'use strict';
 var utils = require('./utils');
 var replicate = require('./replicate').replicate;
@@ -10158,7 +12972,7 @@ Sync.prototype.cancel = function () {
     this.pull.cancel();
   }
 };
-},{"./replicate":36,"./utils":40,"events":8}],39:[function(require,module,exports){
+},{"./replicate":57,"./utils":61,"events":29}],60:[function(require,module,exports){
 'use strict';
 
 module.exports = TaskQueue;
@@ -10228,7 +13042,7 @@ TaskQueue.prototype.addTask = function (name, parameters) {
   }
 };
 
-},{}],40:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 (function (process,global){
 /*jshint strict: false */
 /*global chrome */
@@ -10778,10 +13592,10 @@ exports.MD5 = exports.Crypto.MD5 = function (string) {
 };
 
 }).call(this,require("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./deps/ajax":27,"./deps/blob":28,"./deps/buffer":4,"./deps/errors":29,"./deps/uuid":31,"./merge":35,"JkpR2F":10,"argsarray":42,"bluebird":47,"crypto":4,"events":8,"inherits":43,"md5-jkmyers":61,"pouchdb-extend":62}],41:[function(require,module,exports){
+},{"./deps/ajax":48,"./deps/blob":49,"./deps/buffer":25,"./deps/errors":50,"./deps/uuid":52,"./merge":56,"JkpR2F":31,"argsarray":63,"bluebird":68,"crypto":25,"events":29,"inherits":64,"md5-jkmyers":82,"pouchdb-extend":83}],62:[function(require,module,exports){
 module.exports = "2.2.3";
 
-},{}],42:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 'use strict';
 
 module.exports = argsArray;
@@ -10801,15 +13615,15 @@ function argsArray(fun) {
     }
   };
 }
-},{}],43:[function(require,module,exports){
-module.exports=require(9)
-},{}],44:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
+module.exports=require(30)
+},{}],65:[function(require,module,exports){
 'use strict';
 
 module.exports = INTERNAL;
 
 function INTERNAL() {}
-},{}],45:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise');
 var reject = require('./reject');
@@ -10853,7 +13667,7 @@ module.exports = function all(iterable) {
     }
   }
 };
-},{"./INTERNAL":44,"./handlers":46,"./promise":48,"./reject":50,"./resolve":51}],46:[function(require,module,exports){
+},{"./INTERNAL":65,"./handlers":67,"./promise":69,"./reject":71,"./resolve":72}],67:[function(require,module,exports){
 'use strict';
 var tryCatch = require('./tryCatch');
 var resolveThenable = require('./resolveThenable');
@@ -10899,13 +13713,13 @@ function getThen(obj) {
     };
   }
 }
-},{"./resolveThenable":52,"./states":53,"./tryCatch":54}],47:[function(require,module,exports){
+},{"./resolveThenable":73,"./states":74,"./tryCatch":75}],68:[function(require,module,exports){
 module.exports = exports = require('./promise');
 
 exports.resolve = require('./resolve');
 exports.reject = require('./reject');
 exports.all = require('./all');
-},{"./all":45,"./promise":48,"./reject":50,"./resolve":51}],48:[function(require,module,exports){
+},{"./all":66,"./promise":69,"./reject":71,"./resolve":72}],69:[function(require,module,exports){
 'use strict';
 
 var unwrap = require('./unwrap');
@@ -10951,7 +13765,7 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
   return promise;
 };
 
-},{"./INTERNAL":44,"./queueItem":49,"./resolveThenable":52,"./states":53,"./unwrap":55}],49:[function(require,module,exports){
+},{"./INTERNAL":65,"./queueItem":70,"./resolveThenable":73,"./states":74,"./unwrap":76}],70:[function(require,module,exports){
 'use strict';
 var handlers = require('./handlers');
 var unwrap = require('./unwrap');
@@ -10980,7 +13794,7 @@ QueueItem.prototype.callRejected = function (value) {
 QueueItem.prototype.otherCallRejected = function (value) {
   unwrap(this.promise, this.onRejected, value);
 };
-},{"./handlers":46,"./unwrap":55}],50:[function(require,module,exports){
+},{"./handlers":67,"./unwrap":76}],71:[function(require,module,exports){
 'use strict';
 
 var Promise = require('./promise');
@@ -10992,7 +13806,7 @@ function reject(reason) {
 	var promise = new Promise(INTERNAL);
 	return handlers.reject(promise, reason);
 }
-},{"./INTERNAL":44,"./handlers":46,"./promise":48}],51:[function(require,module,exports){
+},{"./INTERNAL":65,"./handlers":67,"./promise":69}],72:[function(require,module,exports){
 'use strict';
 
 var Promise = require('./promise');
@@ -11027,7 +13841,7 @@ function resolve(value) {
       return EMPTYSTRING;
   }
 }
-},{"./INTERNAL":44,"./handlers":46,"./promise":48}],52:[function(require,module,exports){
+},{"./INTERNAL":65,"./handlers":67,"./promise":69}],73:[function(require,module,exports){
 'use strict';
 var handlers = require('./handlers');
 var tryCatch = require('./tryCatch');
@@ -11060,13 +13874,13 @@ function safelyResolveThenable(self, thenable) {
   }
 }
 exports.safely = safelyResolveThenable;
-},{"./handlers":46,"./tryCatch":54}],53:[function(require,module,exports){
+},{"./handlers":67,"./tryCatch":75}],74:[function(require,module,exports){
 // Lazy man's symbols for states
 
 exports.REJECTED = ['REJECTED'];
 exports.FULFILLED = ['FULFILLED'];
 exports.PENDING = ['PENDING'];
-},{}],54:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 'use strict';
 
 module.exports = tryCatch;
@@ -11082,7 +13896,7 @@ function tryCatch(func, value) {
   }
   return out;
 }
-},{}],55:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 var immediate = require('immediate');
@@ -11104,7 +13918,7 @@ function unwrap(promise, func, value) {
     }
   });
 }
-},{"./handlers":46,"immediate":56}],56:[function(require,module,exports){
+},{"./handlers":67,"immediate":77}],77:[function(require,module,exports){
 'use strict';
 var types = [
   require('./nextTick'),
@@ -11145,7 +13959,7 @@ function immediate(task) {
     scheduleDrain();
   }
 }
-},{"./messageChannel":57,"./mutation.js":58,"./nextTick":4,"./stateChange":59,"./timeout":60}],57:[function(require,module,exports){
+},{"./messageChannel":78,"./mutation.js":79,"./nextTick":25,"./stateChange":80,"./timeout":81}],78:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -11166,7 +13980,7 @@ exports.install = function (func) {
   };
 };
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],58:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 (function (global){
 'use strict';
 //based off rsvp https://github.com/tildeio/rsvp.js
@@ -11191,7 +14005,7 @@ exports.install = function (handle) {
   };
 };
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],59:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -11218,7 +14032,7 @@ exports.install = function (handle) {
   };
 };
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],60:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 'use strict';
 exports.test = function () {
   return true;
@@ -11229,9 +14043,9 @@ exports.install = function (t) {
     setTimeout(t, 0);
   };
 };
-},{}],61:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 !function(a,b){"function"==typeof define&&define.amd?define(b):"object"==typeof exports?module.exports=b():a.md5=b()}(this,function(){function a(a,b){var g=a[0],h=a[1],i=a[2],j=a[3];g=c(g,h,i,j,b[0],7,-680876936),j=c(j,g,h,i,b[1],12,-389564586),i=c(i,j,g,h,b[2],17,606105819),h=c(h,i,j,g,b[3],22,-1044525330),g=c(g,h,i,j,b[4],7,-176418897),j=c(j,g,h,i,b[5],12,1200080426),i=c(i,j,g,h,b[6],17,-1473231341),h=c(h,i,j,g,b[7],22,-45705983),g=c(g,h,i,j,b[8],7,1770035416),j=c(j,g,h,i,b[9],12,-1958414417),i=c(i,j,g,h,b[10],17,-42063),h=c(h,i,j,g,b[11],22,-1990404162),g=c(g,h,i,j,b[12],7,1804603682),j=c(j,g,h,i,b[13],12,-40341101),i=c(i,j,g,h,b[14],17,-1502002290),h=c(h,i,j,g,b[15],22,1236535329),g=d(g,h,i,j,b[1],5,-165796510),j=d(j,g,h,i,b[6],9,-1069501632),i=d(i,j,g,h,b[11],14,643717713),h=d(h,i,j,g,b[0],20,-373897302),g=d(g,h,i,j,b[5],5,-701558691),j=d(j,g,h,i,b[10],9,38016083),i=d(i,j,g,h,b[15],14,-660478335),h=d(h,i,j,g,b[4],20,-405537848),g=d(g,h,i,j,b[9],5,568446438),j=d(j,g,h,i,b[14],9,-1019803690),i=d(i,j,g,h,b[3],14,-187363961),h=d(h,i,j,g,b[8],20,1163531501),g=d(g,h,i,j,b[13],5,-1444681467),j=d(j,g,h,i,b[2],9,-51403784),i=d(i,j,g,h,b[7],14,1735328473),h=d(h,i,j,g,b[12],20,-1926607734),g=e(g,h,i,j,b[5],4,-378558),j=e(j,g,h,i,b[8],11,-2022574463),i=e(i,j,g,h,b[11],16,1839030562),h=e(h,i,j,g,b[14],23,-35309556),g=e(g,h,i,j,b[1],4,-1530992060),j=e(j,g,h,i,b[4],11,1272893353),i=e(i,j,g,h,b[7],16,-155497632),h=e(h,i,j,g,b[10],23,-1094730640),g=e(g,h,i,j,b[13],4,681279174),j=e(j,g,h,i,b[0],11,-358537222),i=e(i,j,g,h,b[3],16,-722521979),h=e(h,i,j,g,b[6],23,76029189),g=e(g,h,i,j,b[9],4,-640364487),j=e(j,g,h,i,b[12],11,-421815835),i=e(i,j,g,h,b[15],16,530742520),h=e(h,i,j,g,b[2],23,-995338651),g=f(g,h,i,j,b[0],6,-198630844),j=f(j,g,h,i,b[7],10,1126891415),i=f(i,j,g,h,b[14],15,-1416354905),h=f(h,i,j,g,b[5],21,-57434055),g=f(g,h,i,j,b[12],6,1700485571),j=f(j,g,h,i,b[3],10,-1894986606),i=f(i,j,g,h,b[10],15,-1051523),h=f(h,i,j,g,b[1],21,-2054922799),g=f(g,h,i,j,b[8],6,1873313359),j=f(j,g,h,i,b[15],10,-30611744),i=f(i,j,g,h,b[6],15,-1560198380),h=f(h,i,j,g,b[13],21,1309151649),g=f(g,h,i,j,b[4],6,-145523070),j=f(j,g,h,i,b[11],10,-1120210379),i=f(i,j,g,h,b[2],15,718787259),h=f(h,i,j,g,b[9],21,-343485551),a[0]=l(g,a[0]),a[1]=l(h,a[1]),a[2]=l(i,a[2]),a[3]=l(j,a[3])}function b(a,b,c,d,e,f){return b=l(l(b,a),l(d,f)),l(b<<e|b>>>32-e,c)}function c(a,c,d,e,f,g,h){return b(c&d|~c&e,a,c,f,g,h)}function d(a,c,d,e,f,g,h){return b(c&e|d&~e,a,c,f,g,h)}function e(a,c,d,e,f,g,h){return b(c^d^e,a,c,f,g,h)}function f(a,c,d,e,f,g,h){return b(d^(c|~e),a,c,f,g,h)}function g(b){txt="";var c,d=b.length,e=[1732584193,-271733879,-1732584194,271733878];for(c=64;c<=b.length;c+=64)a(e,h(b.substring(c-64,c)));b=b.substring(c-64);var f=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];for(c=0;c<b.length;c++)f[c>>2]|=b.charCodeAt(c)<<(c%4<<3);if(f[c>>2]|=128<<(c%4<<3),c>55)for(a(e,f),c=0;16>c;c++)f[c]=0;return f[14]=8*d,a(e,f),e}function h(a){var b,c=[];for(b=0;64>b;b+=4)c[b>>2]=a.charCodeAt(b)+(a.charCodeAt(b+1)<<8)+(a.charCodeAt(b+2)<<16)+(a.charCodeAt(b+3)<<24);return c}function i(a){for(var b="",c=0;4>c;c++)b+=m[a>>8*c+4&15]+m[a>>8*c&15];return b}function j(a){for(var b=0;b<a.length;b++)a[b]=i(a[b]);return a.join("")}function k(a){return j(g(a))}function l(a,b){return a+b&4294967295}function l(a,b){var c=(65535&a)+(65535&b),d=(a>>16)+(b>>16)+(c>>16);return d<<16|65535&c}var m="0123456789abcdef".split("");return"5d41402abc4b2a76b9719d911017c592"!=k("hello"),k});
-},{}],62:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 "use strict";
 
 // Extends method
@@ -11379,7 +14193,7 @@ module.exports = extend;
 
 
 
-},{}],63:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 'use strict';
 
 var upsert = require('./upsert');
@@ -11458,7 +14272,7 @@ module.exports = function (opts) {
   });
 };
 
-},{"./upsert":70,"./utils":71}],64:[function(require,module,exports){
+},{"./upsert":91,"./utils":92}],85:[function(require,module,exports){
 'use strict';
 
 module.exports = function (func, emit, sum, log, isArray, toJSON) {
@@ -11466,7 +14280,7 @@ module.exports = function (func, emit, sum, log, isArray, toJSON) {
   return eval("'use strict'; (" + func + ");");
 };
 
-},{}],65:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 'use strict';
 
 var pouchCollate = require('pouchdb-collate');
@@ -12193,7 +15007,7 @@ function QueryParseError(message) {
 
 utils.inherits(QueryParseError, Error);
 
-},{"./create-view":63,"./evalfunc":64,"./taskqueue":69,"./utils":71,"pouchdb-collate":67}],66:[function(require,module,exports){
+},{"./create-view":84,"./evalfunc":85,"./taskqueue":90,"./utils":92,"pouchdb-collate":88}],87:[function(require,module,exports){
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
 var undefined;
@@ -12275,7 +15089,7 @@ module.exports = function extend() {
 };
 
 
-},{}],67:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 'use strict';
 
 var MIN_MAGNITUDE = -324; // verified by -Number.MIN_VALUE
@@ -12498,7 +15312,7 @@ function numToIndexableString(num) {
   return result;
 }
 
-},{"./utils":68}],68:[function(require,module,exports){
+},{"./utils":89}],89:[function(require,module,exports){
 'use strict';
 
 function pad(str, padWith, upToLength) {
@@ -12569,7 +15383,7 @@ exports.intToDecimalForm = function (int) {
 
   return result;
 };
-},{}],69:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 'use strict';
 /*
  * Simple task queue to sequentialize actions. Assumes callbacks will eventually fire (once).
@@ -12594,7 +15408,7 @@ TaskQueue.prototype.finish = function () {
 
 module.exports = TaskQueue;
 
-},{"./utils":71}],70:[function(require,module,exports){
+},{"./utils":92}],91:[function(require,module,exports){
 'use strict';
 var Promise = require('./utils').Promise;
 
@@ -12637,7 +15451,7 @@ function tryAndPut(db, doc, diffFun) {
 
 module.exports = upsert;
 
-},{"./utils":71}],71:[function(require,module,exports){
+},{"./utils":92}],92:[function(require,module,exports){
 (function (process,global){
 'use strict';
 /* istanbul ignore if */
@@ -12728,7 +15542,7 @@ exports.MD5 = function (string) {
   }
 };
 }).call(this,require("JkpR2F"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"JkpR2F":10,"argsarray":42,"crypto":4,"extend":66,"inherits":43,"lie":47,"md5-jkmyers":61}],72:[function(require,module,exports){
+},{"JkpR2F":31,"argsarray":63,"crypto":25,"extend":87,"inherits":64,"lie":68,"md5-jkmyers":82}],93:[function(require,module,exports){
 "use strict";
 var Promise = require("./rsvp/promise")["default"];
 var EventTarget = require("./rsvp/events")["default"];
@@ -12791,7 +15605,7 @@ exports.reject = reject;
 exports.async = async;
 exports.map = map;
 exports.filter = filter;
-},{"./rsvp/all":75,"./rsvp/all-settled":74,"./rsvp/asap":76,"./rsvp/config":77,"./rsvp/defer":78,"./rsvp/events":80,"./rsvp/filter":81,"./rsvp/hash":83,"./rsvp/hash-settled":82,"./rsvp/map":85,"./rsvp/node":86,"./rsvp/promise":88,"./rsvp/race":94,"./rsvp/reject":95,"./rsvp/resolve":96,"./rsvp/rethrow":97}],73:[function(require,module,exports){
+},{"./rsvp/all":96,"./rsvp/all-settled":95,"./rsvp/asap":97,"./rsvp/config":98,"./rsvp/defer":99,"./rsvp/events":101,"./rsvp/filter":102,"./rsvp/hash":104,"./rsvp/hash-settled":103,"./rsvp/map":106,"./rsvp/node":107,"./rsvp/promise":109,"./rsvp/race":115,"./rsvp/reject":116,"./rsvp/resolve":117,"./rsvp/rethrow":118}],94:[function(require,module,exports){
 'use strict';
 var objectOrFunction = require('./utils').objectOrFunction;
 var isFunction = require('./utils').isFunction;
@@ -13013,7 +15827,7 @@ exports.initializePromise = initializePromise;
 exports.invokeCallback = invokeCallback;
 exports.FULFILLED = FULFILLED;
 exports.REJECTED = REJECTED;
-},{"./config":77,"./instrument":84,"./utils":98}],74:[function(require,module,exports){
+},{"./config":98,"./instrument":105,"./utils":119}],95:[function(require,module,exports){
 'use strict';
 var Enumerator = require('./enumerator')['default'];
 var makeSettledResult = require('./enumerator').makeSettledResult;
@@ -13082,7 +15896,7 @@ AllSettled.prototype._validationError = function () {
 exports['default'] = function allSettled(entries, label) {
     return new AllSettled(Promise, entries, label).promise;
 };
-},{"./enumerator":79,"./promise":88,"./utils":98}],75:[function(require,module,exports){
+},{"./enumerator":100,"./promise":109,"./utils":119}],96:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 /**
@@ -13098,7 +15912,7 @@ var Promise = require('./promise')['default'];
 exports['default'] = function all(array, label) {
     return Promise.all(array, label);
 };
-},{"./promise":88}],76:[function(require,module,exports){
+},{"./promise":109}],97:[function(require,module,exports){
 (function (process){
 'use strict';
 var length = 0;
@@ -13168,7 +15982,7 @@ if (typeof process !== 'undefined' && {}.toString.call(process) === '[object pro
     scheduleFlush = useSetTimeout();
 }
 }).call(this,require("JkpR2F"))
-},{"JkpR2F":10}],77:[function(require,module,exports){
+},{"JkpR2F":31}],98:[function(require,module,exports){
 'use strict';
 var EventTarget = require('./events')['default'];
 var config = { instrument: false };
@@ -13189,7 +16003,7 @@ function configure(name, value) {
 }
 exports.config = config;
 exports.configure = configure;
-},{"./events":80}],78:[function(require,module,exports){
+},{"./events":101}],99:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 /**
@@ -13232,7 +16046,7 @@ exports['default'] = function defer(label) {
     }, label);
     return deferred;
 };
-},{"./promise":88}],79:[function(require,module,exports){
+},{"./promise":109}],100:[function(require,module,exports){
 'use strict';
 var isArray = require('./utils').isArray;
 var isMaybeThenable = require('./utils').isMaybeThenable;
@@ -13338,7 +16152,7 @@ Enumerator.prototype._willSettleAt = function (promise, i) {
         enumerator._settledAt(REJECTED, i, reason);
     });
 };
-},{"./-internal":73,"./utils":98}],80:[function(require,module,exports){
+},{"./-internal":94,"./utils":119}],101:[function(require,module,exports){
 'use strict';
 function indexOf(callbacks, callback) {
     for (var i = 0, l = callbacks.length; i < l; i++) {
@@ -13399,7 +16213,7 @@ exports['default'] = {
         }
     }
 };
-},{}],81:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 var isFunction = require('./utils').isFunction;
@@ -13513,7 +16327,7 @@ exports['default'] = function filter(promises, filterFn, label) {
         });
     });
 };
-},{"./promise":88,"./utils":98}],82:[function(require,module,exports){
+},{"./promise":109,"./utils":119}],103:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 var makeSettledResult = require('./enumerator').makeSettledResult;
@@ -13633,7 +16447,7 @@ HashSettled.prototype._validationError = function () {
 exports['default'] = function hashSettled(object, label) {
     return new HashSettled(Promise, object, label).promise;
 };
-},{"./enumerator":79,"./promise":88,"./promise-hash":87,"./utils":98}],83:[function(require,module,exports){
+},{"./enumerator":100,"./promise":109,"./promise-hash":108,"./utils":119}],104:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 var PromiseHash = require('./promise-hash')['default'];
@@ -13729,7 +16543,7 @@ var ABORT_ON_REJECTION = require('./enumerator').ABORT_ON_REJECTION;
 exports['default'] = function hash(object, label) {
     return new PromiseHash(Promise, object, label).promise;
 };
-},{"./enumerator":79,"./promise":88,"./promise-hash":87}],84:[function(require,module,exports){
+},{"./enumerator":100,"./promise":109,"./promise-hash":108}],105:[function(require,module,exports){
 'use strict';
 var config = require('./config').config;
 var now = require('./utils').now;
@@ -13757,7 +16571,7 @@ exports['default'] = function instrument(eventName, promise, child) {
         }, 50);
     }
 };
-},{"./config":77,"./utils":98}],85:[function(require,module,exports){
+},{"./config":98,"./utils":119}],106:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 var isArray = require('./utils').isArray;
@@ -13853,7 +16667,7 @@ exports['default'] = function map(promises, mapFn, label) {
         return Promise.all(results, label);
     });
 };
-},{"./promise":88,"./utils":98}],86:[function(require,module,exports){
+},{"./promise":109,"./utils":119}],107:[function(require,module,exports){
 'use strict';
 /* global  arraySlice */
 var Promise = require('./promise')['default'];
@@ -14043,7 +16857,7 @@ exports['default'] = function denodeify(nodeFunc, argumentNames) {
     denodeifiedFunction.__proto__ = nodeFunc;
     return denodeifiedFunction;
 };
-},{"./promise":88,"./utils":98}],87:[function(require,module,exports){
+},{"./promise":109,"./utils":119}],108:[function(require,module,exports){
 'use strict';
 var Enumerator = require('./enumerator')['default'];
 var PENDING = require('./-internal').PENDING;
@@ -14084,7 +16898,7 @@ PromiseHash.prototype._enumerate = function () {
         this._eachEntry(result.entry, result.position);
     }
 };
-},{"./-internal":73,"./enumerator":79,"./utils":98}],88:[function(require,module,exports){
+},{"./-internal":94,"./enumerator":100,"./utils":119}],109:[function(require,module,exports){
 'use strict';
 var config = require('./config').config;
 var EventTarget = require('./events')['default'];
@@ -14293,7 +17107,7 @@ Promise.prototype = {
         }, label);
     }
 };
-},{"./-internal":73,"./config":77,"./events":80,"./instrument":84,"./promise/all":89,"./promise/cast":90,"./promise/race":91,"./promise/reject":92,"./promise/resolve":93,"./utils":98}],89:[function(require,module,exports){
+},{"./-internal":94,"./config":98,"./events":101,"./instrument":105,"./promise/all":110,"./promise/cast":111,"./promise/race":112,"./promise/reject":113,"./promise/resolve":114,"./utils":119}],110:[function(require,module,exports){
 'use strict';
 var Enumerator = require('../enumerator')['default'];
 /**
@@ -14346,7 +17160,7 @@ var Enumerator = require('../enumerator')['default'];
 exports['default'] = function all(entries, label) {
     return new Enumerator(this, entries, true, label).promise;
 };
-},{"../enumerator":79}],90:[function(require,module,exports){
+},{"../enumerator":100}],111:[function(require,module,exports){
 'use strict';
 var resolve = require('./resolve')['default'];
 /**
@@ -14418,7 +17232,7 @@ var resolve = require('./resolve')['default'];
   @return {Promise} promise
 */
 exports['default'] = resolve;
-},{"./resolve":93}],91:[function(require,module,exports){
+},{"./resolve":114}],112:[function(require,module,exports){
 'use strict';
 var isArray = require('../utils').isArray;
 var isFunction = require('../utils').isFunction;
@@ -14514,7 +17328,7 @@ exports['default'] = function race(entries, label) {
     }
     return promise;
 };
-},{"../-internal":73,"../utils":98}],92:[function(require,module,exports){
+},{"../-internal":94,"../utils":119}],113:[function(require,module,exports){
 'use strict';
 var noop = require('../-internal').noop;
 var _reject = require('../-internal').reject;
@@ -14560,7 +17374,7 @@ exports['default'] = function reject(reason, label) {
     _reject(promise, reason);
     return promise;
 };
-},{"../-internal":73}],93:[function(require,module,exports){
+},{"../-internal":94}],114:[function(require,module,exports){
 'use strict';
 var noop = require('../-internal').noop;
 var _resolve = require('../-internal').resolve;
@@ -14606,7 +17420,7 @@ exports['default'] = function resolve(object, label) {
     _resolve(promise, object);
     return promise;
 };
-},{"../-internal":73}],94:[function(require,module,exports){
+},{"../-internal":94}],115:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 /**
@@ -14622,7 +17436,7 @@ var Promise = require('./promise')['default'];
 exports['default'] = function race(array, label) {
     return Promise.race(array, label);
 };
-},{"./promise":88}],95:[function(require,module,exports){
+},{"./promise":109}],116:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 /**
@@ -14639,7 +17453,7 @@ var Promise = require('./promise')['default'];
 exports['default'] = function reject(reason, label) {
     return Promise.reject(reason, label);
 };
-},{"./promise":88}],96:[function(require,module,exports){
+},{"./promise":109}],117:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise')['default'];
 /**
@@ -14657,7 +17471,7 @@ var Promise = require('./promise')['default'];
 exports['default'] = function resolve(value, label) {
     return Promise.resolve(value, label);
 };
-},{"./promise":88}],97:[function(require,module,exports){
+},{"./promise":109}],118:[function(require,module,exports){
 'use strict';
 /**
   `RSVP.rethrow` will rethrow an error on the next turn of the JavaScript event
@@ -14705,7 +17519,7 @@ exports['default'] = function rethrow(reason) {
     });
     throw reason;
 };
-},{}],98:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 'use strict';
 function objectOrFunction(x) {
     return typeof x === 'function' || typeof x === 'object' && x !== null;
@@ -14742,2794 +17556,4 @@ var o_create = Object.create || function (object) {
         return o;
     };
 exports.o_create = o_create;
-},{}],99:[function(require,module,exports){
-(function (process){
-var Belt = require('../../lib/adapter')
-
-//  models
-  , Board = require('../lib/models/board')
-  , CardLocation = require('../lib/models/cardlocation')
-  , Pocket = require('../lib/models/pocket')
-  , Region = require('../lib/models/region')
-  , Transform = require('../lib/models/transform')
-  , Wall = require('../lib/models/wall')
-
-//  system
-  , Commands = require('../lib/commands')
-  , Queries = require('../lib/queries')
-  , Services = require('../lib/services')
-  , MovementTracker = require('../lib/trackMovement')
-  , TransformManager = require('../lib/transformManager');
-
-function Application( queue, ui, options ) {
-    this.options = options || {};
-    if ( !process.browser ) {
-        this.options.db = require('memdown');
-    }
-
-    var belt = this.belt = new Belt( 'vuu_se', this.options );
-
-    // initialize the services
-    var commands = new Commands( belt );
-    var queries = new Queries( belt );
-    var services = this.services = new Services( ui, commands, queries );
-    var movementTracker = this.movementTracker = new MovementTracker( queue, commands, queries );
-    var transformManager = this.transformManager = new TransformManager( queue, commands, queries );
-
-    this._listen = true;
-
-    var factories = {
-        "Board": Board
-      , "CardLocation": CardLocation
-      , "Pocket": Pocket
-      , "Region": Region
-      , "Transform": Transform
-      , "Wall": Wall
-    };
-
-    var listeners = [ 'created', 'updated', 'deleted' ];
-
-    for ( var key in factories ) {
-        var type = key.toLowerCase(), Model = factories[ key ];
-
-        // register model
-        belt.resource( type, Model.constructor )
-            .schema( Model.schema )
-            .validator( Model.validator )
-            .beforeCreate( Model.onBeforeCreate )
-            .beforeUpdate( Model.onBeforeUpdate );
-
-        // listen to db for events
-        attachListenersToDb( type );
-    }
-
-
-    function attachListenersToDb( type  ) {
-        listeners.forEach(function( listener ) {
-            belt.on( type + ':' + listener, function( data ) {
-                queue.trigger( type + ':' + listener, data );
-            });
-        });
-    }
-
-    this.constructor = Application;
-
-    var _this = this;
-
-    // setup events to trigger services
-
-    var listeners2 = [ 'new', 'create', 'edit', 'update', 'select', 'display', 'unlink', 'move', 'resize' ];
-
-    for ( var x in factories ) {
-        setUpEventListeners( x );
-    }
-
-    function setUpEventListeners( type ) {
-        listeners2.forEach(function( task ) {
-            queue.on( type.toLowerCase() + ':' + task, function( ev ) {
-                if (!_this._listen || !services[ task + type ]) return;
-
-                if (options.debug) {
-                    console.log( 'services.' + task + type + '()' );
-                }
-
-                services[ task + type ]( ev );
-            });
-        });
-    }
-
-    queue
-        .on('board:displayed', function( board ) {
-            if (!_this._listen) return;
-
-            services.displayCardLocations( board );
-            services.displayRegions( board );
-        })
-
-        .on('wall:firsttime', function( wall ) {
-            if (!_this._listen) return;
-
-            services.newBoard();
-        })
-
-        .on('wall:created', function( wall ) {
-            if (!_this._listen) return;
-
-            services.displayWall( wall.getId() );
-        })
-
-        .on('board:created', function( board ) {
-            if (!_this._listen) return;
-
-            services.displayBoard( board.getId() );
-        })
-
-        .on('region:created', function( region ) {
-            if (!_this._listen) return;
-
-            services.displayRegion( region.getId() );
-        })
-
-        .on('cardlocation:created', function( cardlocation ) {
-            if (!_this._listen) return;
-
-            services.displayCardLocation( cardlocation );
-        })
-
-        .on( 'cardlocation:updated', function( location ) {
-            if (!_this._listen) return;
-
-            movementTracker.trackCardMovement( location );
-        })
-
-        .on( 'region:updated', function( region ) {
-            if (!_this._listen) return;
-
-            movementTracker.trackRegionMovement( region );
-        })
-
-        .on( 'pocket:regionenter', function( data ) {
-            if (!_this._listen) return;
-
-            transformManager.checkTransforms( data );
-        })
-
-        .on( 'pocket:regionexit', function( data ) {
-            if (!_this._listen) return;
-
-            transformManager.checkTransforms( data );
-        })
-
-        ;
-}
-
-Application.prototype.pauseListenting = function() {
-    this._listen = false;
-};
-
-Application.prototype.startListening = function() {
-    this._listen = true;
-};
-
-module.exports = Application;
-
-}).call(this,require("JkpR2F"))
-},{"../../lib/adapter":1,"../lib/commands":100,"../lib/models/board":103,"../lib/models/cardlocation":104,"../lib/models/pocket":105,"../lib/models/region":106,"../lib/models/transform":107,"../lib/models/wall":108,"../lib/queries":109,"../lib/services":112,"../lib/trackMovement":116,"../lib/transformManager":117,"JkpR2F":10,"memdown":13}],100:[function(require,module,exports){
-var RSVP = require('rsvp')
-  , Promise = RSVP.Promise;
-
-// Commands
-
-function Commands( adapter ) {
-    this._db = adapter;
-}
-
-var models = [ 'Board', 'CardLocation', 'Pocket', 'Region', 'Transform', 'Wall' ];
-var commands = [ 'create', 'update' ];
-
-commands.forEach(function( command ) {
-    models.forEach(function( model ) {
-        Commands.prototype[ command + model ] = function( data ) {
-            var _this = this;
-            return new Promise(function(resolve, reject) {
-                if (!_this._db[command]) reject( new Error( '[' + command +'] is not a valid command for ['+ model +']' ) );
-
-                _this._db[command]( model.toLowerCase(), data) // --> model:commanded ( board:created, pocket:updated )
-                    .then( resolve, reject )
-                    .catch( reject );
-            });
-        };
-    });
-});
-
-Commands.prototype.addPocketsToBoard = function( board, pockets ) {
-    var _this = this;
-
-    var promises = pockets.map(function( pocket ) {
-        return _this.createCardLocation( { board: board.getId(), pocket: pocket.getId() } );
-    });
-
-    return RSVP.all( promises );
-};
-
-Commands.prototype.addPocketToBoards = function( boards, pocket ) {
-    var _this = this;
-
-    var promises = boards.map(function( board ) {
-        return _this.createCardLocation( { board: board.getId(), pocket: pocket.getId() } );
-    });
-
-    return RSVP.all( promises );
-};
-
-module.exports = Commands;
-
-},{"rsvp":72}],101:[function(require,module,exports){
-// Commands
-
-function Interface( queue, ui ) {
-    this._queue = queue;
-    this._ui = ui;
-}
-
-Interface.prototype.addBoard = function( board ) {
-    this.displayBoard( board );
-
-    if (this._ui) this._ui.displayBoardSelector( this._wall, board );
-
-    this._queue.trigger( 'board:added', board );
-};
-
-Interface.prototype.displayBoard = function( board ) {
-    if ( !this._wall || board.getWall() !== this._wall.getId() ) return;
-
-    this._board = board;
-    this._regions = [];
-    this._cardlocations = [];
-
-    if (this._ui) this._ui.displayBoard( board );
-
-    this._queue.trigger( 'board:displayed', board );
-
-    this.enableControls();
-};
-
-Interface.prototype.displayBoardCreator = function() {
-    if ( !this._wall ) return;
-
-    if (this._ui) this._ui.displayBoardCreator( this._wall );
-
-    this._queue.trigger( 'boardcreator:displayed' );
-};
-
-Interface.prototype.displayBoardEditor = function( board ) {
-    if (this._ui) this._ui.displayBoardEditor( board );
-
-    this._queue.trigger( 'boardeditor:displayed', board );
-};
-
-Interface.prototype.displayBoardSelector = function( boards ) {
-    if (this._ui) this._ui.displayBoardSelector( this._wall, boards );
-
-    this._queue.trigger( 'boardselector:displayed', boards );
-};
-
-// cardlocations
-
-Interface.prototype.displayCardLocation = function( location, pocket ) {
-    if ( !this._board || location.getBoard() !== this._board.getId() || ~this._cardlocations.indexOf( location.getId() )) return;
-
-    this._cardlocations.push( location.getId() );
-
-    if (this._ui) this._ui.displayCardLocation( location, pocket );
-
-    this._queue.trigger( 'cardlocation:displayed', location );
-};
-
-Interface.prototype.displayPocketCreator = function() {
-    if ( !this._wall ) return;
-
-    if (this._ui) this._ui.displayPocketCreator( this._wall );
-
-    this._queue.trigger( 'pocketcreator:displayed' );
-};
-
-Interface.prototype.displayPocketEditor = function( pocket ) {
-    if (this._ui) this._ui.displayPocketEditor( pocket );
-
-    this._queue.trigger( 'pocketeditor:displayed', pocket );
-};
-
-// regions
-
-Interface.prototype.displayRegion = function( region ) {
-    if ( !this._board || region.getBoard() !== this._board.getId() || ~this._regions.indexOf( region.getId() )) return;
-
-    this._regions.push( region.getId() );
-
-    if (this._ui) this._ui.displayRegion( region );
-
-    this._queue.trigger( 'region:displayed', region );
-};
-
-Interface.prototype.displayRegions = function( regions ) {
-    var _this = this;
-
-    regions.forEach(function( region ) {
-        _this.displayRegion( region );
-    });
-};
-
-Interface.prototype.displayRegionCreator = function() {
-    if ( !this._board ) return;
-
-    if (this._ui) this._ui.displayRegionCreator( this._board );
-
-    this._queue.trigger( 'regioncreator:displayed' );
-};
-
-Interface.prototype.displayRegionEditor = function( region ) {
-    if (this._ui) this._ui.displayRegionEditor( region );
-
-    this._queue.trigger( 'regioneditor:displayed', region );
-};
-
-// walls
-
-Interface.prototype.displayWall = function( wall ) {
-    this._wall = wall;
-    this._regions = [];
-    this._cardlocations = [];
-    delete this._board;
-
-    if (this._ui) this._ui.displayWall( wall );
-
-    this._queue.trigger( 'wall:displayed', wall );
-};
-
-Interface.prototype.displayWallCreator = function() {
-    if (this._ui) this._ui.displayWallCreator();
-
-    this._queue.trigger( 'wallcreator:displayed' );
-};
-
-Interface.prototype.displayWallEditor = function( wall ) {
-    if (this._ui) this._ui.displayWallEditor( wall );
-
-    this._queue.trigger( 'walleditor:displayed', wall );
-};
-
-Interface.prototype.displayWallSelector = function( walls ) {
-    if (this._ui) this._ui.displayWallSelector( walls );
-
-    this._queue.trigger( 'wallselector:displayed', walls );
-};
-
-Interface.prototype.notifyWallFirstTime = function( wall ) {
-    this._queue.trigger( 'wall:firsttime', wall );
-
-    this.displayBoardCreator();
-};
-
-Interface.prototype.enableControls = function( data ) {
-    if (this._ui) this._ui.enableControls( data );
-
-    this._queue.trigger( 'controls:enabled' );
-};
-
-module.exports = Interface;
-
-},{}],102:[function(require,module,exports){
-var $ = window.$
-  , Queue = require('./queue')
-  , Application = require('./application')
-  , Interface = require('./interface')
-  , UI = require('./ui');
-
-var $ = $ || function(){ console.log( 'jQuery not loaded.' ); };
-
-var queue = new Queue({ debug: true });
-var ui = new UI( queue, $('[data-provides="ui"]'), {}, $ );
-var interface = new Interface( queue, ui );
-var application = new Application( queue, interface, {} );
-
-module.exports = queue;
-
-},{"./application":99,"./interface":101,"./queue":111,"./ui":118}],103:[function(require,module,exports){
-
-
-function Board( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        this[prop] = data[prop];
-    }
-
-    this.cardlocations = [];
-    this.regions = [];
-    this.transforms = [];
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.shelf = {};
-
-    this.constructor = Board;
-}
-
-Board.prototype.getId = function() {
-    return this.id;
-};
-
-Board.prototype.getName = function() {
-    return this.name;
-};
-
-Board.prototype.getWall = function() {
-    return this.wall;
-};
-
-Board.prototype.getCardLocations = function() {
-    return this.cardlocations;
-};
-
-Board.prototype.addCardLocation = function( cardlocation ) {
-    if ( !~this.cardlocations.indexOf( cardlocation.id ) ) {
-        this.cardlocations.push( cardlocation.id );
-    }
-
-    return this;
-};
-
-Board.prototype.getRegions = function() {
-    return this.regions;
-};
-
-Board.prototype.addRegion = function( region ) {
-    if ( !~this.regions.indexOf( region.id ) ) {
-        this.regions.push( region.id );
-    }
-
-    return this;
-};
-
-Board.prototype.getTransforms = function() {
-    return this.transforms;
-};
-
-Board.prototype.addTransform = function( transform ) {
-    if ( !~this.transforms.indexOf( transform.id ) ) {
-        this.transforms.push( transform.id );
-    }
-
-    return this;
-};
-
-Board.constructor = function( data ) {
-    if ( data instanceof Board ) {
-        return data;
-    }
-
-    return new Board( data );
-};
-
-Board.schema = {
-    name: String
-  , wall: 'wall'
-  , cardlocations: ['cardlocation']
-  , regions: ['region']
-  , transforms: ['transform']
-  , createdBy: 'user'
-  , createdOn: Date
-  , lastModifiedBy: 'user'
-  , lastModifiedOn: Date
-  // , views: [ 'view' ] --> [ 'transform' ]
-  // , access: [ 'right' ] --> 'user', 'group'
-};
-
-Board.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.name || data.name === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Name is required' );
-    }
-
-    if ( !data.wall || data.wall === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Wall is required' );
-    }
-
-    return validator;
-};
-
-Board.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    return data;
-};
-
-Board.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    return data;
-};
-
-module.exports = Board;
-
-},{}],104:[function(require,module,exports){
-
-
-function CardLocation( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        this[prop] = data[prop];
-    }
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.constructor = CardLocation;
-}
-
-CardLocation.prototype.getId = function() {
-    return this.id;
-};
-
-CardLocation.prototype.getX = function() {
-    return this.x;
-};
-
-CardLocation.prototype.getY = function() {
-    return this.y;
-};
-
-CardLocation.prototype.getPocket = function() {
-    return this.pocket;
-};
-
-CardLocation.prototype.getBoard = function() {
-    return this.board;
-};
-
-CardLocation.prototype.getPosition = function() {
-    return {
-        id: this.id,
-        board: this.board,
-        x: this.x,
-        y: this.y
-    };
-};
-
-CardLocation.prototype.moveTo = function( x, y ) {
-    if ( this.x !== x || this.y !== y ) {
-        this.x = x;
-        this.y = y;
-    }
-
-    return this;
-};
-
-CardLocation.constructor = function( data ) {
-    if ( data instanceof CardLocation ) {
-        return data;
-    }
-
-    return new CardLocation( data );
-};
-
-CardLocation.schema = {
-    x: Number,
-    y: Number,
-    board: 'board',
-    pocket: 'pocket'
-  , createdBy: 'user'
-  , createdOn: Date
-  , lastModifiedBy: 'user'
-  , lastModifiedOn: Date
-};
-
-CardLocation.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.pocket || data.pocket === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Pocket is required' );
-    }
-
-    if ( !data.board || data.board === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Board is required' );
-    }
-
-    return validator;
-};
-
-CardLocation.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    return data;
-};
-
-CardLocation.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    data.x = data.x || 20;
-    data.y = data.y || 20;
-
-    return data;
-};
-
-module.exports = CardLocation;
-
-},{}],105:[function(require,module,exports){
-
-
-function Pocket( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        var value = data[prop];
-
-        this[prop] = (value === 'undefined' ? undefined : value);
-    }
-
-    this.cardlocations = [];
-    this.regions = [];
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.constructor = Pocket;
-}
-
-Pocket.prototype.getId = function() {
-    return this.id;
-};
-
-Pocket.prototype.getTitle = function() {
-    return this.title;
-};
-
-Pocket.prototype.getCardnumber = function() {
-    return this.cardnumber;
-};
-
-Pocket.prototype.getContent = function() {
-    return this.content;
-};
-
-Pocket.prototype.getTags = function() {
-    return this.tags;
-};
-
-Pocket.prototype.getMentions = function() {
-    return this.mentions;
-};
-
-Pocket.prototype.getWall = function() {
-    return this.wall;
-};
-
-Pocket.prototype.getCardLocations = function() {
-    return this.cardlocations;
-};
-
-Pocket.prototype.addCardLocation = function( cardlocation ) {
-    if ( !~this.cardlocations.indexOf( cardlocation.id ) ) {
-        this.cardlocations.push( cardlocation.id );
-    }
-
-    return this;
-};
-
-Pocket.prototype.getRegions = function() {
-    return this.regions;
-};
-
-Pocket.prototype.addRegion = function( region ) {
-    if ( !~this.regions.indexOf( region.id ) ) {
-        this.regions.push( region.id );
-    }
-
-    return this;
-};
-
-Pocket.prototype.removeRegion = function( region ) {
-    var loc = this.regions.indexOf( region.id );
-
-    if ( ~loc ) {
-        this.regions.splice( loc, 1 );
-    }
-
-    return this;
-};
-
-Pocket.constructor = function( data ) {
-    if ( data instanceof Pocket ) {
-        return data;
-    }
-
-    return new Pocket( data );
-};
-
-Pocket.schema = {
-    title: String,
-    cardnumber: Number,
-    content: String,     // [ 'fragment' ]
-    tags: String,        // [ 'tag' ]
-    mentions: String,    // [ 'mention' ] --> 'user', 'group'
-    color: String,
-    wall: 'wall',
-    cardlocation: ['cardlocation'],
-    regions: ['region']
-    , createdBy: 'user'
-    , createdOn: Date
-    , lastModifiedBy: 'user'
-    , lastModifiedOn: Date
-};
-
-Pocket.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.title || data.title === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Title is required' );
-    }
-
-    if ( !data.wall || data.wall === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Wall is required' );
-    }
-
-    return validator;
-};
-
-Pocket.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    return data;
-};
-
-Pocket.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    return data;
-};
-
-module.exports = Pocket;
-
-},{}],106:[function(require,module,exports){
-
-
-function Region( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        this[prop] = data[prop];
-    }
-
-    this.pockets = [];
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.constructor = Region;
-}
-
-Region.prototype.getId = function() {
-    return this.id;
-};
-
-Region.prototype.getLabel = function() {
-    return this.label;
-};
-
-Region.prototype.getColor = function() {
-    return this.color;
-};
-
-Region.prototype.getValue = function() {
-    return this.value;
-};
-
-Region.prototype.getX = function() {
-    return this.x;
-};
-
-Region.prototype.getY = function() {
-    return this.y;
-};
-
-Region.prototype.getWidth = function() {
-    return this.width;
-};
-
-Region.prototype.getHeight = function() {
-    return this.height;
-};
-
-Region.prototype.getBoard = function() {
-    return this.board;
-};
-
-Region.prototype.getPockets = function() {
-    return this.pockets;
-};
-
-Region.prototype.addPocket = function( pocket ) {
-    if ( !~this.pockets.indexOf( pocket.id ) ) {
-        this.pockets.push( pocket.id );
-    }
-
-    return this;
-};
-
-Region.prototype.moveTo = function( x, y ) {
-    if ( this.x !== x || this.y !== y ) {
-        this.x = x;
-        this.y = y;
-    }
-
-    return this;
-};
-
-Region.prototype.resizeTo = function( width, height ) {
-    if ( this.width !== width || this.height !== height ) {
-        this.width = width;
-        this.height = height;
-    }
-
-    return this;
-};
-
-Region.constructor = function( data ) {
-    if ( data instanceof Region ) {
-        return data;
-    }
-
-    return new Region( data );
-};
-
-Region.schema = {
-    label: String
-  , value: String
-  , color: String
-  , x: Number
-  , y: Number
-  , width: Number
-  , height: Number
-  , board: 'board'
-  , pockets: ['pocket']
-  , createdBy: 'user'
-  , createdOn: Date
-  , lastModifiedBy: 'user'
-  , lastModifiedOn: Date
-};
-
-Region.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.label || data.label === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Label is required' );
-    }
-
-    if ( !data.board || data.board === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Board is required' );
-    }
-
-    return validator;
-};
-
-Region.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    return data;
-};
-
-Region.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    data.width = data.width || 100;
-    data.height = data.height || 100;
-    data.x = data.x || 10;
-    data.y = data.y || 10;
-
-    return data;
-};
-
-module.exports = Region;
-
-},{}],107:[function(require,module,exports){
-var queryPhraseParser = require('../queryPhraseParser');
-
-
-function Transform( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        this[prop] = data[prop];
-    }
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.constructor = Transform;
-}
-
-Transform.prototype.getId = function() {
-    return this.id;
-};
-
-Transform.prototype.getPhrase = function() {
-    return this.phrase;
-};
-
-Transform.prototype.getRules = function() {
-    return this.rules;
-};
-
-Transform.prototype.getBoard = function() {
-    return this.board;
-};
-
-Transform.constructor = function( data ) {
-    if ( data instanceof Transform ) {
-        return data;
-    }
-
-    return new Transform( data );
-};
-
-Transform.schema = {
-    phrase: String
-  , rules: Object
-  , board: 'board'
-  , createdBy: 'user'
-  , createdOn: Date
-  , lastModifiedBy: 'user'
-  , lastModifiedOn: Date
-};
-
-Transform.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.phrase || data.phrase === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Phrase is required' );
-    }
-
-    if ( !data.board ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'Board is required' );
-    }
-
-    return validator;
-};
-
-Transform.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    data.rules = queryPhraseParser( data.phrase );
-
-    return data;
-};
-
-Transform.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    data.rules = queryPhraseParser( data.phrase );
-
-    return data;
-};
-
-module.exports = Transform;
-
-},{"../queryPhraseParser":110}],108:[function(require,module,exports){
-function Wall( data ) {
-    for ( var prop in data ) {
-        if ( prop === 'links' ) continue;
-
-        this[prop] = data[prop];
-    }
-
-    this.boards = [];
-    this.pockets = [];
-
-    for ( var link in data.links ) {
-        this[link] = data.links[link];
-    }
-
-    this.constructor = Wall;
-}
-
-Wall.prototype.getId = function() {
-    return this.id;
-};
-
-Wall.prototype.getName = function() {
-    return this.name;
-};
-
-Wall.prototype.getBoards = function() {
-    return this.boards;
-};
-
-Wall.prototype.addBoard = function( board ) {
-    if ( !~this.boards.indexOf( board.id ) ) {
-        this.boards.push( board.id );
-    }
-
-    return this;
-};
-
-Wall.prototype.getPockets = function() {
-    return this.pockets;
-};
-
-Wall.prototype.addPocket = function( pocket ) {
-    if ( !~this.pockets.indexOf( pocket.id ) ) {
-        this.pockets.push( pocket.id );
-    }
-
-    return this;
-};
-
-Wall.constructor = function( data ) {
-    if ( data instanceof Wall ) {
-        return data;
-    }
-
-    return new Wall( data );
-};
-
-Wall.schema = {
-    name: String
-  , boards: ['board']
-  , pockets: ['pocket']
-  , createdBy: 'user'
-  , createdOn: Date
-  , lastModifiedBy: 'user'
-  , lastModifiedOn: Date
-  // , access: [ 'right' ] --> 'user', 'group'
-};
-
-Wall.validator = function( data ) {
-    var validator = {
-        validForUpdate: true
-      , validForCreate: true
-      , issues: []
-    };
-
-    if ( !data.id ) {
-        validator.validForUpdate = false;
-        validator.issues.push( 'ID is required' );
-    }
-
-    if ( !data.name || data.name === '' ) {
-        validator.validForUpdate = validator.validForCreate = false;
-        validator.issues.push( 'Name is required' );
-    }
-
-    return validator;
-};
-
-Wall.onBeforeUpdate = function ( data ) {
-    // data.lastModifiedBy = app.getCurrentUser()._id;
-    data.lastModifiedOn = new Date();
-
-    return data;
-};
-
-Wall.onBeforeCreate = function( data ) {
-    // data.createdBy = app.getCurrentUser()._id;
-    data.createdOn = new Date();
-
-    return data;
-};
-
-module.exports = Wall;
-
-},{}],109:[function(require,module,exports){
-var RSVP = require('rsvp')
-  , Promise = RSVP.Promise;
-
-// Commands
-
-function Queries( adapter ) {
-    this._db = adapter;
-}
-
-Queries.prototype.getBoard = function( boardid ) {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.find( 'board', boardid )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getBoardsForWall = function( wall ) {
-    var _this = this
-      , boardids = wall.getBoards();
-
-    return new Promise(function( resolve, reject ) {
-        if (!boardids.length) {
-            resolve([]);
-        }
-
-        _this._db.findMany( 'board', boardids )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getCardLocation = function( id ) {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.find( 'cardlocation', id )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getCardLocationsForBoard = function( board ) {
-    var _this = this
-      , ids = board.getCardLocations();
-
-    return new Promise(function( resolve, reject ) {
-        if (!ids.length) {
-            resolve([]);
-        }
-
-        _this._db.findMany( 'cardlocation', ids )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getPocket = function( pocketid ) {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.find( 'pocket', pocketid )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getPocketsForWall = function( wall ) {
-    var _this = this
-      , pocketids = wall.getPockets();
-
-    return new Promise(function( resolve, reject ) {
-        if (!pocketids.length) {
-            resolve([]);
-        }
-
-        _this._db.findMany( 'pocket', pocketids )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getRegion = function( regionid ) {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.find( 'region', regionid )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getRegionsForBoard = function( board ) {
-    var _this = this
-      , regionids = board.getRegions();
-
-    return new Promise(function( resolve, reject ) {
-        if (!regionids.length) {
-            resolve([]);
-        }
-
-        _this._db.findMany( 'region', regionids )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getTransformsForBoard = function( board ) {
-    var _this = this
-      , transformids = board.getTransforms();
-
-    return new Promise(function( resolve, reject ) {
-        if (!transformids.length) {
-            resolve([]);
-        }
-
-        _this._db.findMany( 'transform', transformids )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getAllTransforms = function() {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.findMany( 'transforms' )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getWall = function( wallid ) {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.find( 'wall', wallid )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-Queries.prototype.getAllWalls = function() {
-    var _this = this;
-
-    return new Promise(function( resolve, reject ) {
-        _this._db.findMany( 'wall' )
-            .then( resolve )
-            .catch( reject );
-    });
-};
-
-module.exports = Queries;
-
-},{"rsvp":72}],110:[function(require,module,exports){
-// query phrase config object
-
-function Config( attr ) {
-  this.attr = attr;
-}
-
-Config.prototype.from = function( attr, selector ) {
-  this.from = {
-    attr: attr,
-    selector: selector
-  };
-
-  return this;
-};
-
-Config.prototype.when = function( relationship, filter ) {
-  this.when = {
-    relationship: relationship,
-    filter: filter
-  };
-
-  return this;
-};
-
-// parser factory
-
-function get( attr ) {
-  var config = new Config( attr );
-
-  return config;
-}
-
-function region( relationship, selector ) {
-    return {
-      relationship: relationship,
-      selector: selector,
-      node: 'region'
-    };
-}
-
-function board( selector ) {
-    return {
-      selector: selector,
-      node: 'board'
-    };
-}
-
-function Parser( phrase ) {
-  var matches = phrase.match(/(get|from|when)/ig);
-  if (!matches || matches.length < 2) {
-    return {};
-  }
-
-  var out = phrase.replace(/\sof\s/ig, ' ').replace(/board\s#([^\s]*)/ig, 'this.board(\'#$1\')').trim();
-  out = out.replace(/(board[^\(])\s/ig, '\'$1\' ').trim();
-  out = out.replace(/\sboard(?:\s|$)/ig, ' \'board\' ').trim();
-  out = out.replace(/region\s([^\s]*)\s([^\s]*)/ig, 'this.region(\'$1\',$2)').trim();
-  out = out.replace(/\sregion(?:\s|$)/ig, ' \'region\' ').trim();
-  out = out.replace(/get\s([^\s]*)/ig, 'this.get(\'$1\')').trim();
-  out = out.replace(/\sfrom\s([^\s]*)\s([^\s]*)/ig, '.from(\'$1\',$2)').trim();
-  out = out.replace(/\swhen\s([^\s]*?)\s([^\s]*)/ig, '.when(\'$1\',$2)').trim();
-
-  if (out === phrase) {
-    return {};
-  }
-
-  /*jslint evil: true */
-  return (new Function( 'return ' + out )).call({
-      get: get,
-      region: region,
-      board: board
-  });
-}
-
-module.exports = Parser;
-
-},{}],111:[function(require,module,exports){
-function EventQueue( options ) {
-    this.options = options || {};
-
-    this.events = {};
-}
-
-EventQueue.prototype.on = function( ev, reaction, once ) {
-    if (!this.events[ev]) {
-        this.events[ev] = [];
-    }
-
-    this.events[ev].push( { reaction: reaction, once: !!once } );
-
-    return this;
-};
-
-EventQueue.prototype.once = function( ev, reaction ) {
-    return this.on( ev, reaction, true );
-};
-
-EventQueue.prototype.emit = function( ev, data ) {
-    var options = this.options;
-
-    if (options.debug) {
-        console.log( 'EventQueue.emit('+ ev +')', !!this.events[ev] );
-    }
-
-    if (this.events[ev]) {
-        var cleansed = [];
-
-        this.events[ev].forEach(function( react ) {
-            if (options.debug) {
-                console.log( 'this.events['+ ev + '].call()' );
-            }
-
-            // setTimeout(function() {
-                react.reaction( data );
-            // }, 0);
-
-            if (!react.once) {
-                cleansed.push( react );
-            }
-        });
-
-        this.events[ev] = cleansed;
-    }
-
-    return this;
-};
-
-EventQueue.prototype.clearAll = function() {
-    this.events = {};
-};
-
-EventQueue.prototype.trigger = function( ev, data ) {
-    this.emit( ev, data );
-};
-
-module.exports = EventQueue;
-
-},{}],112:[function(require,module,exports){
-var RSVP = require('rsvp')
-  , Promise = RSVP.Promise;
-
-// Application
-
-function Services( interface, commands, queries ) {
-    this._commands = commands;
-    this._queries = queries;
-    this._interface = interface;
-}
-
-// board:new
-Services.prototype.newBoard = function() {
-    return this._interface.displayBoardCreator();
-};
-
-// board:create
-Services.prototype.createBoard = function( data ) {
-    var _this = this, board, phrase;
-
-    if (data.transform) {
-        phrase = data.transform;
-
-        delete data.transform;
-    }
-
-    return this._commands
-        .createBoard( data )  // --> board:created
-        .then(function( resource ) {
-            board = resource;
-
-            return board;
-        })
-        .then(function( board ) {
-            if (phrase && phrase !== '') {
-                return _this.createTransform({
-                        board: board.getId(),
-                        phrase: phrase
-                    })
-                    .then(function( transform ) {
-                        board.transforms.push( transform.getId() );
-
-                        return board;
-                    });
-            }
-
-            return board;
-        })
-        .then(function( board ) {
-            _this._interface.addBoard( board );
-
-            return _this._queries.getWall( board.getWall() );
-        })
-        .then(function( wall ) {
-            return _this._queries.getPocketsForWall( wall );
-        })
-        .then(function( pockets ) {
-            _this._commands.addPocketsToBoard( board, pockets );  // --> cardlocation:created
-
-            return board;
-        });
-};
-
-// board:edit
-Services.prototype.editBoard = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getBoard( id )
-        .then(function( board ) {
-            _this._interface.displayBoardEditor( board );
-
-            return board;
-        });
-};
-
-// board:update
-Services.prototype.updateBoard = function( data ) {
-    var _this = this, phrase;
-
-    if (data.transform) {
-        phrase = data.transform;
-
-        delete data.transform;
-    }
-
-    return this._commands.updateBoard( data )  // --> board:updated
-        .then(function( board ) {
-            if (phrase && phrase !== '') {
-                return _this.createTransform({
-                        board: board.getId(),
-                        phrase: phrase
-                    })
-                    .then(function( transform ) {
-                        board.transforms.push( transform.getId() );
-
-                        return board;
-                    });
-            }
-
-            return board;
-        });
-
-};
-
-// board:display
-// board:created
-Services.prototype.displayBoard = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getBoard( id )
-        .then(function( board ) {
-            _this._interface.displayBoard( board );  // --> board:displayed
-
-            return board;
-        });
-};
-
-// board:select
-Services.prototype.selectBoard = function( wall ) {
-    var _this = this;
-
-    return this._queries
-        .getBoardsForWall( wall )
-        .then(function( boards ) {
-            _this._interface.displayBoardSelector( boards );  // --> boardselector:displayed
-
-            return boards;
-        });
-};
-
-
-
-
-
-// cardlocations
-
-// cardlocation:created
-Services.prototype.displayCardLocation = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getCardLocation( id )
-        .then(function( location ) {
-            return callDisplayCardLocationWithPocket.call( _this, location );
-        });
-};
-
-// board:displayed
-Services.prototype.displayCardLocations = function( board ) {
-    var _this = this;
-
-    return this._queries
-        .getCardLocationsForBoard( board )
-        .then(function( locations ) {
-            var promises = locations.map(function( location ) {
-                return callDisplayCardLocationWithPocket.call( _this, location );
-            });
-
-            return RSVP.all( promises );
-        });
-};
-
-function callDisplayCardLocationWithPocket( location ) {
-    var _this = this;
-
-    return this._queries.getPocket( location.getPocket() )
-        .then(function( pocket ) {
-            _this._interface.displayCardLocation( location, pocket );  // --> cardlocation:displayed
-
-            return location;
-        });
-}
-
-// cardlocation:move
-Services.prototype.moveCardLocation = function( info ) {
-    var _this = this;
-
-    return this._queries
-        .getCardLocation( info.id )
-        .then(function( cardlocation ) {
-            if ( cardlocation.x != info.x || cardlocation.y != info.y ) {
-              cardlocation.x = info.x;
-              cardlocation.y = info.y;
-
-              return _this._commands.updateCardLocation( cardlocation );  // --> cardlocation:updated
-            }
-        });
-};
-
-
-
-
-
-
-// pockets
-
-// pocket:new
-Services.prototype.newPocket = function() {
-    return this._interface.displayPocketCreator();
-};
-
-// pocket:create
-Services.prototype.createPocket = function( data ) {
-    var _this = this, pocket;
-
-    return this._commands
-        .createPocket( data )  // --> pocket:created
-        .then(function( resource ) {
-            pocket = resource;
-
-            return _this._queries.getWall( pocket.getWall() );
-        })
-        .then(function( wall ) {
-            return _this._queries.getBoardsForWall( wall );
-        })
-        .then(function( boards ) {
-            _this._commands.addPocketToBoards( boards, pocket );  // --> cardlocation:created
-
-            return pocket;
-        });
-};
-
-// pocket:edit
-Services.prototype.editPocket = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getPocket( id )
-        .then(function( pocket ) {
-            _this._interface.displayPocketEditor( pocket );
-
-            return pocket;
-        });
-};
-
-// pocket:update
-Services.prototype.updatePocket = function( data ) {
-    return this._commands.updatePocket( data );  // --> pocket:updated
-};
-
-
-
-
-
-
-// regions
-
-// region:created
-Services.prototype.displayRegion = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getRegion( id )
-        .then(function( region ) {
-            _this._interface.displayRegion( region );  // --> region:displayed
-
-            return region;
-        });
-};
-
-// board:displayed
-Services.prototype.displayRegions = function( board ) {
-    var _this = this;
-
-    return this._queries
-        .getRegionsForBoard( board )
-        .then(function( regions ) {
-            _this._interface.displayRegions( regions );  // --> region:displayed
-
-            return regions;
-        });
-};
-// region:new
-Services.prototype.newRegion = function() {
-    return this._interface.displayRegionCreator();
-};
-
-// region:create
-Services.prototype.createRegion = function( data ) {
-    return this._commands.createRegion( data );  // --> region:created
-};
-
-// region:edit
-Services.prototype.editRegion = function( id ) {
-    var _this = this;
-
-    return this._queries.getRegion( id )
-        .then(function( region ) {
-            _this._interface.displayRegionEditor( region );
-
-            return region;
-        });
-};
-
-// region:move
-Services.prototype.moveRegion = function( info ) {
-  var _this = this;
-
-  return this._queries
-      .getRegion( info.id )
-      .then(function( region ) {
-          if ( region.x != info.x || region.y != info.y ) {
-            region.x = info.x;
-            region.y = info.y;
-
-            return _this._commands.updateRegion( region );  // --> region:updated
-          }
-      });
-};
-
-// region:resize
-Services.prototype.resizeRegion = function( info ) {
-  var _this = this;
-
-  return this._queries
-      .getRegion( info.id )
-      .then(function( region ) {
-          if ( region.height != info.height || region.width != info.width ) {
-            region.height = info.height;
-            region.width = info.width;
-
-            return _this._commands.updateRegion( region );  // --> region:updated
-          }
-      });
-};
-
-
-
-
-
-
-// transforms
-
-Services.prototype.createTransform = function( data ) {
-    return this._commands.createTransform( data );  // --> region:created
-};
-
-// transform:unlink
-Services.prototype.unlinkTransform = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getTransform( id )
-        .then(function( transform ) {
-            return _this._commands.unlinkTransform( id );  // --> transform:unlinked
-        })
-        .then(function( transform ) {
-            _this._interface.removeTransform( transform );
-
-            return transform;
-        });
-};
-
-
-
-
-
-// walls
-
-// wall:new
-Services.prototype.newWall = function() {
-    this._interface.displayWallCreator();
-};
-
-// wall:create
-Services.prototype.createWall = function( data ) {
-    return this._commands.createWall( data ); // --> wall:created
-};
-
-// wall:edit
-Services.prototype.editWall = function( id ) {
-    var _this = this;
-
-    return this._queries
-        .getWall( id )
-        .then(function( wall ) {
-            _this._interface.displayWallEditor( wall );
-
-            return wall;
-        });
-};
-
-// wall:update
-Services.prototype.updateWall = function( data ) {
-    return this._commands.updateWall( data );  // --> wall:updated
-};
-
-// wall:select
-Services.prototype.selectWall = function( id ) {
-    var _this = this;
-
-    return this._queries.getAllWalls()
-        .then(function( walls ) {
-            _this._interface.displayWallSelector( walls );
-
-            return walls;
-        });
-};
-
-// wall:display
-// wall:created
-Services.prototype.displayWall = function( id ) {
-    var _this = this, wall;
-
-    return this._queries.getWall( id )
-        .then(function( resource ) {
-            wall = resource;
-
-            _this._interface.displayWall( wall );  // --> wall:displayed
-
-            if ( !wall.boards.length ) {
-                _this._interface.notifyWallFirstTime( wall );  // --> wall:firsttime
-            }
-
-            return _this.selectBoard( wall );
-        })
-        .then(function( boards ) {
-            if (boards.length) {
-                _this._interface.displayBoard( boards[0] );  // --> board:displayed
-            }
-
-            return wall;
-        });
-};
-
-module.exports = Services;
-
-},{"rsvp":72}],113:[function(require,module,exports){
-// defaults
-
-var min_scale = 0.1;
-
-// constructor
-
-function CanvasBoard( queue, board, options ) {
-    var shape = new Kinetic.Stage({
-        container: board.getId(),
-        width: options.width,
-        height: options.height,
-        draggable: true
-    });
-
-    shape.regions = new Kinetic.Layer();
-    shape.add( shape.regions );
-
-    shape.cards = new Kinetic.Layer();
-    shape.add( shape.cards );
-
-    // triggers
-    shape
-        .on( 'contentDblclick contentDbltap', function( e ) {
-            if (shape.preventEvents) {
-                shape.preventEvents = false;
-
-                return ;
-            }
-
-            queue.trigger( 'board:edit', board.getId() );
-        });
-
-    var $container = $( '#' + options.container );
-    var scale = 1;
-    var zoomFactor = 1.1;
-    var origin = { x: 0, y: 0 };
-
-    $container
-      .on('mousewheel', function( e ) {
-          var evt = e.originalEvent,
-              mx = evt.clientX /* - canvas.offsetLeft */,
-              my = evt.clientY /* - canvas.offsetTop */,
-              delta = evt.wheelDelta;
-
-          //prevent only the actual wheel movement
-          if (delta !== 0) {
-              e.preventDefault();
-          }
-
-          var cur_scale = scale * (zoomFactor - (delta < 0 ? 0.2 : 0));
-
-          if (cur_scale > min_scale) {
-              origin.x = mx / scale + origin.x - mx / cur_scale;
-              origin.y = my / scale + origin.y - my / cur_scale;
-
-              scale = cur_scale;
-
-              queue.trigger( 'board:scale', { id: board.getId(), scale: scale });
-
-              shape.offset({ x: origin.x, y: origin.y });
-              shape.scale( { x: cur_scale, y: cur_scale });
-              shape.batchDraw();
-
-              queue.trigger( 'board:scaled', { id: board.getId(), scale: scale });
-          }
-      });
-
-    // public methods
-
-    shape.addRegion = function( canvasregion ) {
-        shape.regions.add( canvasregion );
-
-        shape.regions.batchDraw();
-    };
-
-    shape.addCard = function( canvascard ) {
-        shape.cards.add( canvascard );
-
-        shape.cards.batchDraw();
-    };
-
-    // instance
-
-    return shape;
-}
-
-module.exports = CanvasBoard;
-
-},{}],114:[function(require,module,exports){
-// defaults
-
-var colors = {
-  fill: '#f6f6f6',
-  stroke: { active: '#aaa', inactive: '#e5e5e5' }
-};
-
-var shadow = {
-  color: 'black',
-  offset: { active: 2, inactive: 1 },
-  blur: { active: 9, inactive: 5 }
-};
-
-var size = {    // issue is that the server needs to know this as well
-  width: 100,
-  height: 65
-};
-
-// constructor
-
-function CanvasCard( queue, location, pocket ) {
-    var shape = new Kinetic.Group({
-      id: location.id,
-      x: location.x || 5,
-      y: location.y || 5,
-      draggable: true
-    });
-
-    var cardback = __createCardback( size.width, size.height, (pocket.color || colors.fill), shadow.color );
-    var cardnumber = __createIdText( pocket.cardnumber );
-    var cardtitle = __createTitleText( pocket.getTitle() );
-
-    shape.add( cardback );
-    shape.add( cardnumber );
-    shape.add( cardtitle );
-
-    queue
-      .on( 'cardlocation:updated', function( data ) {
-        if ( location.id === data.id &&
-            ( shape.getX() != data.x || shape.getY() != data.y ) ) {
-          __moveTo( data.x, data.y );
-        }
-      })
-      .on( 'pocket:updated', function( data ) {
-        if ( pocket.id === data.id ) {
-            __UpdateDisplay( data );
-        }
-      })
-      .on( 'pocket:transformed', function( data ) {
-        if ( pocket.id === data.id ) {
-            __UpdateDisplay( data );
-        }
-      });
-
-    shape
-      .on('mousedown touchstart', function() {
-        __displayActiveState();
-
-        queue.trigger( 'cardlocation:activate', location );
-      })
-      .on('mouseup touchend', function() {
-        __displayInactiveState();
-
-        queue.trigger( 'cardlocation:deactivate', location );
-      })
-      .on('dragend', function() {
-        queue.trigger( 'cardlocation:move', { id: location.getId(), x: shape.getX(), y: shape.getY() } );
-      })
-      .on('dblclick dbltap', function( e ) {
-        e.cancelBubble = true;
-        shape.getStage().preventEvents = true;
-
-        queue.trigger( 'pocket:edit', pocket.getId() );
-      });
-
-    // private methods
-
-    function __redrawLayer() {
-      try {
-        var layer = shape.getLayer();
-
-        if (layer) {
-          layer.batchDraw();
-        }
-      } catch(e) {
-      }
-    }
-
-    function __UpdateDisplay( data ) {
-      cardtitle.setText( data.title || "" );
-      cardnumber.setText( '#' + data.cardnumber );
-      cardback.setFill( data.color || colors.fill );
-
-      __redrawLayer();
-    }
-
-    function __moveTo( x, y ) {
-      shape.moveToTop();
-
-      shape.setX( x );
-      shape.setY( y );
-
-      __redrawLayer();
-    }
-
-    function __displayActiveState() {
-      cardback.setStroke( colors.stroke.active );
-      cardback.setShadowBlur( shadow.blur.active );
-      cardback.setShadowOffset( shadow.offset.active );
-
-      shape.moveToTop();
-
-      __redrawLayer();
-    }
-
-    function __displayInactiveState() {
-      cardback.setStroke( colors.stroke.inactive );
-      cardback.setShadowBlur( shadow.blur.inactive );
-      cardback.setShadowOffset( shadow.offset.inactive );
-
-      __redrawLayer();
-    }
-
-    // initialise
-
-    __displayInactiveState();
-
-    // instance
-
-    return shape;
-}
-
-  // private methods
-
-function __createCardback( w, h, fill, shadow ) {
-  return new Kinetic.Rect({
-    x: 0,
-    y: 0,
-    width: w,
-    height: h,
-    cornerRadius: 5,
-    fill: fill,
-    strokeWidth: 1,
-    shadowOpacity: 0.5,
-    shadowColor: shadow,
-  });
-}
-
-function __createIdText( id ) {
-  return new Kinetic.Text({
-    x: 5,
-    y: 2,
-    text: '#' + id,
-    fontSize: 15,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-}
-
-function __createTitleText( title ) {
-  return new Kinetic.Text({
-    x: 5,
-    y: 22,
-    width: 85,
-    height: 36,
-    text: title,
-    fontSize: 11,
-    fontFamily: 'Calibri',
-    fill: '#666'
-  });
-}
-
-module.exports = CanvasCard;
-
-},{}],115:[function(require,module,exports){
-// defaults
-
-var handleSize = 20;
-
-var colors = {
-  fill: '#aaa'
-};
-
-var shadow = {
-  color: '#eee',
-  offset: { active: 1, inactive: 0 },
-  blur: { active: 5, inactive: 0 }
-};
-
-// constructor
-
-function CanvasRegion( queue, region ) {
-    var shape = new Kinetic.Group({
-        id: region.getId(),
-        x: region.getX() || 5,
-        y: region.getY() || 5,
-        draggable: true
-    });
-    var color = __asColor( region.getColor() );
-    var resizing = false;
-
-    var background = __createBackground( region.getWidth(), region.getHeight(), color || colors.fill, shadow.color );
-    var handle = __createHandle( region.getWidth(), region.getHeight() );
-    var title = __createTitleText( region.getWidth(), region.getLabel() );
-
-    shape.add( background );
-    shape.add( title );
-    shape.add( handle );
-
-    // triggers
-
-    queue
-      .on( 'region:updated', function( data ) {
-        if ( region.id === data.id ) {
-          __moveTo( data.x, data.y );
-          __resizeTo( data.width, data.height );
-          __UpdateDisplay( data );
-        }
-      });
-
-    shape
-      .on('mousedown touchstart', function() {
-        __displayActiveState();
-
-        queue.trigger( 'region:activate', region );
-      })
-      .on('mouseup touchend', function() {
-        __displayInactiveState();
-
-        queue.trigger( 'region:deactivate', region );
-      })
-      .on('dragend', function() {
-        queue.trigger( 'region:move', { id: region.getId(), x: shape.getX(), y: shape.getY() } );
-      })
-      .on('dblclick dbltap', function( e ) {
-        e.cancelBubble = true;
-        shape.getStage().preventEvents = true;
-
-        queue.trigger( 'region:edit', region.getId() );
-      });
-
-    handle
-      .on('mousedown touchstart', function() {
-        resizing = true;
-      })
-      .on('mouseup touchend', function() {
-        resizing = false;
-      })
-      .on('dragmove', function( evt ) {
-        evt.cancelBubble = true;
-
-        var width = handle.getX() + ( handleSize / 2 );
-        var height = handle.getY() + ( handleSize / 2 );
-
-        __resizeTo( width, height );
-      })
-      .on('dragend', function( evt ) {
-        evt.cancelBubble = true;
-
-        queue.trigger( 'region:resize', { id: region.getId(), width: background.getWidth(), height: background.getHeight() } );
-      });
-
-    // private methods
-
-    function __createBackground( w, h, fill, shadow ) {
-      return new Kinetic.Rect({
-        x: 0,
-        y: 0,
-        width: w,
-        height: h,
-        fill: fill,
-        opacity: 0.1,
-        shadowOpacity: 0.5,
-        shadowColor: shadow
-      });
-    }
-
-    function __createTitleText( w, title ) {
-      return new Kinetic.Text({
-        x: 5,
-        y: 5,
-        width: w - 10,
-        text: title,
-        fontSize: 16,
-        fontFamily: 'Calibri',
-        fontWeight: 600,
-        fill: '#666',
-        align: 'center'
-      });
-    }
-
-    function __createHandle( w, h ) {
-      return new Kinetic.Rect({
-        x: w - ( handleSize / 2 ),
-        y: h - ( handleSize / 2 ),
-        width: handleSize,
-        height: handleSize,
-        stroke: '#ddd',
-        strokeWidth: 2,
-        cornerRadius: ( handleSize / 2 ),
-        opacity: 0,
-        draggable: true
-      });
-    }
-
-    function __redrawLayer() {
-      try {
-        var layer = shape.getLayer();
-
-        if (layer) {
-          layer.batchDraw();
-        }
-      } catch(e) {
-      }
-    }
-
-    function __UpdateDisplay( data ) {
-      title.setText( data.label || "" );
-
-      color = __asColor( data.color );
-
-      background.setFill( color || colors.fill );
-
-      __redrawLayer();
-    }
-
-    function __asColor( color ) {
-      if ( color ) {
-        return color;
-      }
-
-      return;
-    }
-
-    function __displayActiveState() {
-      background.setShadowBlur( shadow.blur.active );
-      background.setShadowOffset( shadow.offset.active );
-
-      handle.setOpacity( 1 );
-
-      shape.moveToTop();
-
-      __redrawLayer();
-
-      return shape;
-    }
-
-    function __displayInactiveState() {
-      background.setShadowBlur( shadow.blur.inactive );
-      background.setShadowOffset( shadow.offset.inactive );
-
-      handle.setOpacity( 0 );
-
-      __redrawLayer();
-
-      return shape;
-    }
-
-    function __moveTo( x, y ) {
-      shape.moveToTop();
-
-      shape.setX( x );
-      shape.setY( y );
-
-      __redrawLayer();
-    }
-
-    function __resizeTo( width, height ) {
-      shape.moveToTop();
-
-      background.size({ width: width, height: height });
-      title.setWidth( width - 10 );
-
-      __redrawLayer();
-    }
-
-    __displayInactiveState();
-
-    // instance
-
-    return shape;
-}
-
-module.exports = CanvasRegion;
-
-},{}],116:[function(require,module,exports){
-
-var cardHeight = 65;
-var cardWidth = 100;
-
-function MovementTracker( queue, commands, queries ) {
-    this._queue = queue;
-    this._commands = commands;
-    this._queries = queries;
-
-    this._regionalcards = {};
-}
-
-MovementTracker.prototype.trackCardMovement = function( location ) {
-    var _this = this
-      , patch = {
-            in: []
-          , out: []
-        }
-      , card;
-
-    this._queries
-        .getPocket( location.getPocket() )
-        .then(function( resource ) {
-            card = resource;
-
-            return _this._queries.getBoard( location.getBoard() );
-        })
-        .then(function( board ) {
-            return _this._queries.getRegionsForBoard( board );
-        })
-        .then(function( regions ) {
-            var update = [];
-
-            regions.forEach(function( region ) {
-                var regionid = region.getId()
-                  , isInRegion = cardIsInRegion.call( _this, location, region )
-                  , areLinked = ~card.getRegions().indexOf( regionid );
-
-                if ( isInRegion ) {
-                    if (!areLinked) {
-                        patch.in.push( region ); // mark region going in
-                    }
-
-                    update.push( regionid );
-
-                    return;
-                }
-
-                if ( areLinked ) {
-                    patch.out.push( region ); // mark region comming out
-                }
-            });
-
-            if ( !patch.in.length && !patch.out.length ) return card;
-
-            card.regions = update;
-
-            return _this._commands
-                .updatePocket( card )
-                .then(function( card ) {
-                    patch.out.forEach(function( region ) {
-                        _this._queue.emit( 'pocket:regionexit', { pocket: card, region: region } );
-                    });
-
-                    patch.in.forEach(function( region ) {
-                        _this._queue.emit( 'pocket:regionenter', { pocket: card, region: region } );
-                    });
-
-                    return card;
-                });
-        });
-};
-
-MovementTracker.prototype.trackRegionMovement = function( region ) {
-    var _this = this;
-
-    this._queries
-        .getBoard( region.getBoard() )
-        .then(function( board ) {
-            return _this._queries.getCardLocationsForBoard( board );
-        })
-        .then(function( cards ) {
-            cards.forEach(function( card ) {
-                if ( !cardIsInRegion.call( _this, card, region ) ) {
-                    markPocketAsNotInRegion.call( _this, card.getPocket(), region );
-                }
-            });
-
-            return regions;
-        })
-        .then(function( cards ) {
-            cards.forEach(function( card ) {
-                if ( cardIsInRegion.call( _this, card, region ) ) {
-                    markPocketAsInRegion.call( _this, card.getPocket(), region );
-                }
-            });
-        });
-};
-
-function cardIsInRegion( card, region ) {
-    var cardX = (card.x + (cardHeight / 2))
-      , cardY = (card.y + (cardWidth / 2))
-      , inLeft = cardX > region.x
-      , inRight = cardX < (region.x + region.width)
-      , inTop = cardY > region.y
-      , inBase = cardY < (region.y + region.height);
-
-    return ( inLeft && inRight && inTop && inBase );
-}
-
-
-function markPocketAsInRegion( pocketid, region ) {
-    var _this = this;
-
-    return this._queries
-        .getPocket( pocketid )
-        .then(function( pocket ) {
-            var numregions = pocket.getRegions().length;
-
-            pocket.addRegion( region );
-
-            if (pocket.getRegions().length > numregions) {
-                return _this._commands
-                    .updatePocket( pocket )
-                    .then(function() {
-                        _this._queue.emit( 'pocket:regionenter', { pocket: pocket, region: region } );
-                    });
-
-            }
-        });
-}
-
-function markPocketAsNotInRegion( pocketid, region ) {
-    var _this = this;
-
-    return this._queries
-        .getPocket( pocketid )
-        .then(function( pocket ) {
-            var numregions = pocket.getRegions().length;
-
-            pocket.removeRegion( region );
-
-            if (pocket.getRegions().length < numregions) {
-                return _this._commands
-                    .updatePocket( pocket )
-                    .then(function() {
-                        app.queue.emit( 'pocket:regionexit', { pocket: pocket, region: region } );
-                    });
-            }
-        });
-}
-
-module.exports = MovementTracker;
-
-},{}],117:[function(require,module,exports){
-
-function TransformManager( queue, commands, queries ) {
-    this._queue = queue;
-    this._commands = commands;
-    this._queries = queries;
-
-    this._regionalcards = {};
-}
-
-TransformManager.prototype.checkTransforms = function( data ) {
-    var pocket = data.pocket
-      , region = data.region;
-
-    return this._queries.getAllTransforms()
-        .then(function( resources ) {
-            resources.forEach(function( transform ) {
-                processTransform.call( this, transform, pocket, region );
-            });
-        });
-};
-
-function processTransform( transform, pocket, region ) {
-    var rules = transform.rules
-      , attr = rules.attr
-      , when = rules.when
-      , from = rules.from
-      , canApply = checkCanApplyTransform( region, when, from.selector );
-
-    if ( canApply ) {
-        pocket[attr] = region[from.attr];
-
-        // this._queue.emit( 'pocket:transformed', pocket );
-
-        this._commands.updatePocket( pocket );
-    }
-}
-
-function checkCanApplyTransform( region, when, filter ) {
-    if ( when.relationship === 'within' && when.filter === 'region' && filter.node === 'region' ) {
-        return filterMethods[typeof filter.selector]( region, filter );
-    }
-
-    return false;
-}
-
-var filterMethods = {
-    'string': function( region, filter ) {
-        return region.getId() === filter.selector.replace('#', '');
-    }
-  , 'object': function( region, filter ) {
-        var f = filter.selector;
-
-        return region[f.node] === f.selector.replace('#', '');
-    }
-};
-
-module.exports = TransformManager;
-
-},{}],118:[function(require,module,exports){
-var CanvasBoard = require('./shapes/board')
-  , CanvasCard = require('./shapes/card')
-  , CanvasRegion = require('./shapes/region');
-
-
-function UI( queue, $element, options, $ ) {
-    this._queue = queue;
-
-    this._$element = $element;
-
-    this._size = {
-        height: $(window).innerHeight(),
-        width: $(window).innerWidth()
-    };
-
-    this.constructor = UI;
-
-    var clicks = [ 'new', 'edit', 'select', 'display', 'unlink' ];
-
-    // e.g. on click or touch for [data-new="wall"] trigger 'wall:new' with id
-    // e.g. on click or touch for [data-edit="board"] trigger 'board:edit' with id
-
-    clicks.forEach(function( task ) {
-        $element.on( 'click touch', '[data-'+ task +']', function( ev ) {
-            ev.preventDefault();
-
-            var type = $(this).data( task );
-
-            var target = $(this).data( type ) || $(this).data('parent') || ( $(this).attr('href') || '' ).replace('#', '');
-
-            queue.trigger( type + ':' + task, target );
-        });
-    });
-
-    var submits = [ 'create', 'update' ];
-
-    // e.g. on submit for [data-create="wall"] trigger 'wall:new' with ev
-
-    submits.forEach(function( task ) {
-        $element.on( 'submit', '[data-'+ task +']', function( ev ) {
-            ev.preventDefault();
-
-            var data = {};
-            var a = $(this).serializeArray();
-            a.forEach(function( pair ) {
-                var key = pair.name, value = pair.value;
-
-                if (data[key] !== undefined) {
-                    if (!data[key].push) {
-                        data[key] = [data[key]];
-                    }
-                    data[key].push(value || '');
-                } else {
-                    data[key] = value || '';
-                }
-            });
-
-            queue.trigger( $(this).data( task ) + ':' + task, data );
-        });
-    });
-}
-
-UI.prototype.displayBoard = function( board ) {
-    var viewer = '<div id="'+ board.getId() +'" class="tab-content" data-viewer="board"></div>';
-
-    this._$element.find('[data-viewer="board"]').replaceWith( viewer );
-
-    this._canvasboard = new CanvasBoard( this._queue, board, this._size );
-    this._canvascards = [];
-    this._canvasregions = [];
-};
-
-UI.prototype.displayBoardCreator = function( wall ) {
-    this._boardcreator = this._boardcreator || this._$element.find('[data-create="board"]');
-
-    this._boardcreator[0].reset();
-    this._boardcreator.find('[name="wall"]').val( wall.getId() );
-
-    this._boardcreator.modal( 'show' );
-};
-
-UI.prototype.displayBoardEditor = function( board ) {
-    this._boardeditor = this._boardeditor || this._$element.find('[data-update="board"]');
-
-    this._boardeditor[0].reset();
-    this._boardeditor.find('[name="id"]').val( board.getId() );
-    this._boardeditor.find('[name="name"]').val( board.getName() );
-    this._boardeditor.find('[name="transform"]').val( board.getWall() );
-    this._boardeditor.find('[name="wall"]').val( board.getWall() );
-
-    this._boardeditor.modal( 'show' );
-};
-
-UI.prototype.displayBoardSelector = function( wall, boards ) {
-    var selector = this._$element.find('[data-selector="board"]');
-
-    var options = boards.map(function( board ) {
-        return '<li><a href="#'+ board.getId() +'" data-display="board">'+ board.getName() +'</a></li>';
-    });
-
-    options.push('<li><button type="button" class="btn btn-default" data-new="board" data-parent="'+ wall.getId() +'" title="Add Board"><i class="glyphicon glyphicon-plus"></i></button></li>');
-
-    selector.empty().append( options.join('') );
-};
-
-UI.prototype.updateBoardSelector = function( board ) {
-    var selector = this._$element.find('[data-selector="board"]');
-
-    selector.find('.active').removeClass('active');
-
-    $('<li><a href="#'+ board.getId() +'" data-display="board">'+ board.getName() +'</a></li>')
-        .appendBefore( selector.children().last() );
-};
-
-// cardlocations
-
-UI.prototype.displayCardLocation = function( cardlocation, pocket ) {
-    var canvascard = new CanvasCard( this._queue, cardlocation, pocket );
-
-    this._canvasboard.addCard( canvascard );
-};
-
-UI.prototype.displayPocketCreator = function( wall ) {
-    this._pocketcreator = this._pocketcreator || this._$element.find('[data-create="pocket"]');
-
-    this._pocketcreator[0].reset();
-    this._pocketcreator.find('[name="wall"]').val( wall.getId() );
-
-    this._pocketcreator.modal( 'show' );
-};
-
-UI.prototype.displayPocketEditor = function( pocket ) {
-    this._pocketeditor = this._pocketeditor || this._$element.find('[data-update="pocket"]');
-
-    this._pocketeditor[0].reset();
-    this._pocketeditor.find('[name="id"]').val( pocket.getId() );
-    this._pocketeditor.find('[name="title"]').val( pocket.getTitle() );
-    this._pocketeditor.find('[name="content"]').val( pocket.getContent() );
-    this._pocketeditor.find('[name="tags"]').val( pocket.getTags() );
-    this._pocketeditor.find('[name="mentions"]').val( pocket.getMentions() );
-    this._pocketeditor.find('[name="wall"]').val( pocket.getWall() );
-
-    this._pocketeditor.modal( 'show' );
-};
-
-// regions
-
-UI.prototype.displayRegion = function( region ) {
-    var canvasregion = new CanvasRegion( this._queue, region );
-
-    this._canvasboard.addRegion( canvasregion );
-};
-
-UI.prototype.displayRegionCreator = function( board ) {
-    this._regioncreator = this._regioncreator || this._$element.find('[data-create="region"]');
-
-    this._regioncreator[0].reset();
-    this._regioncreator.find('[name="board"]').val( board.getId() );
-
-    this._regioncreator.modal( 'show' );
-};
-
-UI.prototype.displayRegionEditor = function( region ) {
-    this._regioneditor = this._regioneditor || this._$element.find('[data-update="region"]');
-
-    this._regioneditor[0].reset();
-    this._regioneditor.find('[name="id"]').val( region.getId() );
-    this._regioneditor.find('[name="label"]').val( region.getLabel() );
-    this._regioneditor.find('[name="value"]').val( region.getValue() );
-    this._regioneditor.find('[name="color"]').val( region.getColor() );
-    this._regioneditor.find('[name="board"]').val( region.getBoard() );
-
-    this._regioneditor.modal( 'show' );
-};
-
-// walls
-
-UI.prototype.displayWall = function( wall ) {
-    var viewer = $('<div id="'+ wall.getId() +'" class="container" data-viewer="wall"> \
-            <ul data-selector="board" class="nav nav-tabs"></ul> \
-            <div class="tab-content" data-viewer="board"></div> \
-        </div>');
-
-    this._$element.find('[data-viewer="wall"]').replaceWith( viewer );
-};
-
-UI.prototype.displayWallCreator = function() {
-    this._wallcreator = this._wallcreator || this._$element.find('[data-create="wall"]');
-
-    this._wallcreator[0].reset();
-
-    this._wallcreator.modal( 'show' );
-};
-
-UI.prototype.displayWallEditor = function( wall ) {
-    this._walleditor = this._walleditor || this._$element.find('[data-update="wall"]');
-
-    this._walleditor[0].reset();
-    this._walleditor.find('[name="id"]').val( wall.getId() );
-    this._walleditor.find('[name="name"]').val( wall.getName() );
-
-    this._walleditor.modal( 'show' );
-};
-
-UI.prototype.displayWallSelector = function( walls ) {
-    this._wallselector = this._wallselector || this._$element.find('[data-selector="wall"]');
-
-    var options = walls.map(function( wall ) {
-        return '<a href="#'+ wall.getId() +'" class="list-group-item" data-display="wall" data-dismiss="modal">'+ wall.getName() +'</a>';
-    });
-
-    this._wallselector.find('[data-options="list"]').empty().append( options.join('') );
-
-    this._wallselector.modal( 'show' );
-};
-
-// controls
-
-UI.prototype.enableControls = function() {
-    this._$element.find('[data-new]:disabled').removeAttr( 'disabled' );
-};
-
-module.exports = UI;
-
-},{"./shapes/board":113,"./shapes/card":114,"./shapes/region":115}]},{},[102]);
+},{}]},{},[4]);
