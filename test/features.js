@@ -31,7 +31,7 @@ var _this = this;
 var features = [
     'wall.new'
   , 'wall.create'
-// , 'wall.select'
+//, 'wall.select'
 //, 'wall.display'
 //, 'wall.edit'
 //, 'wall.update'
