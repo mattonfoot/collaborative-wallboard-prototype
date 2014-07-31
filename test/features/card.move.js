@@ -28,6 +28,7 @@ module.exports = function( should, RSVP, Promise, debug, queue, ui, application,
 
                 services
                     .displayWall( storedWallId )
+                    .then( addPocketToNewWall )
                     .catch( done );
 
                 function addPocketToNewWall() {
