@@ -1,50 +1,64 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:Display', function() {
+var storedName = 'display wall'
+  , storedWall
+  , resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the selecting of a wall', function() {
-            var storedId, storedName = 'display wall';
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Displays the chosen wall', function(done) {
-                application.pauseListenting();
+    before(function(done) {
 
-                services
-                    .createWall( { name: storedName } )
-                    .then(function( wall ) {
-                        storedId = wall.getId();
-                        wall.getName().should.be.equal( storedName );
+        queue.once( 'boardcreator:displayed', function() {
+            queue.clearCalls();
 
-                        queue.clearCalls();
-                        application.startListening();
-
-                        queue.once( 'wall:firsttime', onWallFirsttime);
-
-                        queue.trigger( 'wall:display', storedId );
-                    })
-                    .catch( done );
-
-                function onWallFirsttime( wall ) {
-                    should.exist( wall );
-
-                    wall.should.respondTo( 'getId' );
-                    wall.getId().should.be.equal( storedId );
-                    wall.should.respondTo( 'getName' );
-                    wall.getName().should.be.equal( storedName );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.above( 2 );
-
-                    calls[0].event.should.be.equal( 'wall:display' );
-                    calls[1].event.should.be.equal( 'wall:displayed' );
-                    calls[2].event.should.be.equal( 'wall:firsttime' );
-
-                    done();
-                }
-            });
-
+            done();
         });
 
+        services.createWall({ name: storedName })
+            .then(function( wall ) {
+                storedWall = wall;
+            });
     });
 
-};
+    it('Emit a <wall:display> event with a valid wall id to open the wall\n',
+            function(done) {
+
+        queue.trigger( 'wall:display', storedWall.getId() );
+
+        queue.once( 'wall:displayed', function( resource ) {
+            should.exist( resource );
+
+            resource.should.be.a.specificWallResource( storedName );
+
+            resourceChecked = true;
+        });
+
+        queue.once( 'wall:firsttime', function() {
+            queue.should.haveLogged([
+                    'wall:display'
+                  , 'wall:displayed'
+                  , 'boardselector:displayed'
+                  , 'wall:firsttime'
+                  , 'boardcreator:displayed'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'wall:firsttime', function() {
+            resourceChecked.should.equal( true );
+            queueChecked.should.equal( true );
+
+            done();
+        });
+    });
+
+}
+
+features.title = 'Displaying a wall';
+
+module.exports = features;
