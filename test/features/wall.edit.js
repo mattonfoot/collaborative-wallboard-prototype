@@ -1,45 +1,53 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:Edit', function() {
+var resourceChecked = false
+  , queueChecked = false
+  , storedName = 'display wall'
+  , storedWall;
 
-        describe('Triggering the wall editor', function() {
-            var storedId;
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Displays a wall editor to capture walls new details', function(done) {
-                application.pauseListenting();
+    before(function(done) {
 
-                services
-                    .createWall( { name: 'editable wall' } )
-                    .then( onWallCreated )
-                    .catch( done );
+        queue.once( 'boardcreator:displayed', function() {
+            queue.clearCalls();
 
-                function onWallCreated( wall ) {
-                    storedId = wall.getId();
+            done();
+        });
 
-                    queue.clearCalls();
-                    application.startListening();
-
-                    queue.once( 'walleditor:displayed', onWallEditorDisplayed);
-
-                    queue.trigger( 'wall:edit', storedId );
-                }
-
-                function onWallEditorDisplayed( data ) {
-                    should.exist( data );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.equal( 2 );
-
-                    calls[0].event.should.be.equal( 'wall:edit' );
-                    calls[1].event.should.be.equal( 'walleditor:displayed' );
-
-                    done();
-                }
+        services.createWall({ name: storedName })
+            .then(function( wall ) {
+                storedWall = wall;
             });
+    });
 
+    it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n',
+            function(done) {
+
+        queue.trigger( 'wall:edit', storedWall.getId() );
+
+        queue.once( 'walleditor:displayed', function() {
+            queue.should.haveLogged([
+                    'wall:edit'
+                  , 'walleditor:displayed'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'walleditor:displayed', function() {
+            queueChecked.should.equal( true );
+
+            done();
         });
 
     });
 
-};
+}
+
+features.title = 'Accessing the wall editor input control';
+
+module.exports = features;
