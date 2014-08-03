@@ -52,9 +52,15 @@ Fixture('Application service API Features', function() {
     };
 
     features.forEach(function( namespace ) {
-        var feature = require( './features/' + namespace );
+        var features = require( './features/' + namespace );
 
-        Feature( feature.title, function() { feature.call( fixture ); } );
+        if (!features.length) {
+            features = [ features ];
+        }
+
+        features.forEach(function( feature ) {
+            Feature( feature.title, function() { feature.call( fixture ); } );
+        });
     });
 
     afterEach(function (done) {
