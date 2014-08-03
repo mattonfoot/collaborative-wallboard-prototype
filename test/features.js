@@ -35,7 +35,7 @@ var features = [
   , 'wall.display'
   , 'wall.edit'
   , 'wall.update'
-//, 'board.new'
+  , 'board.new'
 //, 'board.create'
 //, 'board.select'
 //, 'board.display'

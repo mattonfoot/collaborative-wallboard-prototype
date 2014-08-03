@@ -1,42 +1,59 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Board:New', function() {
+var resourceChecked = false
+  , queueChecked = false
+  , storedWall;
 
-        describe('Triggering the board creator', function() {
-            var storedId;
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Displays a board creator to capture new board details', function(done) {
-                application.pauseListenting();
+    before(function(done) {
 
-                services
-                    .createWall( { name: 'wall for new board' } )
-                    .then(function( wall ) {
-                        storedId = wall.getId();
+        queue.once( 'boardcreator:displayed', function() {
+            queue.clearCalls();
 
-                        queue.clearCalls();
-                        application.startListening();
-
-                        queue.once( 'boardcreator:displayed', onDisplayed);
-
-                        queue.trigger( 'board:new', storedId );
-                    })
-                    .catch( done );
-
-                function onDisplayed( data ) {
-                    should.not.exist( data );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.equal( 2 );
-
-                    calls[0].event.should.be.equal( 'board:new' );
-                    calls[1].event.should.be.equal( 'boardcreator:displayed' );
-
-                    done();
-                }
-            });
-
+            done();
         });
+
+        services.createWall({ name: 'wall for board' })
+            .then(function( wall ) {
+                storedWall = wall;
+            });
     });
 
-};
+    it('Emit a <wall:new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n',
+            function(done) {
+
+        queue.trigger( 'board:new', storedWall.getId() );
+
+        queue.once( 'boardcreator:displayed', function( resource ) {
+            should.not.exist( resource );
+
+            resourceChecked = true;
+        });
+
+        queue.once( 'boardcreator:displayed', function() {
+            queue.should.haveLogged([
+                    'board:new'
+                  , 'boardcreator:displayed'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'boardcreator:displayed', function() {
+            resourceChecked.should.equal( true );
+            queueChecked.should.equal( true );
+
+            done();
+        });
+
+    });
+
+}
+
+features.title = 'Accessing the board creator input control';
+
+module.exports = features;
