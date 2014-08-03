@@ -31,15 +31,15 @@ var _this = this;
 var features = [
     'wall.new'
   , 'wall.create'
-//, 'wall.select'
+//, 'wall.select'   // two features need implementing
   , 'wall.display'
   , 'wall.edit'
   , 'wall.update'
   , 'board.new'
-  , 'board.create'
+  , 'board.create'  // second feature with cards already needs implementing
 //, 'board.select'
 //, 'board.display'
-//, 'board.edit'
+  , 'board.edit'
 //, 'board.update'
 //, 'card.move'
 ];

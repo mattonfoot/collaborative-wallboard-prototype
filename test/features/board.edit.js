@@ -1,53 +1,62 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Board:Edit', function() {
+var storedName = 'unedited board'
+  , storedWall
+  , storedBoard
+  , resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the board editor', function() {
-            var storedId, storedParentId;
 
-            it('Displays a board editor to capture boards new details', function(done) {
-                application.pauseListenting();
 
-                services
-                    .createWall( { name: 'parent wall' } )
-                    .then( onWallCreated )
-                    .then( onBoardCreated )
-                    .catch( done );
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-                function onWallCreated( wall ) {
-                    storedParentId = wall.getId();
+    beforeEach(function(done) {
 
-                    return services
-                        .createBoard( { wall: storedParentId, name: 'editable board' } );
-                }
+        queue.once( 'board:created', function( board ) {
+            storedBoard = board;
+        });
 
-                function onBoardCreated( board ) {
-                    storedId = board.getId();
+        queue.once( 'controls:enabled', function() {
+            queue.clearCalls();
 
-                    queue.clearCalls();
-                    application.startListening();
+            done();
+        });
 
-                    queue.once( 'boardeditor:displayed', onEditorDisplayed);
+        services.createWall({ name: 'parent wall for board' })
+            .then(function( wall ) {
+                storedWall = wall;
 
-                    queue.trigger( 'board:edit', storedId );
-                }
-
-                function onEditorDisplayed( data ) {
-                    should.exist( data );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.equal( 2 );
-
-                    calls[0].event.should.be.equal( 'board:edit' );
-                    calls[1].event.should.be.equal( 'boardeditor:displayed' );
-
-                    done();
-                }
+                services.createBoard({ wall: wall.getId(), name: storedName });
             });
+    });
 
+    it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n',
+            function(done) {
+
+        queue.trigger( 'board:edit', storedBoard.getId() );
+
+        queue.once( 'boardeditor:displayed', function() {
+            queue.should.haveLogged([
+                    'board:edit'
+                  , 'boardeditor:displayed'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'boardeditor:displayed', function() {
+            queueChecked.should.equal( true );
+
+            done();
         });
 
     });
 
-};
+}
+
+features.title = 'Accessing the board editor input control';
+
+module.exports = features;
