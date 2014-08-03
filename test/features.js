@@ -36,7 +36,7 @@ var features = [
   , 'wall.edit'
   , 'wall.update'
   , 'board.new'
-//, 'board.create'
+  , 'board.create'
 //, 'board.select'
 //, 'board.display'
 //, 'board.edit'
@@ -146,4 +146,16 @@ function shouldBeSpecificWallResource( expectedName ) {
     resource.should.respondTo( 'getId' );
     resource.should.respondTo( 'getName' );
     resource.getName().should.equal( expectedName );
+}
+
+chai.Assertion.addMethod('specificBoardResource', shouldBeSpecificBoardResource);
+
+function shouldBeSpecificBoardResource( expectedName, expectedWallId ) {
+    var resource = this._obj;
+
+    resource.should.respondTo( 'getId' );
+    resource.should.respondTo( 'getName' );
+    resource.getName().should.equal( expectedName );
+    resource.should.respondTo( 'getWall' );
+    resource.getWall().should.equal( expectedWallId );
 }

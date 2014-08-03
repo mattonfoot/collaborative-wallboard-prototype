@@ -1,57 +1,83 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Board:Create', function() {
+var storedName = 'new board'
+  , resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the creation of a board', function() {
 
-            it('When the wall has no cards', function( done ) {
-                var storedId, storedName = 'new board';
 
-                application.pauseListenting();
+function features() {
+    var services = this.application.services
+      , belt = this.application.belt
+      , queue = this.queue;
 
-                services
-                    .createWall( { name: 'wall for new board' } )
-                    .then( onWallCreated )
-                    .then( onWallDisplay )
-                    .catch( done );
+    beforeEach(function(done) {
 
-                function onWallCreated( wall ) {
-                    storedId = wall.getId();
+        queue.once( 'boardcreator:displayed', function() {
+            queue.clearCalls();
 
-                    return services.displayWall( storedId );
-                }
+            done();
+        });
 
-                function onWallDisplay() {
-                    queue.clearCalls();
-                    application.startListening();
-
-                    queue.once( 'board:added', onBoardAdded);
-
-                    queue.trigger( 'board:create', { wall: storedId, name: storedName } );
-                }
-
-                function onBoardAdded( board ) {
-                    should.exist( board );
-
-                    board.should.respondTo( 'getId' );
-                    board.should.respondTo( 'getName' );
-                    board.getName().should.be.equal( storedName );
-                    board.should.respondTo( 'getWall' );
-                    board.getWall().should.be.equal( storedId );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.above( 2 );
-
-                    calls[0].event.should.be.equal( 'board:create' );
-                    calls[1].event.should.be.equal( 'board:created' );
-                    calls[2].event.should.be.equal( 'board:displayed' );
-                    calls[3].event.should.be.equal( 'controls:enabled' );
-                    calls[4].event.should.be.equal( 'board:added' );
-
-                    done();
-                }
+        services.createWall({ name: 'wall for board' })
+            .then(function( wall ) {
+                storedWall = wall;
             });
+    });
+
+    it('Emit a <board:create> event passing a data object with a valid wall id and a name attribute to trigger the process of creating a new board\n',
+        function( done ) {
+
+            queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
+
+            queue.once( 'board:added', function( resource ) {
+                should.exist( resource );
+
+                resource.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+
+                resourceChecked = true;
+            });
+
+            queue.once( 'controls:enabled', function() {
+                queue.should.haveLogged([
+                        'board:create'
+                      , 'board:created'
+                      , 'board:added'
+                      , 'board:displayed'
+                      , 'controls:enabled'
+                    ]);
+
+                queueChecked = true;
+            });
+
+            queue.once( 'controls:enabled', function() {
+                resourceChecked.should.equal( true );
+                queueChecked.should.equal( true );
+
+                done();
+            });
+
+        });
+
+}
+
+features.title = 'Creating a board';
+
+module.exports = features;
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 
             it('When the wall has two cards already', function( done ) {
                 var storedId, storedName = 'Two card board';
@@ -125,9 +151,4 @@ module.exports = function( should, RSVP, Promise, debug, queue, ui, application,
                     done();
                 }
             });
-
-        });
-
-    });
-
-};
+*/
