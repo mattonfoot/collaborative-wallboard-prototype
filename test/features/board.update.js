@@ -1,62 +1,77 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Board:Update', function() {
+var storedName = 'unedited board'
+  , editedName = 'edited board'
+  , storedWall
+  , storedBoard
+  , resourceChecked = false
+  , queueChecked = false;
 
-        describe('Triggering the updating of a board', function() {
-            var storedId, storedParentId, storedName = 'unedited board', newName = 'edited board';
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Updates the chosen board', function( done ) {
-                application.pauseListenting();
+    beforeEach(function(done) {
 
-                services
-                    .createWall( { name: 'parent wall' } )
-                    .then( onWallCreated )
-                    .then( onBoardCreated )
-                    .catch( done );
-
-
-                function onWallCreated( wall ) {
-                    storedParentId = wall.getId();
-
-                    return services
-                        .createBoard( { wall: storedParentId, name: storedName } );
-                }
-
-                function onBoardCreated( board ) {
-                    storedId = board.getId();
-                    board.getName().should.be.equal( storedName );
-
-                    queue.clearCalls();
-                    application.startListening();
-
-                    queue.once( 'board:updated', onBoardUpdated);
-
-                    board.name = newName;
-
-                    queue.trigger( 'board:update', board );
-                }
-
-                function onBoardUpdated( board ) {
-                    should.exist( board );
-
-                    board.should.respondTo( 'getId' );
-                    board.getId().should.be.equal( storedId );
-                    board.should.respondTo( 'getName' );
-                    board.getName().should.be.equal( newName );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.equal( 2 );
-
-                    calls[0].event.should.be.equal( 'board:update' );
-                    calls[1].event.should.be.equal( 'board:updated' );
-
-                    done();
-                }
-            });
-
+        queue.once( 'board:created', function( board ) {
+            storedBoard = board;
         });
-        
+
+        queue.once( 'controls:enabled', function() {
+            queue.clearCalls();
+
+            done();
+        });
+
+        services.createWall({ name: 'parent wall for board' })
+            .then(function( wall ) {
+                storedWall = wall;
+
+                services.createBoard({ wall: wall.getId(), name: storedName });
+            });
     });
 
-};
+    it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n',
+            function(done) {
+
+        var update = {
+            id: storedBoard.getId(),
+            wall: storedBoard.getWall(),
+            name: editedName
+        };
+
+        queue.trigger( 'board:update', update );
+
+        queue.once( 'board:updated', function( resource ) {
+            should.exist( resource );
+
+            resource.should.be.a.specificBoardResource( editedName, storedWall.getId() );
+            resource.getId().should.equal( storedBoard.getId() );
+
+            resourceChecked = true;
+        });
+
+        queue.once( 'board:updated', function() {
+            queue.should.haveLogged([
+                    'board:update'
+                  , 'board:updated'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'board:updated', function() {
+            resourceChecked.should.equal( true );
+            queueChecked.should.equal( true );
+
+            done();
+        });
+
+    });
+
+}
+
+features.title = 'Updating a Board';
+
+module.exports = features;

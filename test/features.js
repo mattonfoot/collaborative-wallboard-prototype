@@ -40,7 +40,7 @@ var features = [
 //, 'board.select'
 //, 'board.display'
   , 'board.edit'
-//, 'board.update'
+  , 'board.update'
 //, 'card.move'
 ];
 
