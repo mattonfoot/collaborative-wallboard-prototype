@@ -1,53 +1,68 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:Update', function() {
+var resourceChecked = false
+  , queueChecked = false
+  , storedName = 'unedited wall'
+  , editedName = 'edited wall'
+  , storedWall;
 
-        describe('Triggering the updating of a wall', function() {
-            var storedId, storedName = 'unedited wall', newName = 'edited wall';
+function features() {
+    var services = this.application.services
+      , queue = this.queue;
 
-            it('Updates the chosen wall', function( done ) {
-                application.pauseListenting();
+    before(function(done) {
 
-                services
-                    .createWall( { name: storedName } )
-                    .then( onWallCreated )
-                    .catch( done );
+        queue.once( 'boardcreator:displayed', function() {
+            queue.clearCalls();
 
-                function onWallCreated( wall ) {
-                    storedId = wall.getId();
-                    wall.getName().should.be.equal( storedName );
-
-                    queue.clearCalls();
-                    application.startListening();
-
-                    queue.once( 'wall:updated', onWallUpdated);
-
-                    wall.name = newName;
-
-                    queue.trigger( 'wall:update', wall );
-                }
-
-                function onWallUpdated( wall ) {
-                    should.exist( wall );
-
-                    wall.should.respondTo( 'getId' );
-                    wall.getId().should.be.equal( storedId );
-                    wall.should.respondTo( 'getName' );
-                    wall.getName().should.be.equal( newName );
-
-                    var calls = queue.getCalls();
-
-                    calls.length.should.be.equal( 2 );
-
-                    calls[0].event.should.be.equal( 'wall:update' );
-                    calls[1].event.should.be.equal( 'wall:updated' );
-
-                    done();
-                }
-            });
-
+            done();
         });
 
+        services.createWall({ name: storedName })
+            .then(function( wall ) {
+                storedWall = wall;
+            });
     });
 
-};
+    it('Emit a <wall:update> event passing a updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n',
+            function(done) {
+
+        var update = {
+            id: storedWall.getId(),
+            name: editedName
+        };
+
+        queue.trigger( 'wall:update', update );
+
+        queue.once( 'wall:updated', function( resource ) {
+            should.exist( resource );
+
+            resource.should.be.a.specificWallResource( editedName );
+            resource.getId().should.equal( storedWall.getId() );
+
+            resourceChecked = true;
+        });
+
+        queue.once( 'wall:updated', function() {
+            queue.should.haveLogged([
+                    'wall:update'
+                  , 'wall:updated'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'wall:updated', function() {
+            resourceChecked.should.equal( true );
+            queueChecked.should.equal( true );
+
+            done();
+        });
+    });
+
+}
+
+features.title = 'Updating a wall';
+
+module.exports = features;

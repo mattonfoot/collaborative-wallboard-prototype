@@ -34,7 +34,7 @@ var features = [
 //, 'wall.select'
   , 'wall.display'
   , 'wall.edit'
-//, 'wall.update'
+  , 'wall.update'
 //, 'board.new'
 //, 'board.create'
 //, 'board.select'
@@ -125,10 +125,10 @@ function shouldHaveLogged( events ) {
 
     var i = 0, len = events.length;
 
-    queue.length.should.equal( len, 'expected number of queued event to equal ' + len  );
+    queue.length.should.equal( len, 'expected number of queued event to equal ' + len + '\n'  );
 
     for (; i < len; i++) {
-        queue[i].event.should.equal( events[i], 'expected queued event ' + i + ' to equal ' + events[i] );
+        queue[i].event.should.equal( events[i], 'expected queued event ' + i + ' to equal ' + events[i] + '\n' );
     }
 }
 
