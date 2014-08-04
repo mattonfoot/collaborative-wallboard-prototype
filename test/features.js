@@ -45,6 +45,7 @@ var features = [
   , 'board.edit'
   , 'board.update'
 
+  , 'card.create'
 //, 'card.move'
 ];
 
@@ -294,6 +295,18 @@ function shouldBeSpecificBoardResource( expectedName, expectedWallId ) {
     resource.should.respondTo( 'getId' );
     resource.should.respondTo( 'getName' );
     resource.getName().should.equal( expectedName );
+    resource.should.respondTo( 'getWall' );
+    resource.getWall().should.equal( expectedWallId );
+}
+
+chai.Assertion.addMethod('specificCardResource', shouldBeSpecificCardResource);
+
+function shouldBeSpecificCardResource( expectedTitle, expectedWallId ) {
+    var resource = this._obj;
+
+    resource.should.respondTo( 'getId' );
+    resource.should.respondTo( 'getTitle' );
+    resource.getTitle().should.equal( expectedTitle );
     resource.should.respondTo( 'getWall' );
     resource.getWall().should.equal( expectedWallId );
 }
