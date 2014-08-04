@@ -8,7 +8,7 @@
     "start": "PORT=5000 BASE_URL=http://localhost node ./lib/server.js",
     "test": "./node_modules/grunt-cli/bin/grunt test",
     "coverage": "./node_modules/grunt-cli/bin/grunt coverage",
-    "travis-ci": "./node_modules/grunt-cli/bin/grunt --verbose ci"
+    "ci": "./node_modules/grunt-cli/bin/grunt --verbose ci"
   },
   "repository": {
     "type": "git",
