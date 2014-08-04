@@ -37,8 +37,7 @@ var features = [
   , 'wall.update'
   , 'board.new'
   , 'board.create'  // second feature with cards already needs implementing
-//, 'board.select'
-//, 'board.display'
+  , 'board.display'
   , 'board.edit'
   , 'board.update'
 //, 'card.move'
