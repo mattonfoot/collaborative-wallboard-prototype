@@ -15,7 +15,7 @@ function features() {
       , queue = this.queue
       , scenarios = this.scenarios;
 
-    beforeEach(function(done) {
+    before(function(done) {
 
         scenarios.TwoBoardsOneWithRegions()
             .then(function( storage ) {
@@ -68,6 +68,6 @@ function features() {
 
 }
 
-features.title = 'Creating a board';
+features.title = 'Creating a board on a wall where cards already exist';
 
 module.exports = features;

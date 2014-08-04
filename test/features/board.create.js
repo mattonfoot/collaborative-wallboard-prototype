@@ -12,7 +12,7 @@ function features() {
       , belt = this.application.belt
       , queue = this.queue;
 
-    beforeEach(function(done) {
+    before(function(done) {
 
         queue.once( 'boardcreator:displayed', function() {
             queue.clearCalls();

@@ -41,7 +41,7 @@ var features = [
   , 'board.create'
   , 'board.create.withCompleteBoard'
   , 'board.display'
-//, 'board.display.withCompleteBoard'
+  , 'board.display.withCompleteBoard'
   , 'board.edit'
   , 'board.update'
 

@@ -13,7 +13,7 @@ function features() {
     var services = this.application.services
       , queue = this.queue;
 
-    beforeEach(function(done) {
+    before(function(done) {
 
         queue.once( 'board:created', function( board ) {
             storedBoard = board;

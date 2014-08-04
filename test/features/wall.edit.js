@@ -12,7 +12,7 @@ function features() {
 
     before(function(done) {
 
-        queue.once( 'boardcreator:displayed', function() {
+        queue.once( 'wall:firsttime', function() {
             queue.clearCalls();
 
             done();

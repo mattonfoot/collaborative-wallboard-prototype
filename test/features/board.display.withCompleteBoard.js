@@ -3,7 +3,7 @@ var chai = require('chai')
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise;
 
-var storedName = 'display board'
+var storedName = 'Board with regions'
   , storedWall
   , storedBoard
   , resourceChecked = false
@@ -14,8 +14,8 @@ function features() {
       , scenarios = this.scenarios
       , queue = this.queue;
 
-    beforeEach(function(done) {
-        queue.on('boardselector:displayed', function( board ) {
+    before(function(done) {
+        queue.once('boardselector:displayed', function( board ) {
             queue.clearCalls();
 
             done();
@@ -58,12 +58,12 @@ function features() {
             resourceChecked.should.equal( true );
             queueChecked.should.equal( true );
 
-            //done();
+            done();
         });
 
     });
 }
 
-features.title = 'Selecting a Board for display';
+features.title = 'Selecting a pre populated Board for display';
 
 module.exports = features;
