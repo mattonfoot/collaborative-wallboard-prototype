@@ -34,12 +34,14 @@ var features = [
   , 'wall.display'
   , 'wall.edit'
   , 'wall.update'
+
   , 'board.new'
   , 'board.create'
   , 'board.create.withCompleteBoard'
   , 'board.display'
   , 'board.edit'
   , 'board.update'
+
 //, 'card.move'
 ];
 
@@ -49,7 +51,10 @@ Fixture('Application service API Features', function() {
           debug: debug
         , queue: queue
         , application: application
-        , setupPopulatedBoardScenario: setupPopulatedBoardScenario
+        , scenarios: {
+            TwoBoardsOneWithRegions: setupPopulatedBoardScenario
+          , OneEmptyBoard: setupEmptyBoardScenario
+        }
       };
 
     features.forEach(function( namespace ) {
@@ -139,6 +144,34 @@ function underline( title, format, indent, endWith ) {
 
 // setup routines
 
+function setupEmptyBoardScenario() {
+    application.pauseListening();
+
+    return new Promise(function( resolve, reject ) {
+        var storage = {};
+
+        // one wall
+        belt.create( 'wall', { name: 'Scenario wall' })
+            .then(function( resource ) {
+                storage.wall = resource;
+
+                var promises = [];
+
+                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function( resources ) {
+                storage.boards = resources;
+
+                application.startListening();
+
+                resolve( storage );
+            }, reject)
+            .catch( reject );
+    });
+}
+
 function setupPopulatedBoardScenario() {
     application.pauseListening();
 
@@ -152,8 +185,8 @@ function setupPopulatedBoardScenario() {
 
                 var promises = [];
 
-                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'First Wall' }) );
-                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Second Wall' }) );
+                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Board with cards only' }) );
+                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Board with regions' }) );
 
                 return RSVP.all( promises );
             })

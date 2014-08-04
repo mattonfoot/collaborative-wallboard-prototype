@@ -13,11 +13,11 @@ function features() {
     var services = this.application.services
       , belt = this.application.belt
       , queue = this.queue
-      , setupPopulatedBoardScenario = this.setupPopulatedBoardScenario;
+      , scenarios = this.scenarios;
 
     beforeEach(function(done) {
 
-        setupPopulatedBoardScenario()
+        scenarios.TwoBoardsOneWithRegions()
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[1];
