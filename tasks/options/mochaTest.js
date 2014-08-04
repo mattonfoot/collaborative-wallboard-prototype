@@ -30,23 +30,21 @@ module.exports = function( config ) {
           , src: coverage
         }
 
+      , lcov: {
+            options: {
+                reporter: 'mocha-lcov-reporter',
+              , captureFile: 'reports/lcov.info'
+            },
+            src: coverage
+        }
+
       , coverage: {
             options: {
                 reporter: 'html-cov'
-              , quiet: true
               , captureFile: 'reports/coverage.html'
             }
 
           , src: coverage
-        }
-
-      , lcov: {
-            options: {
-              reporter: 'mocha-lcov-reporter',
-              quiet: true,
-              captureFile: 'reports/lcov.info'
-            },
-            src: coverage
         }
 
     };
