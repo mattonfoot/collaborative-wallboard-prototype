@@ -32,7 +32,7 @@ module.exports = function( config ) {
 
       , lcov: {
             options: {
-                reporter: 'mocha-lcov-reporter',
+                reporter: 'mocha-lcov-reporter'
               , captureFile: 'reports/lcov.info'
             },
             src: coverage
