@@ -12,7 +12,6 @@ var queue = new TestQueue({ debug: debug });
 var ui = new UI( queue );
 var application = new Application( queue, ui, { debug: debug } );
 var belt = application.belt;
-var services = application.services;
 
 /*
   WALL --> NEW, CREATE, SELECT, DISPLAY, EDIT, UPDATE
@@ -48,6 +47,7 @@ Fixture('Application service API Features', function() {
         debug: debug
       , queue: queue
       , application: application
+      , setupPopulatedBoardScenario: setupPopulatedBoardScenario
     };
 
     features.forEach(function( namespace ) {
@@ -116,6 +116,58 @@ function underline( title, format, indent, endWith ) {
         new Array( indent + 1 ).join( ' ' ) +
         new Array( title.length + 1 ).join( format ) +
         endWith;
+}
+
+
+
+
+// setup routines
+
+function setupPopulatedBoardScenario() {
+    application.pauseListenting();
+
+    return new Promise(function( resolve, reject ) {
+        var storage = {};
+
+        // one wall
+        belt.create( 'wall', { name: 'Scenario wall' })
+            .then(function( resource ) {
+                storage.wall = resource;
+
+                var promises = [];
+
+                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'First Wall' }) );
+                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Second Wall' }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function( resources ) {
+                storage.boards = resources;
+
+                var promises = [], board = storage.boards[1];
+
+                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red' }) );
+                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue' }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function( resources ) {
+                storage.regions = resources;
+
+                var promises = [];
+
+                promises.push( belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' }) );
+                promises.push( belt.create('pocket', { wall: storage.wall.getId(), title: 'Second Card' }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function() {
+                application.startListening();
+
+                resolve( storage );
+            }, reject)
+            .catch( reject );
+    });
 }
 
 
