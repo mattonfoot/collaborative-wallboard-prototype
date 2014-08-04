@@ -1,51 +1,47 @@
-module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
+var chai = require('chai')
+  , should = chai.should();
 
-    describe('Wall:Select', function() {
+var queueChecked = false;
 
-        describe('Triggering the wall selector when there are multiple walls in the database', function() {
+function features() {
+    var services = this.application.services
+      , scenarios = this.scenarios
+      , queue = this.queue;
 
-            it('Displays a complete list of walls to select from', function(done) {
-                application.pauseListenting();
+    before(function(done) {
 
-                services
-                    .createWall( { name: 'wall one' } )
-                    .then(function( wall ) {
-                        return services.createWall( { name: 'wall two' } );
-                    })
-                    .then(function( wall ) {
-                        return services.createWall( { name: 'wall three' } );
-                    })
-                    .then(function( wall ) {
-                        queue.clearCalls();
-                        application.startListening();
+        scenarios.multipleWalls()
+            .then(function() {
+                queue.clearCalls();
 
-                        queue.once( 'wallselector:displayed', after);
-
-                        queue.trigger( 'wall:select', {} );
-                    })
-                    .catch( done );
-
-                function after( walls ) {
-                    should.exist( walls );
-
-                    walls.length.should.be.equal( 3 );
-
-                    walls.forEach(function( wall ) {
-                        wall.should.respondTo( 'getId' );
-                        wall.should.respondTo( 'getName' );
-                    });
-
-                    var calls = queue.getCalls();
-
-                    calls[0].event.should.be.equal( 'wall:select' );
-                    calls[1].event.should.be.equal( 'wallselector:displayed' );
-
-                    done();
-                }
+                done();
             });
+    });
 
+    it('If there are several walls configured then the Wall Selector input control will display all available walls\n',
+            function(done) {
+
+        queue.trigger( 'wall:select' );
+
+        queue.once( 'wallselector:displayed', function() {
+            queue.should.haveLogged([
+                    'wall:select'
+                  , 'wallselector:displayed'
+                ]);
+
+            queueChecked = true;
+        });
+
+        queue.once( 'wallselector:displayed', function() {
+            queueChecked.should.equal( true );
+
+            done();
         });
 
     });
 
-};
+}
+
+features.title = 'Selecting a Wall from multiple';
+
+module.exports = features;

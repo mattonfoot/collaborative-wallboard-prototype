@@ -31,7 +31,7 @@ var features = [
     'wall.new'
   , 'wall.create'
   , 'wall.select'
-//, 'wall.select.withMultipleWalls'
+  , 'wall.select.withMultipleWalls'
   , 'wall.display'
   , 'wall.display.withCompleteBoard'
   , 'wall.edit'
@@ -57,6 +57,7 @@ Fixture('Application service API Features', function() {
         , scenarios: {
             TwoBoardsOneWithRegions: setupPopulatedBoardScenario
           , OneEmptyBoard: setupEmptyBoardScenario
+          , multipleWalls: setupMultipleWallScenario
         }
       };
 
@@ -146,6 +147,40 @@ function underline( title, format, indent, endWith ) {
 
 
 // setup routines
+
+function setupMultipleWallScenario() {
+    application.pauseListening();
+
+    return new Promise(function( resolve, reject ) {
+        var storage = {}
+          , promises = [];
+
+        promises.push( belt.create('wall', { name: 'Wall one' }) );
+        promises.push( belt.create('wall', { name: 'Wall two' }) );
+        promises.push( belt.create('wall', { name: 'Wall three' }) );
+
+        RSVP.all( promises )
+            .then(function( resources ) {
+                storage.walls = resources;
+
+                var promises = [];
+
+                promises.push( belt.create('board', { wall: resources[0].getId(), name: 'Empty Board One' }) );
+                promises.push( belt.create('board', { wall: resources[1].getId(), name: 'Empty Board Two' }) );
+                promises.push( belt.create('board', { wall: resources[2].getId(), name: 'Empty Board Three' }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function( resources ) {
+                storage.boards = resources;
+
+                application.startListening();
+
+                resolve( storage );
+            }, reject)
+            .catch( reject );
+    });
+}
 
 function setupEmptyBoardScenario() {
     application.pauseListening();
