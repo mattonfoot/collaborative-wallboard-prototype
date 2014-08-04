@@ -35,7 +35,8 @@ var features = [
   , 'wall.edit'
   , 'wall.update'
   , 'board.new'
-  , 'board.create'  // second feature with cards already needs implementing
+  , 'board.create'
+  , 'board.create.withCompleteBoard'
   , 'board.display'
   , 'board.edit'
   , 'board.update'
@@ -43,12 +44,13 @@ var features = [
 ];
 
 Fixture('Application service API Features', function() {
-    var fixture = {
-        debug: debug
-      , queue: queue
-      , application: application
-      , setupPopulatedBoardScenario: setupPopulatedBoardScenario
-    };
+    var featureSet = {}
+      , fixture = {
+          debug: debug
+        , queue: queue
+        , application: application
+        , setupPopulatedBoardScenario: setupPopulatedBoardScenario
+      };
 
     features.forEach(function( namespace ) {
         var features = require( './features/' + namespace );
@@ -58,9 +60,23 @@ Fixture('Application service API Features', function() {
         }
 
         features.forEach(function( feature ) {
-            Feature( feature.title, function() { feature.call( fixture ); } );
+            featureSet[feature.title] = featureSet[feature.title] || [];
+
+            featureSet[feature.title].push( feature );
         });
     });
+
+    for (var title in featureSet) {
+        Feature( title, generateCallList( featureSet[title] ) );
+    }
+
+    function generateCallList( calls ) {
+        return function() {
+            calls.forEach(function(feature ) {
+                feature.call( fixture );
+            });
+        };
+    }
 
     afterEach(function (done) {
         if (debug || this.currentTest.state === 'failed') console.log( queue.getCalls() );
@@ -124,7 +140,7 @@ function underline( title, format, indent, endWith ) {
 // setup routines
 
 function setupPopulatedBoardScenario() {
-    application.pauseListenting();
+    application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
         var storage = {};
