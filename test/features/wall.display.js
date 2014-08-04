@@ -37,7 +37,7 @@ function features() {
             resourceChecked = true;
         });
 
-        queue.once( 'wall:firsttime', function() {
+        queue.once( 'boardcreator:displayed', function() {
             queue.should.haveLogged([
                     'wall:display'
                   , 'wall:displayed'
@@ -49,7 +49,7 @@ function features() {
             queueChecked = true;
         });
 
-        queue.once( 'wall:firsttime', function() {
+        queue.once( 'boardcreator:displayed', function() {
             resourceChecked.should.equal( true );
             queueChecked.should.equal( true );
 

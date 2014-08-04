@@ -1,7 +1,7 @@
 module.exports = function( should, RSVP, Promise, debug, queue, ui, application, belt, services ) {
 
     describe('Wall:Select', function() {
-      
+
         describe('Triggering the wall selector when there are multiple walls in the database', function() {
 
             it('Displays a complete list of walls to select from', function(done) {

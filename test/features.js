@@ -30,8 +30,10 @@ var _this = this;
 var features = [
     'wall.new'
   , 'wall.create'
-//, 'wall.select'   // two features need implementing
+//, 'wall.select'
+//, 'wall.select.withMultipleWalls'
   , 'wall.display'
+  , 'wall.display.withCompleteBoard'
   , 'wall.edit'
   , 'wall.update'
 
@@ -39,6 +41,7 @@ var features = [
   , 'board.create'
   , 'board.create.withCompleteBoard'
   , 'board.display'
+//, 'board.display.withCompleteBoard'
   , 'board.edit'
   , 'board.update'
 
