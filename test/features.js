@@ -30,7 +30,7 @@ var _this = this;
 var features = [
     'wall.new'
   , 'wall.create'
-//, 'wall.select'
+  , 'wall.select'
 //, 'wall.select.withMultipleWalls'
   , 'wall.display'
   , 'wall.display.withCompleteBoard'
