@@ -49,14 +49,6 @@ module.exports = function( config ) {
             src: coverage
         }
 
-      , 'travis-cov': {
-            options: {
-                reporter: 'travis-cov'
-            }
-
-          , src: coverage
-        }
-
     };
 
 };
