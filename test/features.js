@@ -46,6 +46,7 @@ var features = [
   , 'board.update'
 
   , 'card.create'
+  , 'card.create.withMultipleBoard'
 //, 'card.move'
 ];
 
