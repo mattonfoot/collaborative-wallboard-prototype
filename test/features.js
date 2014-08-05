@@ -92,7 +92,7 @@ Fixture('Application service API Features', function() {
     }
 
     afterEach(function (done) {
-        if (debug || this.currentTest.state === 'failed') console.log( queue.getCalls() );
+        if (debug && this.currentTest.state === 'failed') console.log( queue.getCalls() );
 
         var promises =[];
 

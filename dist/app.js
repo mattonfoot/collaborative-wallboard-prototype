@@ -1404,17 +1404,13 @@ EventQueue.prototype.emit = function( ev, data ) {
     var options = this.options;
 
     if (options.debug) {
-        console.log( 'EventQueue.emit('+ ev +')', !!this.events[ev] );
+        console.log( 'EventQueue.emit('+ ev +')', ( data && data.getId ? data.getId() : typeof( data ) ) );
     }
 
     if (this.events[ev]) {
         var cleansed = [];
 
         this.events[ev].forEach(function( react ) {
-            if (options.debug) {
-                console.log( 'this.events['+ ev + '].call()' );
-            }
-
             setTimeout(function() {
                 react.reaction( data );
             }, 0);
@@ -2394,8 +2390,6 @@ MovementTracker.prototype.trackCardMovement = function( location ) {
         })
         .then(function( regions ) {
             var update = [];
-
-            console.trace( regions );
 
             regions.forEach(function( region ) {
                 var regionid = region.getId()
