@@ -52,7 +52,8 @@ var features = [
 
   , 'card.create'
   , 'card.create.withMultipleBoard'
-//, 'card.move'
+  , 'card.create.toDisplayedBoardOFMultipleBoards'
+//, 'card.move
 ];
 
 Fixture('Application service API Features', function() {

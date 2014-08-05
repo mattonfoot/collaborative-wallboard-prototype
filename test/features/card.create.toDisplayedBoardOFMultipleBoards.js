@@ -23,6 +23,12 @@ function features() {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[0];
 
+                return services.displayWall( storedWall.getId() );
+            })
+            .then(function() {
+                return services.displayBoard( storedBoard.getId() );
+            })
+            .then(function() {
                 queue.clearCalls();
 
                 done();
@@ -52,15 +58,23 @@ function features() {
                 resource.should.respondTo( 'getBoard' );
                 resource.getPocket().should.equal( storedPocket.getId() );
 
-                locationChecked = true;
-            });
+                queue.once( 'cardlocation:created', function( resource ) {
+                    should.exist( resource );
 
-            queue.once( 'cardlocation:created', function() {
+                    resource.should.respondTo( 'getId' );
+                    resource.should.respondTo( 'getPocket' );
+                    resource.should.respondTo( 'getBoard' );
+                    resource.getPocket().should.equal( storedPocket.getId() );
+
+                    locationChecked = true;
+                });
+
                 queue.once( 'cardlocation:created', function() {
                     queue.should.haveLogged([
                             'pocket:create'
                           , 'pocket:created'
                           , 'cardlocation:created'
+                          , 'cardlocation:displayed'
                           , 'cardlocation:created'
                         ]);
 
@@ -80,6 +94,6 @@ function features() {
 
 }
 
-features.title = 'Creating a Card on a wall with multiple Boards';
+features.title = 'Creating a Card for a displayed board when ther are multiple other Boards';
 
 module.exports = features;
