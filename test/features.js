@@ -6,6 +6,11 @@ var chai = require('chai')
   , Application = require('../lib/application')
   , UI = require('../lib/interface');
 
+require('nodetime').profile({
+    accountKey: '8d4c70bf6e37e5d967724a6f8294d346fcd59d0f', 
+    appName: 'VUU.SE'
+});
+
 var debug = false;
 
 var queue = new TestQueue({ debug: debug });
