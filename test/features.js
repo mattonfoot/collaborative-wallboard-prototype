@@ -48,7 +48,7 @@ var features = [
   , 'card.create'
   , 'card.create.withMultipleBoard'
   , 'card.create.toDisplayedBoardOFMultipleBoards'
-//, 'card.move
+  , 'card.move.intoEmptyArea'
 ];
 
 Fixture('Application service API Features', function() {
@@ -265,7 +265,7 @@ function setupPopulatedBoardScenario() {
             })
             .then(function( resources ) {
                 storage.locations = resources;
-                
+
                 application.startListening();
 
                 resolve( storage );

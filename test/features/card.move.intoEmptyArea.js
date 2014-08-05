@@ -5,9 +5,11 @@ var storedName = 'new card'
   , storedWall
   , storedBoard
   , storedPocket
+  , storedLocation
   , resourceChecked = false
   , locationChecked = false
-  , queueChecked = false;
+  , queueChecked = false
+  , update;
 
 
 
@@ -22,6 +24,14 @@ function features() {
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[0];
+                storedPocket = storage.pockets[0];
+                storedLocation = storage.locations[0];
+
+                update = {
+                    id: storedLocation.getId(),
+                    x: 200,
+                    y: 200
+                };
 
                 queue.clearCalls();
 
@@ -29,57 +39,47 @@ function features() {
             });
     });
 
-    it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
+    it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n',
         function( done ) {
 
-            queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+            queue.trigger( 'cardlocation:move', update );
 
-            queue.once( 'pocket:created', function( resource ) {
-                storedPocket = resource;
-
-                should.exist( resource );
-
-                resource.should.be.a.specificCardResource( storedName, storedWall.getId() );
-
-                resourceChecked = true;
-            });
-
-            queue.once( 'cardlocation:created', function( resource ) {
+            queue.once( 'cardlocation:updated', function( resource ) {
                 should.exist( resource );
 
                 resource.should.respondTo( 'getId' );
                 resource.should.respondTo( 'getPocket' );
-                resource.should.respondTo( 'getBoard' );
                 resource.getPocket().should.equal( storedPocket.getId() );
+                resource.should.respondTo( 'getBoard' );
+                resource.getBoard().should.equal( storedBoard.getId() );
+                resource.should.respondTo( 'getX' );
+                resource.getX().should.equal( update.x );
+                resource.should.respondTo( 'getY' );
+                resource.getY().should.equal( update.y );
 
                 locationChecked = true;
             });
 
-            queue.once( 'cardlocation:created', function() {
-                queue.once( 'cardlocation:created', function() {
-                    queue.should.haveLogged([
-                            'pocket:create'
-                          , 'pocket:created'
-                          , 'cardlocation:created'
-                          , 'cardlocation:created'
-                        ]);
+            queue.once( 'cardlocation:updated', function() {
+                queue.should.haveLogged([
+                        'cardlocation:move'
+                      , 'cardlocation:updated'
+                    ]);
 
-                    queueChecked = true;
-                });
+                queueChecked = true;
+            });
 
-                queue.once( 'cardlocation:created', function() {
-                    resourceChecked.should.equal( true );
-                    locationChecked.should.equal( true );
-                    queueChecked.should.equal( true );
+            queue.once( 'cardlocation:updated', function() {
+                locationChecked.should.equal( true );
+                queueChecked.should.equal( true );
 
-                    done();
-                });
+                done();
             });
 
         });
 
 }
 
-features.title = 'Creating a Card on a wall with multiple Boards';
+features.title = 'Moving a displayed card into an empty area on the displayed board';
 
 module.exports = features;
