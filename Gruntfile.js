@@ -45,7 +45,7 @@ module.exports = function( grunt )
     // grunt.registerTask('clean'     , [ 'clean' ]);
 
     // test
-    grunt.registerTask('coverage'     , [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov'/*, 'mochaTest:coverage'*/]);
+    grunt.registerTask('coverage'     , [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage']);
     grunt.registerTask('test'         , [ 'jshint', 'mochaTest:test' ]);
 
     // build
@@ -56,6 +56,6 @@ module.exports = function( grunt )
 
     // travis-ci
 
-    grunt.registerTask('ci'     , [ 'test', 'coverage', 'coveralls']);
+    grunt.registerTask('ci'     , [ 'coverage', 'coveralls']);
 
 };

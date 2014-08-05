@@ -33,6 +33,7 @@ module.exports = function( config ) {
       , lcov: {
             options: {
                 reporter: 'mocha-lcov-reporter'
+              , quiet: true
               , captureFile: 'reports/lcov.info'
             },
             src: coverage
@@ -41,6 +42,7 @@ module.exports = function( config ) {
       , coverage: {
             options: {
                 reporter: 'html-cov'
+              , quiet: true
               , captureFile: 'reports/coverage.html'
             }
 

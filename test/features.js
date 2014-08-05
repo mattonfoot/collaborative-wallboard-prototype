@@ -28,7 +28,7 @@ var belt = application.belt;
 var _this = this;
 
 var features = [
-  'wall.new'
+    'wall.new'
   , 'wall.create'
   , 'wall.select'
   , 'wall.select.withMultipleWalls'
@@ -92,8 +92,11 @@ Fixture('Application service API Features', function() {
     }
 
     afterEach(function (done) {
-        if (debug && this.currentTest.state === 'failed') console.log( queue.getCalls() );
+        if (this.currentTest.state === 'failed') console.log( queue.getCalls() );
 
+        queue.clearCalls();
+        application.startListening();
+/*
         var promises =[];
 
         [ 'region', 'cardlocation', 'pocket', 'board', 'wall' ]
@@ -126,8 +129,10 @@ Fixture('Application service API Features', function() {
                 done();
             })
             .catch( done );
-    });
+        */
 
+        done();
+    });
 });
 
 // helpers
@@ -287,11 +292,11 @@ function shouldHaveLogged( events ) {
 
     var i = 0, len = events.length;
 
-    queue.length.should.equal( len, 'expected number of queued event to equal ' + len + '\n'  );
-
     for (; i < len; i++) {
         queue[i].event.should.equal( events[i], 'expected queued event ' + i + ' to equal ' + events[i] + '\n' );
     }
+
+    queue.length.should.equal( len, 'expected number of queued event to equal ' + len + '\n'  );
 }
 
 chai.Assertion.addMethod('specificWallResource', shouldBeSpecificWallResource);
