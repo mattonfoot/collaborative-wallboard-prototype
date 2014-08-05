@@ -54,8 +54,7 @@
     "mocha": "*",
     "mocha-lcov-reporter": "*",
     "travis-cov": "*",
-    "literalify": "*",
-    "nodetime": "*"
+    "literalify": "*"
   },
   "config": {
     "travis-cov": {
