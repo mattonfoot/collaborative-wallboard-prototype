@@ -1587,14 +1587,10 @@ Services.prototype.selectBoard = function( wall ) {
 // cardlocations
 
 // cardlocation:created
-Services.prototype.displayCardLocation = function( id ) {
+Services.prototype.displayCardLocation = function( location ) {
     var _this = this;
 
-    return this._queries
-        .getCardLocation( id )
-        .then(function( location ) {
-            return callDisplayCardLocationWithPocket.call( _this, location );
-        });
+    return callDisplayCardLocationWithPocket.call( _this, location );
 };
 
 // board:displayed
@@ -2398,6 +2394,8 @@ MovementTracker.prototype.trackCardMovement = function( location ) {
         })
         .then(function( regions ) {
             var update = [];
+
+            console.trace( regions );
 
             regions.forEach(function( region ) {
                 var regionid = region.getId()

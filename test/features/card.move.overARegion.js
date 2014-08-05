@@ -5,6 +5,7 @@ var storedName = 'new card'
   , storedWall
   , storedBoard
   , storedPocket
+  , storedRegion
   , storedLocation
   , resourceChecked = false
   , locationChecked = false
@@ -23,14 +24,15 @@ function features() {
         scenarios.TwoBoardsOneWithRegions()
             .then(function( storage ) {
                 storedWall = storage.wall;
-                storedBoard = storage.boards[0];
+                storedBoard = storage.boards[1];
                 storedPocket = storage.pockets[0];
-                storedLocation = storage.locations[0];
+                storedRegion = storage.regions[0];
+                storedLocation = storage.locations[2];
 
                 update = {
                     id: storedLocation.getId(),
-                    x: 600,
-                    y: 600
+                    x: 350,
+                    y: 100
                 };
 
                 queue.clearCalls();
@@ -39,7 +41,7 @@ function features() {
             });
     });
 
-    it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n',
+    it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates within a Region on the same Board to trigger the process of moving a Card over a Region on a Board\n',
         function( done ) {
 
             queue.trigger( 'cardlocation:move', update );
@@ -60,16 +62,29 @@ function features() {
                 locationChecked = true;
             });
 
-            queue.once( 'cardlocation:updated', function() {
+            queue.once( 'pocket:updated', function( resource ) {
+                resource.getId().should.equal( storedPocket.getId() );
+                resource.getRegions().should.contain( storedRegion.getId() );
+
+                resourceChecked = true;
+            });
+
+            queue.once( 'pocket:regionenter', function( info ) {
+                info.pocket.getId().should.equal( storedPocket.getId() );
+                info.region.getId().should.equal( storedRegion.getId() );
+
                 queue.should.haveLogged([
                         'cardlocation:move'
                       , 'cardlocation:updated'
+                      , 'pocket:updated'
+                      , 'pocket:regionenter'
                     ]);
 
                 queueChecked = true;
             });
 
-            queue.once( 'cardlocation:updated', function() {
+            queue.once( 'pocket:regionenter', function() {
+                resourceChecked.should.equal( true );
                 locationChecked.should.equal( true );
                 queueChecked.should.equal( true );
 
@@ -80,6 +95,6 @@ function features() {
 
 }
 
-features.title = 'Moving a displayed card into an empty area on the displayed board';
+features.title = 'Moving a displayed card over a region on the displayed board';
 
 module.exports = features;

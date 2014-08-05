@@ -28,7 +28,7 @@ var belt = application.belt;
 var _this = this;
 
 var features = [
-    'wall.new'
+  'wall.new'
   , 'wall.create'
   , 'wall.select'
   , 'wall.select.withMultipleWalls'
@@ -49,6 +49,7 @@ var features = [
   , 'card.create.withMultipleBoard'
   , 'card.create.toDisplayedBoardOFMultipleBoards'
   , 'card.move.intoEmptyArea'
+  , 'card.move.overARegion'
 ];
 
 Fixture('Application service API Features', function() {
@@ -236,8 +237,8 @@ function setupPopulatedBoardScenario() {
 
                 var promises = [], board = storage.boards[1];
 
-                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 50, y:50, width:200, height:200 }) );
-                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:50, width:200, height:200 }) );
+                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 }) );
+                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 }) );
 
                 return RSVP.all( promises );
             })
