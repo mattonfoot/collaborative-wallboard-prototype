@@ -55,16 +55,18 @@ function features() {
 
                 resource.should.respondTo( 'getId' );
                 resource.should.respondTo( 'getPocket' );
-                resource.should.respondTo( 'getBoard' );
                 resource.getPocket().should.equal( storedPocket.getId() );
+                resource.should.respondTo( 'getBoard' );
+                resource.getBoard().should.equal( storedBoard.getId() );
 
                 queue.once( 'cardlocation:created', function( resource ) {
                     should.exist( resource );
 
                     resource.should.respondTo( 'getId' );
                     resource.should.respondTo( 'getPocket' );
-                    resource.should.respondTo( 'getBoard' );
                     resource.getPocket().should.equal( storedPocket.getId() );
+                    resource.should.respondTo( 'getBoard' );
+                    resource.getBoard().should.not.equal( storedBoard.getId() );
 
                     locationChecked = true;
                 });
