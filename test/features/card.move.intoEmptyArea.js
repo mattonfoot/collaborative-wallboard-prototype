@@ -23,12 +23,6 @@ function features() {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[0];
 
-                return services.displayWall( storedWall.getId() );
-            })
-            .then(function() {
-                return services.displayBoard( storedBoard.getId() );
-            })
-            .then(function() {
                 queue.clearCalls();
 
                 done();
@@ -55,30 +49,18 @@ function features() {
 
                 resource.should.respondTo( 'getId' );
                 resource.should.respondTo( 'getPocket' );
-                resource.getPocket().should.equal( storedPocket.getId() );
                 resource.should.respondTo( 'getBoard' );
-                resource.getBoard().should.equal( storedBoard.getId() );
+                resource.getPocket().should.equal( storedPocket.getId() );
 
-                queue.once( 'cardlocation:created', function( resource ) {
-                    should.exist( resource );
+                locationChecked = true;
+            });
 
-                    resource.should.respondTo( 'getId' );
-                    resource.should.respondTo( 'getPocket' );
-                    resource.getPocket().should.equal( storedPocket.getId() );
-                    resource.should.respondTo( 'getBoard' );
-                    resource.getBoard().should.not.equal( storedBoard.getId() );
-
-                    locationChecked = true;
-                });
-
+            queue.once( 'cardlocation:created', function() {
                 queue.once( 'cardlocation:created', function() {
                     queue.should.haveLogged([
                             'pocket:create'
-                          , 'cardlocation:displayed'  // muddy event from displayWall
-                          , 'cardlocation:displayed'  // muddy event from displayWall
                           , 'pocket:created'
                           , 'cardlocation:created'
-                          , 'cardlocation:displayed'
                           , 'cardlocation:created'
                         ]);
 
@@ -98,6 +80,6 @@ function features() {
 
 }
 
-features.title = 'Creating a Card for a displayed board when there are multiple other Boards';
+features.title = 'Creating a Card on a wall with multiple Boards';
 
 module.exports = features;

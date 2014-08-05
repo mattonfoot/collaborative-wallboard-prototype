@@ -236,8 +236,8 @@ function setupPopulatedBoardScenario() {
 
                 var promises = [], board = storage.boards[1];
 
-                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red' }) );
-                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue' }) );
+                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 50, y:50, width:200, height:200 }) );
+                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:50, width:200, height:200 }) );
 
                 return RSVP.all( promises );
             })
@@ -251,7 +251,21 @@ function setupPopulatedBoardScenario() {
 
                 return RSVP.all( promises );
             })
-            .then(function() {
+            .then(function( resources ) {
+                storage.pockets = resources;
+
+                var promises = [];
+
+                promises.push( belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:50, y:50 }) );
+                promises.push( belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[0].getId(), x:50, y:50 }) );
+                promises.push( belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[1].getId(), x:400, y:50 }) );
+                promises.push( belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[1].getId(), x:400, y:50 }) );
+
+                return RSVP.all( promises );
+            })
+            .then(function( resources ) {
+                storage.locations = resources;
+                
                 application.startListening();
 
                 resolve( storage );

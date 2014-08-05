@@ -47,6 +47,8 @@ function features() {
         queue.once( 'controls:enabled', function() {
             queue.should.haveLogged([
                     'board:display'
+                  , 'cardlocation:displayed'
+                  , 'cardlocation:displayed'
                   , 'board:displayed'
                   , 'controls:enabled'
                 ]);
