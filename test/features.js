@@ -53,6 +53,7 @@ var features = [
 
   , 'region.create'
   , 'region.move.intoEmptyArea'
+  , 'region.move.UnderACard'
 ];
 
 Fixture('Application service API Features', function() {
