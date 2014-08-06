@@ -28,7 +28,7 @@ var belt = application.belt;
 var _this = this;
 
 var features = [
-    'wall.new'
+/*    'wall.new'
   , 'wall.create'
   , 'wall.select'
   , 'wall.select.withMultipleWalls'
@@ -53,7 +53,7 @@ var features = [
 
   , 'region.create'
   , 'region.move.intoEmptyArea'
-  , 'region.move.UnderACard'
+  , */'region.move.UnderACard'
 ];
 
 Fixture('Application service API Features', function() {
