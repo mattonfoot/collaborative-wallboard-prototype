@@ -14,13 +14,9 @@ var application = new Application( queue, ui, { debug: debug } );
 var belt = application.belt;
 
 /*
-  WALL --> NEW, CREATE, SELECT, DISPLAY, EDIT, UPDATE
+  CARD --> NEW, EDIT, UPDATE
 
-  BOARD --> NEW, CREATE, SELECT, DISPLAY, EDIT, UPDATE
-
-  CARD --> NEW, CREATE, EDIT, UPDATE, MOVE
-
-  REGION --> NEW, CREATE, EDIT, UPDATE, MOVE, UPDATE
+  REGION --> NEW, EDIT, UPDATE, UPDATE
 
   TRANSFORM --> CREATE, UNLINK
 */
@@ -28,7 +24,7 @@ var belt = application.belt;
 var _this = this;
 
 var features = [
-/*    'wall.new'
+    'wall.new'
   , 'wall.create'
   , 'wall.select'
   , 'wall.select.withMultipleWalls'
@@ -53,7 +49,7 @@ var features = [
 
   , 'region.create'
   , 'region.move.intoEmptyArea'
-  , */'region.move.UnderACard'
+  , 'region.move.UnderACard'
 ];
 
 Fixture('Application service API Features', function() {

@@ -26,10 +26,11 @@ function features() {
                 storedBoard = storage.boards[1];
                 storedPocket = storage.pockets[0];
                 storedRegion = storage.regions[0];
+                storedLocation = storage.locations[2];
 
                 update = {
                     id: storedRegion.getId(),
-                    x: 0,
+                    x: 400,
                     y: 0
                 };
 
@@ -84,13 +85,13 @@ function features() {
                 locationChecked.should.equal( true );
                 queueChecked.should.equal( true );
 
-                //done();
+                done();
             });
 
         });
 
 }
 
-features.title = 'Moving a displayed Region under a CArd on the displayed Board';
+features.title = 'Moving a displayed Region under a Card on the displayed Board';
 
 module.exports = features;
