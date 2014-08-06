@@ -50,6 +50,8 @@ var features = [
   , 'card.create.toDisplayedBoardOFMultipleBoards'
   , 'card.move.intoEmptyArea'
   , 'card.move.overARegion'
+
+  , 'region.create'
 ];
 
 Fixture('Application service API Features', function() {
@@ -319,6 +321,9 @@ function shouldBeSpecificBoardResource( expectedName, expectedWallId ) {
     resource.getName().should.equal( expectedName );
     resource.should.respondTo( 'getWall' );
     resource.getWall().should.equal( expectedWallId );
+    resource.should.respondTo( 'getTransforms' );
+    resource.should.respondTo( 'getCardLocations' );
+    resource.should.respondTo( 'getRegions' );
 }
 
 chai.Assertion.addMethod('specificCardResource', shouldBeSpecificCardResource);
@@ -331,4 +336,29 @@ function shouldBeSpecificCardResource( expectedTitle, expectedWallId ) {
     resource.getTitle().should.equal( expectedTitle );
     resource.should.respondTo( 'getWall' );
     resource.getWall().should.equal( expectedWallId );
+    resource.should.respondTo( 'getContent' );
+    resource.should.respondTo( 'getTags' );
+    resource.should.respondTo( 'getMentions' );
+    resource.should.respondTo( 'getCardnumber' );
+    resource.should.respondTo( 'getCardLocations' );
+    resource.should.respondTo( 'getRegions' );
+}
+
+chai.Assertion.addMethod('specificRegionResource', shouldBeSpecificRegionResource);
+
+function shouldBeSpecificRegionResource( expectedLabel, expectedBoardId ) {
+    var resource = this._obj;
+
+    resource.should.respondTo( 'getId' );
+    resource.should.respondTo( 'getLabel' );
+    resource.getLabel().should.equal( expectedLabel );
+    resource.should.respondTo( 'getBoard' );
+    resource.getBoard().should.equal( expectedBoardId );
+    resource.should.respondTo( 'getColor' );
+    resource.should.respondTo( 'getValue' );
+    resource.should.respondTo( 'getX' );
+    resource.should.respondTo( 'getY' );
+    resource.should.respondTo( 'getHeight' );
+    resource.should.respondTo( 'getWidth' );
+    resource.should.respondTo( 'getPockets' );
 }
