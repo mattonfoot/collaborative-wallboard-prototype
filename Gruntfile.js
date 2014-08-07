@@ -49,7 +49,7 @@ module.exports = function( grunt )
     grunt.registerTask('test'         , [ 'jshint', 'mochaTest:test' ]);
 
     // build
-    grunt.registerTask('build'        , [ 'browserify' ]);
+    grunt.registerTask('build'        , [ 'browserify', 'copy:client' ]);
 
     // auto build
     // grunt.registerTask('default'      , [ 'watch' ]);

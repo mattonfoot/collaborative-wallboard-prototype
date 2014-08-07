@@ -5,6 +5,12 @@ module.exports = function( config ) {
             src: ['test/**'],
             dest: 'coverage/'
         }
+
+      , client: {
+            files: {
+                'dist/index.html': [ './lib/index.html' ]
+            }
+        }
     };
 
 };
