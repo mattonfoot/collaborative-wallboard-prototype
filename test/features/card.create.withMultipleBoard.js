@@ -9,8 +9,6 @@ var storedName = 'new card'
   , locationChecked = false
   , queueChecked = false;
 
-
-
 function features() {
     var services = this.application.services
       , scenarios = this.scenarios
@@ -31,6 +29,7 @@ function features() {
 
     it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
         function( done ) {
+
 
             queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 

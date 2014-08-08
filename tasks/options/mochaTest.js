@@ -1,9 +1,9 @@
 var mocha = require('mocha');
 
-module.exports = function( config ) {
+module.exports = function() {
 
-    var tests = ['test/**/*.js'];
-    var coverage = ['coverage/test/**/*.js'];
+    var tests = [ 'test/**/*.js' ];
+    var coverage = [ 'coverage/test/**/*.js' ];
 
     var configSlow = 800;
     var configTimeout = 10000;

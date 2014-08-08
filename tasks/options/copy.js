@@ -1,9 +1,9 @@
-module.exports = function( config ) {
+module.exports = function() {
 
     return {
         coverage: {
-            src: ['test/**'],
-            dest: 'coverage/'
+            src:    [ 'test/**' ],
+            dest:   'coverage/'
         }
 
       , client: {

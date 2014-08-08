@@ -1,11 +1,11 @@
 var literalify = require('literalify');
 
-module.exports = function( config ) {
+module.exports = function() {
     return {
 
         test: {
             files: {
-                'browser/test.js': [ 'test/**/browser.js' ]
+                'browser/test.js': [ 'test/*.js' ]
             }
         },
 

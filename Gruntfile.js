@@ -1,12 +1,12 @@
-module.exports = function( grunt )
-{
-    "use strict";
+module.exports = function( grunt ) {
+    'use strict';
 
     // helper function to load task configs
 
     function loadConfig( path, config ) {
-        var glob = require( 'glob' )
-          , object = {}
+        var glob = require( 'glob' );
+
+        var object = {}
           , key;
 
         glob.sync('*', { cwd: path })
@@ -45,17 +45,17 @@ module.exports = function( grunt )
     // grunt.registerTask('clean'     , [ 'clean' ]);
 
     // test
-    grunt.registerTask('coverage'     , [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage']);
-    grunt.registerTask('test'         , [ 'jshint', 'mochaTest:test' ]);
+    grunt.registerTask('coverage'     , [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage' ]);
+    grunt.registerTask('test'         , [ /*'jshint', 'eslint',*/ 'mochaTest:test' ]);
 
     // build
     grunt.registerTask('build'        , [ 'browserify', 'copy:client' ]);
 
     // auto build
-    // grunt.registerTask('default'      , [ 'watch' ]);
+    // grunt.registerTask('default'   , [ 'watch' ]);
 
     // travis-ci
 
-    grunt.registerTask('ci'     , [ 'coverage', 'coveralls']);
+    grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);
 
 };

@@ -3,7 +3,7 @@ module.exports = function() {
     return {
 
         options: {
-            jshintrc  : '.jshintrc'
+            eslintrc  : true
         }
 
       , gruntfile   : [ 'Gruntfile.js', 'tasks/**/*.js' ]

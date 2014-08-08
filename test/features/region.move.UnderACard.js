@@ -6,6 +6,7 @@ var storedName = 'new region'
   , storedBoard
   , storedPocket
   , storedRegion
+  , storedLocation
   , resourceChecked = false
   , locationChecked = false
   , queueChecked = false

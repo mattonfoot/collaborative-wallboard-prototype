@@ -1,15 +1,15 @@
-module.exports = function( config ) {
+module.exports = function() {
 
     return {
 
         coverage: {
-            src: ['lib/'],
-            dest: 'coverage/lib/'
+            src:    [ 'lib/' ],
+            dest:   'coverage/lib/'
         }
 
       , features: {
-            src: ['test/lib/'],
-            dest: 'coverage/test/lib/'
+            src:    [ 'test/lib/' ],
+            dest:   'coverage/test/lib/'
         }
 
     };

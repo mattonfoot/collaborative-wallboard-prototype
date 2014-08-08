@@ -45,6 +45,7 @@
     "grunt-complexity": "*",
     "grunt-contrib-clean": "*",
     "grunt-contrib-copy": "*",
+    "grunt-contrib-eslint": "*",
     "grunt-contrib-jshint": "*",
     "grunt-contrib-watch": "*",
     "grunt-coveralls": "*",
@@ -53,6 +54,7 @@
     "memdown": "*",
     "mocha": "*",
     "mocha-lcov-reporter": "*",
+    "njstrace": "*",
     "travis-cov": "*",
     "literalify": "*"
   },

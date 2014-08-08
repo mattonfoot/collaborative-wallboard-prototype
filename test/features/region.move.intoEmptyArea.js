@@ -4,8 +4,7 @@ var chai = require('chai')
 var storedName = 'new Region'
   , storedWall
   , storedBoard
-  , storedPocket
-  , storedLocation
+  , storedRegion
   , resourceChecked = false
   , locationChecked = false
   , queueChecked = false

@@ -1,4 +1,4 @@
-module.exports= function( config ) {
+module.exports = function() {
 
     return {
 
@@ -8,7 +8,7 @@ module.exports= function( config ) {
         }
 
       , all: {
-            src: ['benchmarks/*.js'],
+            src:  [ 'benchmarks/*.js' ],
             dest: 'reports/benchmarks.csv'
         }
 

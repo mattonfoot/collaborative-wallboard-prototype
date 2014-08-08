@@ -2,6 +2,7 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new board'
+  , storedWall
   , resourceChecked = false
   , queueChecked = false;
 

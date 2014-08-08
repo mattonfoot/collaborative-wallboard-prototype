@@ -3,6 +3,7 @@ var chai = require('chai')
 
 var storedName = 'display wall'
   , storedWall
+  , storedBoard
   , wallChecked = false
   , boardChecked = false
   , queueChecked = false;
