@@ -2,17 +2,26 @@ var chai = require('chai')
   , should = chai.should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
+  , PouchDB = require('pouchdb')
+  , Belt = require('belt')
   , ExecutionTimer = require('./executionTimer')
   , TestQueue = require('../lib/queue.extensions')
   , Application = require('../lib/application')
   , UI = require('../lib/interface');
 
-var debug = false;
+var debug = false
+  , dbname = 'vuuse_features'
+  , opts = {};
 
+if ( !process.browser ) {
+    opts.db = require('memdown');
+}
+
+var belt = new Belt( new PouchDB(dbname, opts), opts);
 var queue = new TestQueue({ debug: debug });
 var ui = new UI( queue );
-var application = new Application( queue, ui, { debug: debug } );
-var belt = application.belt;
+
+var application = new Application( belt, queue, ui, { debug: debug } );
 /*
 ExecutionTimer( application.commands, 'Commands' );
 ExecutionTimer( application.queries, 'Queries' );
@@ -30,6 +39,7 @@ ExecutionTimer( application.interface, 'Interface' );
 var _this = this;
 
 var features = [
+
     require( './features/wall.new' )
   , require( './features/wall.create' )
   , require( './features/wall.select' )
@@ -57,6 +67,7 @@ var features = [
   , require( './features/region.create' )
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
+
 ];
 
 Fixture('Application service API Features', function() {

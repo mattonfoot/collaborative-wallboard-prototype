@@ -12,8 +12,6 @@ var storedName = 'new region'
   , queueChecked = false
   , update;
 
-
-
 function features() {
     var services = this.application.services
       , scenarios = this.scenarios
@@ -62,7 +60,6 @@ function features() {
 
             queue.once( 'region:updated', function( resource ) {
                 resource.getId().should.equal( storedRegion.getId() );
-                //resource.getPockets().should.contain( storedPocket.getId() );
 
                 resourceChecked = true;
             });
@@ -70,6 +67,7 @@ function features() {
             queue.once( 'pocket:regionenter', function( info ) {
                 info.pocket.getId().should.equal( storedPocket.getId() );
                 info.region.getId().should.equal( storedRegion.getId() );
+                // info.region.getPockets().should.contain( storedPocket.getId() );
 
                 queue.should.haveLogged([
                         'region:move'

@@ -2,6 +2,7 @@ var should = require('chai').should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
   , Belt = require('belt')
+  , PouchDB = require('pouchdb')
   , Queue = require('../lib/queue')
   , Commands = require('../lib/commands')
   , Queries = require('../lib/queries')
@@ -15,13 +16,14 @@ var should = require('chai').should()
 
 describe.skip('using an adapter', function() {
     var ids = {}
+      , dbname = 'vuuse_pockets'
       , opts = {};
 
     if ( !process.browser ) {
         opts.db = require('memdown');
     }
 
-    var belt = new Belt( 'belt_pocket_management_test', opts);
+    var belt = new Belt( new PouchDB(dbname, opts), opts);
     var queue = new Queue();
     var interface = new Interface( queue );
     var commands = new Commands( belt );

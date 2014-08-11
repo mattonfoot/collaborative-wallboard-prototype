@@ -1,6 +1,7 @@
 var should = require('chai').should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
+  , PouchDB = require('pouchdb')
   , Belt = require('belt')
   , Queue = require('../lib/queue')
   , Commands = require('../lib/commands')
@@ -11,13 +12,14 @@ var should = require('chai').should()
 
 describe.skip('using an adapter', function() {
     var ids = {}
+      , dbname = 'vuuse_walls'
       , opts = {};
 
     if ( !process.browser ) {
         opts.db = require('memdown');
     }
 
-    var belt = new Belt( 'belt_wall_management_test', opts);
+    var belt = new Belt( new PouchDB(dbname, opts), opts);
     var queue = new Queue();
     var interface = new Interface( queue );
     var commands = new Commands( belt );
