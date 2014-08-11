@@ -52,7 +52,7 @@
     "grunt-mocha-test": "*",
     "load-grunt-tasks": "*",
     "memdown": "*",
-    "PouchDB": "*",
+    "pouchdb": "*",
     "mocha": "*",
     "mocha-lcov-reporter": "*",
     "njstrace": "*",
