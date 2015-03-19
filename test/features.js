@@ -39,7 +39,7 @@ ExecutionTimer( application.interface, 'Interface' );
 var _this = this;
 
 var features = [
-
+/*
     require( './features/wall.new' )
   , require( './features/wall.create' )
   , require( './features/wall.select' )
@@ -57,8 +57,8 @@ var features = [
   , require( './features/board.edit' )
   , require( './features/board.update' )
 
-  , require( './features/card.create' )
-  , require( './features/card.create.withMultipleBoard' )
+  ,*/ require( './features/card.create' )
+/*  , require( './features/card.create.withMultipleBoard' )
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
@@ -67,7 +67,7 @@ var features = [
   , require( './features/region.create' )
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
-
+*/
 ];
 
 Fixture('Application service API Features', function() {

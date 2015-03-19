@@ -19,7 +19,7 @@ function Application( belt, queue, ui, options ) {
     this.belt = belt;
 
     // initialize the services
-    var commands = this.commands = new Commands( belt );
+    var commands = this.commands = new Commands( belt, queue );
     var queries = this.queries = new Queries( belt );
     var services = this.services = new Services( ui, commands, queries );
     var movementTracker = this.movementTracker = new MovementTracker( queue, commands, queries );
@@ -88,18 +88,6 @@ function Application( belt, queue, ui, options ) {
     }
 
     queue
-        .on('board:displayed', function( board ) {
-            if (!_this._listen) return;
-
-            services.displayCardLocations( board );
-            services.displayRegions( board );
-        })
-
-        .on('wall:firsttime', function( wall ) {
-            if (!_this._listen) return;
-
-            services.newBoard();
-        })
 
         .on('wall:created', function( wall ) {
             if (!_this._listen) return;
@@ -137,9 +125,22 @@ function Application( belt, queue, ui, options ) {
             movementTracker.trackRegionMovement( region );
         })
 
+        .on('board:displayed', function( board ) {
+            if (!_this._listen) return;
+
+            services.displayCardLocations( board );
+            services.displayRegions( board );
+        })
+
+        .on('wall:firsttime', function( wall ) {
+            if (!_this._listen) return;
+
+            services.newBoard();
+        })
+
         .on( 'pocket:regionenter', function( data ) {
             if (!_this._listen) return;
-              
+
             transformManager.checkTransforms( data );
         })
 
@@ -168,8 +169,9 @@ var RSVP = require('rsvp')
 
 // Commands
 
-function Commands( adapter ) {
+function Commands( adapter, queue ) {
     this._db = adapter;
+    this._queue = queue;
 }
 
 var models = [ 'Board', 'CardLocation', 'Pocket', 'Region', 'Transform', 'Wall' ];
@@ -180,10 +182,10 @@ commands.forEach(function( command ) {
         Commands.prototype[ command + model ] = function( data ) {
             var _this = this;
 
-            return new Promise(function(resolve, reject) {
-                if (!_this._db[command]) return reject( new Error( '[' + command +'] is not a valid command for ['+ model +']' ) );
+            return new Promise(function( resolve, reject ) {
+                if (!_this._db[ command ]) return reject( new Error( '[' + command + '] is not a valid command for [' + model + ']' ) );
 
-                var db = _this._db[command]( model.toLowerCase(), data) // --> model:commanded ( board:created, pocket:updated )
+                var db = _this._db[ command ]( model.toLowerCase(), data ) // --> model:commanded ( board:created, pocket:updated )
                     .then(function( resource ) {
                         resolve( resource );
                     }, function(error) {

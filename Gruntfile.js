@@ -41,6 +41,12 @@ module.exports = function( grunt ) {
 
 
 
+    grunt.registerTask(
+          'serve'
+        , 'Starts a dev web server on the first available port starting from 8000 with the build folder as the root.'
+        , [ 'connect:dev' ]
+    );
+
     // clean
     // grunt.registerTask('clean'     , [ 'clean' ]);
 
@@ -55,7 +61,6 @@ module.exports = function( grunt ) {
     // grunt.registerTask('default'   , [ 'watch' ]);
 
     // travis-ci
-
     grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);
 
 };
