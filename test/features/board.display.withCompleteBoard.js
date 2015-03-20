@@ -54,6 +54,7 @@ function features() {
                 ]);
 
             queueChecked = true;
+
         });
 
         queue.once( 'controls:enabled', function() {

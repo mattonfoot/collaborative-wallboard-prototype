@@ -167,6 +167,8 @@ function Feature( title, fn ) {
 }
 
 function underline( title, format, indent, endWith ) {
+    if ( process.browser ) return '';
+
     return title + '\n' +
         new Array( indent + 1 ).join( ' ' ) +
         new Array( title.length + 1 ).join( format ) +
