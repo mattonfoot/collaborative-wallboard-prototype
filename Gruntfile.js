@@ -56,6 +56,7 @@ module.exports = function( grunt ) {
 
     // build
     grunt.registerTask('build'        , [ 'browserify', 'copy:client' ]);
+    grunt.registerTask('build:test'   , [ 'browserify:test' ]);
 
     // auto build
     // grunt.registerTask('default'   , [ 'watch' ]);

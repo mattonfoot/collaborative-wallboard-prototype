@@ -8,7 +8,7 @@ module.exports = function( config ) {
                 port: 9001,
                 useAvailablePort: true,
                 keepalive: true,
-                base: [ './dist' ],
+                base: [ './dist', './test', './browser', './node_modules' ],
                 open: 'http://remotehost:9001'
             }
 

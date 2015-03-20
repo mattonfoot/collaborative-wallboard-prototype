@@ -8,8 +8,8 @@ module.exports = function() {
         }
 
       , test: {
-            files: 'test/**/*.js',
-            tasks: [ 'test' ]
+            files: 'test/**/*.*',
+            tasks: [ 'build:test', 'test' ]
         }
     };
 
