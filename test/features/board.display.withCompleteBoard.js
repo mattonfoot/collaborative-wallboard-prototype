@@ -7,7 +7,10 @@ var storedName = 'Board with regions'
   , storedWall
   , storedBoard
   , resourceChecked = false
-  , queueChecked = false;
+  , controlsChecked = false
+  , queueChecked = false
+  , regionCount = 0
+  , cardCount = 0;
 
 function features() {
     var services = this.application.services
@@ -33,6 +36,9 @@ function features() {
     it('Any card and regions already associated with a board will also be displayed\n',
             function(done) {
 
+        countCards();
+        countRegions();
+
         queue.trigger( 'board:display', storedBoard.getId() );
 
         queue.once( 'board:displayed', function( resource ) {
@@ -45,24 +51,57 @@ function features() {
         });
 
         queue.once( 'controls:enabled', function() {
+            controlsChecked = true;
+        });
+
+        function checkQueue() {
             queue.should.haveLogged([
                     'board:display'
                   , 'cardlocation:displayed'
                   , 'cardlocation:displayed'
                   , 'board:displayed'
                   , 'controls:enabled'
+                  , 'region:displayed'
+                  , 'region:displayed'
+                  , 'cardlocation:displayed'
+                  , 'cardlocation:displayed'
                 ]);
 
             queueChecked = true;
 
-        });
-
-        queue.once( 'controls:enabled', function() {
             resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
+            controlsChecked.should.equal( true );
 
             done();
-        });
+        }
+
+        function countCards() {
+          queue.once( 'cardlocation:displayed', function() {
+            cardCount++;
+
+            if ( cardCount >= 2 && regionCount >= 1 ) {
+              checkQueue();
+
+              return;
+            }
+
+            countCards();
+          });
+        }
+
+        function countRegions() {
+          queue.once( 'region:displayed', function() {
+            regionCount++;
+
+            if ( cardCount >= 2 && regionCount >= 1 ) {
+              checkQueue();
+
+              return;
+            }
+
+            countRegions();
+          });
+        }
 
     });
 }

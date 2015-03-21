@@ -25,14 +25,15 @@
     "npm": ">=1.3.0"
   },
   "dependencies": {
-    "belt": "git+https://github.com/mattonfoot/belt.git",
     "auth0": "*",
+    "belt": "git+https://github.com/mattonfoot/belt.git",
     "connect": "*",
-    "serve-static": "*",
     "mustache": "*",
-    "socket.io": "*",
     "pouchdb": "~3.0.6",
-    "rsvp": "~3.0.17"
+    "rsvp": "~3.0.17",
+    "serve-static": "*",
+    "setimmediate": "^1.0.2",
+    "socket.io": "*"
   },
   "devDependencies": {
     "chai": "*",
