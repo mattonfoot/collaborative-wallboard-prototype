@@ -35,13 +35,9 @@ function features() {
     it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n',
             function(done) {
 
-        var update = {
-            id: storedBoard.getId(),
-            wall: storedBoard.getWall(),
-            name: editedName
-        };
+        storedBoard.name = editedName;
 
-        queue.trigger( 'board:update', update );
+        queue.trigger( 'board:update', storedBoard );
 
         queue.once( 'board:updated', function( resource ) {
             should.exist( resource );

@@ -28,12 +28,9 @@ function features() {
     it('Emit a <wall:update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n',
             function(done) {
 
-        var update = {
-            id: storedWall.getId(),
-            name: editedName
-        };
-
-        queue.trigger( 'wall:update', update );
+        storedWall.name = editedName;
+        
+        queue.trigger( 'wall:update', storedWall );
 
         queue.once( 'wall:updated', function( resource ) {
             should.exist( resource );
