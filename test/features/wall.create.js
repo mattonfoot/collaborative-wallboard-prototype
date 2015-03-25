@@ -6,43 +6,30 @@ var storedName = 'new wall'
   , queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    it('Emit a <wall:create> event passing a data object with a name attribute to trigger the process of creating a new wall\n',
-        function( done ) {
+  it('Emit a <wall:create> event passing a data object with a name attribute to trigger the process of creating a new wall\n', function( done ) {
 
-            queue.trigger( 'wall:create', { name: storedName } );
+    var queue = this.queue;
 
-            queue.once( 'wall:created', function( resource ) {
-                should.exist( resource );
+    queue.when([
+      'wall:created',
+      'wall:displayed',
+      'boardselector:displayed',
+      'wall:firsttime',
+      'boardcreator:displayed',
+    ],
+    function( wall ) {
+      should.exist( wall );
+      wall.getName().should.equal( storedName );
 
-                resource.should.be.a.specificWallResource( storedName );
+      done();
+    },
+    done,
+    { once: true, timeout: 1000 });
 
-                resourceChecked = true;
-            });
+    queue.trigger( 'wall:create', { name: storedName } );
 
-            queue.once( 'boardcreator:displayed', function() {
-                queue.should.haveLogged([
-                        'wall:create'
-                      , 'wall:created'
-                      , 'wall:displayed'
-                      , 'boardselector:displayed'
-                      , 'wall:firsttime'
-                      , 'boardcreator:displayed'
-                    ]);
-
-                queueChecked = true;
-            });
-
-            queue.once( 'boardcreator:displayed', function() {
-                resourceChecked.should.equal( true );
-                queueChecked.should.equal( true );
-
-                done();
-            });
-
-        });
+  });
 
 }
 

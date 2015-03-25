@@ -15,13 +15,14 @@ var storedName = 'new card'
 
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions()
+        scenarios.TwoBoardsOneWithRegions.call( this )
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[1];
@@ -38,11 +39,16 @@ function features() {
                 queue.clearCalls();
 
                 done();
-            });
+            })
+            .catch( done );
     });
 
     it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates within a Region on the same Board to trigger the process of moving a Card over a Region on a Board\n',
         function( done ) {
+                var services = this.services;
+                var belt = this.application.belt;
+                var scenarios = this.scenarios;
+                var queue = this.queue;
 
             queue.trigger( 'cardlocation:move', update );
 
@@ -77,7 +83,10 @@ function features() {
                         'cardlocation:move'
                       , 'cardlocation:updated'
                       , 'pocket:updated'
+                      , 'cardlocation:updated'
+                      , 'pocket:updated'
                       , 'pocket:regionenter'
+                      , 'pocket:updated'
                     ]);
 
                 queueChecked = true;

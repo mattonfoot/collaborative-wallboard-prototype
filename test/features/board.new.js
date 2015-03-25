@@ -6,10 +6,12 @@ var resourceChecked = false
   , storedWall;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         queue.once( 'boardcreator:displayed', function() {
             queue.clearCalls();
@@ -25,6 +27,10 @@ function features() {
 
     it('Emit a <wall:new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n',
             function(done) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         queue.trigger( 'board:new', storedWall.getId() );
 

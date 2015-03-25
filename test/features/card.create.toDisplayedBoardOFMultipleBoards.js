@@ -12,13 +12,14 @@ var storedName = 'new card'
 
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions()
+        scenarios.TwoBoardsOneWithRegions.call( this )
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[0];
@@ -32,11 +33,16 @@ function features() {
                 queue.clearCalls();
 
                 done();
-            });
+            })
+            .catch( done );
     });
 
     it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
         function( done ) {
+                var services = this.services;
+                var belt = this.application.belt;
+                var scenarios = this.scenarios;
+                var queue = this.queue;
 
             queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 

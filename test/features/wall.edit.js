@@ -1,50 +1,43 @@
 var chai = require('chai')
   , should = chai.should();
 
-var resourceChecked = false
-  , queueChecked = false
-  , storedName = 'display wall'
-  , storedWall;
+var storedName = 'display wall', storedWall;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+  beforeEach(function(done) {
+    var services = this.services;
 
-        queue.once( 'wall:firsttime', function() {
-            queue.clearCalls();
+    services.createWall({ name: storedName })
+      .then(function( wall ) {
+        storedWall = wall;
 
-            done();
-        });
+        done();
+      });
+  });
 
-        services.createWall({ name: storedName })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
-    });
+  it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {
+    var queue = this.queue;
 
-    it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n',
-            function(done) {
+    queue.when([
+      'wall:edit',
+      'walleditor:displayed'
+    ],
+    function( a, b ) {
+      should.exist( a );
+      a.should.equal( storedWall.getId() );
 
-        queue.trigger( 'wall:edit', storedWall.getId() );
+      should.exist( b );
+      b.should.be.a.specificWallResource( storedName );
 
-        queue.once( 'walleditor:displayed', function() {
-            queue.should.haveLogged([
-                    'wall:edit'
-                  , 'walleditor:displayed'
-                ]);
+      done();
+    },
+    done,
+    { once: true });
 
-            queueChecked = true;
-        });
+    queue.trigger( 'wall:edit', storedWall.getId() );
 
-        queue.once( 'walleditor:displayed', function() {
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+  });
 
 }
 

@@ -1,50 +1,40 @@
 var chai = require('chai')
   , should = chai.should();
 
-var resourceChecked = false
-  , queueChecked = false
-  , storedName = 'display wall'
-  , storedWall;
-
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
+  var storedName = 'display wall';
+  var storedWall;
 
-    before(function(done) {
+  beforeEach(function(done) {
+    var services = this.services;
 
-        queue.once( 'wall:firsttime', function() {
-            queue.clearCalls();
-
-            done();
-        });
-
-        services.createWall({ name: storedName })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
-    });
-
-    it('Emit a <wall:select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n',
-            function(done) {
-
-        queue.trigger( 'wall:select' );
-
-        queue.once( 'wallselector:displayed', function() {
-            queue.should.haveLogged([
-                    'wall:select'
-                  , 'wallselector:displayed'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'wallselector:displayed', function() {
-            queueChecked.should.equal( true );
+    services.createWall({ name: storedName })
+        .then(function( wall ) {
+            storedWall = wall;
 
             done();
-        });
+        })
+        .catch( done );
+  });
 
+  it('Emit a <wall:select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n', function(done) {
+    var queue = this.queue;
+
+    var subscription = queue.subscribe( 'wallselector:displayed' );
+    subscription.subscribe(function( a ) {
+      should.exist( a );
+      a.should.be.instanceOf( Array );
+      a.length.should.equal( 1 );
+
+      a[0].should.be.specificWallResource( storedWall.getName() );
+
+      queue.unsubscribe( subscription );
+
+      done();
     });
+
+    queue.publish( 'wall:select' );
+  });
 
 }
 

@@ -9,10 +9,12 @@ var storedName = 'unedited board'
   , queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         queue.once( 'board:created', function( board ) {
             storedBoard = board;
@@ -34,6 +36,10 @@ function features() {
 
     it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n',
             function(done) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         storedBoard.name = editedName;
 

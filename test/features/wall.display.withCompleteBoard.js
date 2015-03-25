@@ -1,71 +1,49 @@
 var chai = require('chai')
   , should = chai.should();
 
-var storedName = 'display wall'
-  , storedWall
-  , storedBoard
-  , wallChecked = false
-  , boardChecked = false
-  , queueChecked = false;
+var storedWall, storedBoard;
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
-        scenarios.TwoBoardsOneWithRegions()
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[0];
+  beforeEach(function(done) {
+    var scenarios = this.scenarios;
 
-                queue.clearCalls();
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[0];
+      })
+      .then( done, done );
+  });
 
-                done();
-            });
-    });
+  it('Select and display the first associated board of a Wall\n', function(done) {
+    var queue = this.queue;
 
-    it('If the Wall has any associated Boards then the first board will be selected and displayed\n',
-            function(done) {
+    queue.when([
+      'wall:displayed',
+      'boardselector:displayed',
+      'board:displayed',
+      'controls:enabled'
+    ],
+    function( a, b, c, d ) {
+      should.exist( a );
+      a.should.be.a.specificWallResource( storedWall.getName() );
 
-        queue.trigger( 'wall:display', storedWall.getId() );
+      should.exist( b );
+      b.should.be.an.instanceOf( Array );
+      b.length.should.equal( 2 );
 
-        queue.once( 'wall:displayed', function( resource ) {
-            should.exist( resource );
+      should.exist( c );
+      c.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
 
-            resource.should.be.a.specificWallResource( storedWall.getName() );
+      done();
+    },
+    done,
+    { once: true });
 
-            wallChecked = true;
-        });
+    queue.trigger( 'wall:display', storedWall.getId() );
 
-        queue.once( 'board:displayed', function( resource ) {
-            should.exist( resource );
-
-            resource.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
-
-            boardChecked = true;
-        });
-
-        queue.once( 'controls:enabled', function() {
-            queue.should.haveLogged([
-                    'wall:display'
-                  , 'wall:displayed'
-                  , 'boardselector:displayed'
-                  , 'board:displayed'
-                  , 'controls:enabled'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'controls:enabled', function() {
-            wallChecked.should.equal( true );
-            boardChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-    });
+  });
 
 }
 

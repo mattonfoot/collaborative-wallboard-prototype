@@ -29,6 +29,9 @@
     "belt": "git+https://github.com/mattonfoot/belt.git",
     "connect": "*",
     "mustache": "*",
+    "postal": "^1.0.1",
+    "postal.diagnostics": "^0.7.4",
+    "postal.when": "^0.2.0",
     "pouchdb": "~3.0.6",
     "rsvp": "~3.0.17",
     "serve-static": "*",
@@ -36,13 +39,14 @@
     "socket.io": "*"
   },
   "devDependencies": {
+    "browser-process-hrtime": "^0.1.1",
     "chai": "*",
     "glob": "*",
     "grunt": "*",
-    "grunt-cli": "*",
     "grunt-benchmark": "*",
     "grunt-blanket": "*",
     "grunt-browserify": "*",
+    "grunt-cli": "*",
     "grunt-complexity": "*",
     "grunt-contrib-clean": "*",
     "grunt-contrib-connect": "*",
@@ -52,13 +56,13 @@
     "grunt-contrib-watch": "*",
     "grunt-coveralls": "*",
     "grunt-mocha-test": "*",
+    "literalify": "*",
     "load-grunt-tasks": "*",
     "memdown": "*",
     "mocha": "*",
     "mocha-lcov-reporter": "*",
     "njstrace": "*",
-    "travis-cov": "*",
-    "literalify": "*"
+    "travis-cov": "*"
   },
   "config": {
     "travis-cov": {

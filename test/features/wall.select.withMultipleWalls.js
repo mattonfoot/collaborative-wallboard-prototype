@@ -4,41 +4,52 @@ var chai = require('chai')
 var queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
+  var storedWalls, len;
 
-    before(function(done) {
+  beforeEach(function( done ) {
+    var scenarios = this.scenarios;
 
-        scenarios.multipleWalls()
-            .then(function() {
-                queue.clearCalls();
+    scenarios
+      .multipleWalls.call( this )
+      .then(function( resources ) {
+        should.exist( resources );
+        should.exist( resources.walls );
+        resources.walls.should.be.instanceOf( Array );
+        resources.walls.length.should.be.greaterThan( 1 );
 
-                done();
-            });
+        storedWalls = resources.walls;
+        len = resources.walls.length;
+
+        done();
+      })
+      .catch( done );
+  });
+
+  it('If there are several walls configured then the Wall Selector input control will display all available walls\n', function(done) {
+    var queue = this.queue;
+
+    var subscription = queue.subscribe( 'wallselector:displayed' );
+    subscription.subscribe(function( resources ) {
+      should.exist( resources );
+      resources.should.be.instanceOf( Array );
+      resources.length.should.equal( len );
+
+      var names = storedWalls.map(function( wall ) {
+        return wall.getName();
+      });
+
+      resources.forEach(function( resource ) {
+        names.should.include( resource.getName() );
+      });
+
+      queue.unsubscribe( subscription );
+
+      done();
     });
 
-    it('If there are several walls configured then the Wall Selector input control will display all available walls\n',
-            function(done) {
+    queue.publish( 'wall:select' );
 
-        queue.trigger( 'wall:select' );
-
-        queue.once( 'wallselector:displayed', function() {
-            queue.should.haveLogged([
-                    'wall:select'
-                  , 'wallselector:displayed'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'wallselector:displayed', function() {
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+  });
 
 }
 

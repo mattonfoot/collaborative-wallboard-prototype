@@ -5,41 +5,15 @@ var chai = require('chai')
   , PouchDB = require('pouchdb')
   , Belt = require('belt')
   , ExecutionTimer = require('./executionTimer')
-  , TestQueue = require('../lib/queue.extensions')
   , Application = require('../lib/application')
-  , UI = require('../lib/interface');
+  , UI = require('../lib/interface')
+  , Queue = require('../lib/queue');
 
-var debug = false
-  , dbname = 'vuuse_features'
-  , opts = {};
+var debug = false;
 
-if ( !process.browser ) {
-    opts.db = require('memdown');
-}
-
-var belt = new Belt( new PouchDB(dbname, opts), opts);
-var queue = new TestQueue({ debug: debug });
-var ui = new UI( queue );
-
-var application = new Application( belt, queue, ui, { debug: debug } );
-/*
-ExecutionTimer( application.commands, 'Commands' );
-ExecutionTimer( application.queries, 'Queries' );
-ExecutionTimer( application.interface, 'Interface' );
-*/
-
-/*
-  CARD --> NEW, EDIT, UPDATE
-
-  REGION --> NEW, EDIT, UPDATE, UPDATE
-
-  TRANSFORM --> CREATE, UNLINK
-*/
-
-var _this = this;
+var featureSet = {};
 
 var features = [
-
     require( './features/wall.new' )
   , require( './features/wall.create' )
   , require( './features/wall.select' )
@@ -48,7 +22,7 @@ var features = [
   , require( './features/wall.display.withCompleteBoard' )
   , require( './features/wall.edit' )
   , require( './features/wall.update' )
-
+/*
   , require( './features/board.new' )
   , require( './features/board.create' )
   , require( './features/board.create.withCompleteBoard' )
@@ -56,105 +30,132 @@ var features = [
   , require( './features/board.display.withCompleteBoard' )
   , require( './features/board.edit' )
   , require( './features/board.update' )
-
+*/
+/*
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
   , require( './features/card.move.onABoardWithATransform' )
-
+*/
+/*
   , require( './features/region.create' )
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
+*/
+  /*
+    CARD --> EDIT, UPDATE
+
+    REGION --> EDIT, UPDATE, UPDATE
+
+    TRANSFORM --> CREATE, UNLINK
+  */
 
 ];
 
+features.forEach(function( features ) {
+    if (!features.length) {
+        features = [ features ];
+    }
+
+    features.forEach(function( feature ) {
+        featureSet[feature.title] = featureSet[feature.title] || [];
+
+        featureSet[feature.title].push( feature );
+    });
+});
+
 Fixture('Application service API Features', function() {
-    var featureSet = {}
-      , fixture = {
-          debug: debug
-        , queue: queue
-        , application: application
-        , scenarios: {
+  var dbIndex = 0;
+
+  before(function( done ) {
+    this.debug = debug;
+
+    done();
+  });
+
+  after(function( done ) {
+    ExecutionTimer.process();
+
+    done();
+  });
+
+  for (var title in featureSet) {
+    Feature( title, generateCallList( featureSet[title] ) );
+  }
+});
+
+var dbIndex = 0;
+
+function generateCallList( calls ) {
+  return function() {
+    calls.forEach(function( feature ) {
+
+      beforeEach(function( done ) {
+        dbIndex++;
+
+        var db = 'vuuse_features_' + dbIndex;
+        var channelName = 'vuuse_features_channel' + dbIndex;
+
+        if ( !process.browser ) {
+          db = new PouchDB( db, { db: require('memdown') } );
+        }
+
+        var belt = this.belt = new Belt( db );
+        var queue = this.queue = new Queue({ channel: channelName, debug: debug });
+        var ui = this.ui = new UI( queue );
+
+        var application = this.application = new Application( belt, queue, ui, { debug: debug } );
+
+        var services = this.services = this.application.services;
+
+        this.scenarios = {
             TwoBoardsOneWithRegions: setupPopulatedBoardScenario
           , OneEmptyBoard: setupEmptyBoardScenario
           , multipleWalls: setupMultipleWallScenario
           , colorChangingBoard: setupColorChangingBoardScenario
-        }
-      };
-
-    features.forEach(function( features ) {
-        if (!features.length) {
-            features = [ features ];
-        }
-
-        features.forEach(function( feature ) {
-            featureSet[feature.title] = featureSet[feature.title] || [];
-
-            featureSet[feature.title].push( feature );
-        });
-    });
-
-    for (var title in featureSet) {
-        Feature( title, generateCallList( featureSet[title] ) );
-    }
-
-    function generateCallList( calls ) {
-        return function() {
-            calls.forEach(function(feature ) {
-                feature.call( fixture );
-            });
         };
-    }
 
-    afterEach(function (done) {
-        if (this.currentTest.state === 'failed') console.log( queue.getCalls() );
+        if ( debug ) {
+          ExecutionTimer( belt, 'Belt' );
+          ExecutionTimer( application.commands, 'Commands' );
+          ExecutionTimer( application.queries, 'Queries' );
+          ExecutionTimer( application.interface, 'Interface' );
+        }
 
-        queue.clearCalls();
         application.startListening();
-/*
-        var promises = [];
-
-        [ 'region', 'cardlocation', 'pocket', 'board', 'wall' ]
-            .forEach(function( schema ) {
-                var promise = belt.findMany( schema )
-                    .then(function( resources ) {
-                        if (!resources.length) return;
-
-                        var promises = resources.map(function( resource ) {
-                            return new Promise(function(resolve, reject) {
-                                belt.delete( schema, resource.getId() )
-                                    .then(function() {
-                                        resolve();
-                                    })
-                                    .catch( reject );
-                            });
-                        });
-
-                        return RSVP.all( promises );
-                    });
-
-                promises.push( promise );
-            });
-
-        RSVP.all( promises )
-            .then(function() {
-                queue.clearCalls();
-                application.startListening();
-
-                done();
-            })
-            .catch( done );
-        */
 
         done();
-    });
+      });
 
-    after(function() {
-        ExecutionTimer.process();
+      afterEach(function( done ) {
+        var belt = this.belt;
+        var queue = this.queue;
+        var application = this.application;
+
+        application.pauseListening();
+
+        var promises = [];
+        [ 'region', 'cardlocation', 'pocket', 'board', 'wall' ].forEach(function( schema ) {
+            belt.findMany( schema )
+                .then(function( resources ) {
+                    resources.forEach(function( resource ) {
+                        promises.push( belt.delete( schema, resource.getId() ) );
+                    });
+                });
+        });
+
+        RSVP.all( promises ).then(function( responses ) {
+          done();
+        })
+        .catch( done );
+      });
+
+      feature();
     });
-});
+  }
+}
 
 // helpers
 
@@ -167,7 +168,7 @@ function Feature( title, fn ) {
 }
 
 function underline( title, format, indent, endWith ) {
-    if ( process.browser ) return '';
+    if ( process.browser ) return title;
 
     return title + '\n' +
         new Array( indent + 1 ).join( ' ' ) +
@@ -181,6 +182,13 @@ function underline( title, format, indent, endWith ) {
 // setup routines
 
 function setupMultipleWallScenario() {
+  var belt = this.belt;
+  var queue = this.queue;
+  var ui = this.ui;
+  var application = this.application;
+  var services = this.services;
+  var scenarios = this.scenarios;
+
     application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
@@ -209,12 +217,19 @@ function setupMultipleWallScenario() {
                 application.startListening();
 
                 resolve( storage );
-            }, reject)
+            })
             .catch( reject );
     });
 }
 
 function setupEmptyBoardScenario() {
+  var belt = this.belt;
+  var queue = this.queue;
+  var ui = this.ui;
+  var application = this.application;
+  var services = this.services;
+  var scenarios = this.scenarios;
+
     application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
@@ -225,11 +240,7 @@ function setupEmptyBoardScenario() {
             .then(function( resource ) {
                 storage.wall = resource;
 
-                var promises = [];
-
-                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' }) );
-
-                return RSVP.all( promises );
+                return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
             })
             .then(function( resources ) {
                 storage.boards = resources;
@@ -237,12 +248,19 @@ function setupEmptyBoardScenario() {
                 application.startListening();
 
                 resolve( storage );
-            }, reject)
+            })
             .catch( reject );
     });
 }
 
 function setupPopulatedBoardScenario() {
+  var belt = this.belt;
+  var queue = this.queue;
+  var ui = this.ui;
+  var application = this.application;
+  var services = this.services;
+  var scenarios = this.scenarios;
+
     application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
@@ -298,12 +316,19 @@ function setupPopulatedBoardScenario() {
                 application.startListening();
 
                 resolve( storage );
-            }, reject)
+            })
             .catch( reject );
     });
 }
 
 function setupColorChangingBoardScenario() {
+  var belt = this.belt;
+  var queue = this.queue;
+  var ui = this.ui;
+  var application = this.application;
+  var services = this.services;
+  var scenarios = this.scenarios;
+
     application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
@@ -351,7 +376,7 @@ function setupColorChangingBoardScenario() {
                 application.startListening();
 
                 resolve( storage );
-            }, reject)
+            })
             .catch( reject );
     });
 }
@@ -373,6 +398,23 @@ function shouldHaveLogged( events ) {
     }
 
     queue.length.should.equal( len, 'expected number of queued event to equal ' + len + '\n'  );
+}
+
+chai.Assertion.addMethod('containTheSequence', shouldContainTheSequence);
+
+function shouldContainTheSequence( events ) {
+    var queue = this._obj.getCalls();
+
+    var i = 0, len = events.length - 1;
+
+    for (; i < len; i++) {
+      var index = queue.indexOf( events[ i ] );
+      var nextIndex = queue.indexOf( events[ i + 1 ], index );
+
+      console.log( index, nextIndex, i, i + 1 );
+
+      nextIndex.should.be.greaterThan( index, 'expected event ' + events[ i + 1 ] + ' to be after ' + events[ i ] + '\n' );
+    }
 }
 
 chai.Assertion.addMethod('specificWallResource', shouldBeSpecificWallResource);

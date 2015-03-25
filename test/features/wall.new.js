@@ -5,37 +5,27 @@ var resourceChecked = false
   , queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    it('Emit a <wall:new> event - no data object is needed - to access an input control allowing you to enter details required to create a new Wall\n',
-        function(done) {
+  it('Emit a <wall:new> event - no data object is needed - to access an input control allowing you to enter details required to create a new Wall\n', function(done) {
 
-            queue.trigger( 'wall:new' );
+    var queue = this.queue;
 
-            queue.once( 'wallcreator:displayed', function( resource ) {
-                should.not.exist( resource );
+    queue.when([
+      'wall:new',
+      'wallcreator:displayed'
+    ],
+    function( a, b ) {
+      a.should.be.instanceOf( queue.nodata );
+      b.should.be.instanceOf( queue.nodata );
 
-                resourceChecked = true;
-            });
+      done();
+    },
+    done,
+    { once: true });
 
-            queue.once( 'wallcreator:displayed', function() {
-                queue.should.haveLogged([
-                        'wall:new'
-                      , 'wallcreator:displayed'
-                    ]);
+    queue.trigger( 'wall:new' );
 
-                queueChecked = true;
-            });
-
-            queue.once( 'wallcreator:displayed', function() {
-                resourceChecked.should.equal( true );
-                queueChecked.should.equal( true );
-
-                done();
-            });
-
-        });
+  });
 
 }
 

@@ -2,59 +2,44 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'display wall'
-  , storedWall
-  , resourceChecked = false
-  , queueChecked = false;
+  , storedWall;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
+    beforeEach(function(done) {
+      var services = this.services;
 
-    before(function(done) {
-
-        queue.once( 'boardcreator:displayed', function() {
-            queue.clearCalls();
-
-            done();
-        });
-
-        services.createWall({ name: storedName })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
+      services.createWall({ name: storedName })
+          .then(function( wall ) {
+              storedWall = wall;
+          })
+          .then( done, done );
     });
 
-    it('Emit a <wall:display> event with a valid wall id to open the wall\n',
-            function(done) {
+    it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {
+      var queue = this.queue;
 
-        queue.trigger( 'wall:display', storedWall.getId() );
+      queue.when([
+            'wall:displayed'
+          , 'boardselector:displayed'
+          , 'wall:firsttime'
+          , 'boardcreator:displayed'
+        ], function( a, b, c, d ) {
+          should.exist( a );
+          a.should.be.a.specificWallResource( storedName );
 
-        queue.once( 'wall:displayed', function( resource ) {
-            should.exist( resource );
+          should.exist( b );
+          b.should.be.an.instanceOf( Array );
+          b.length.should.equal( 0 );
 
-            resource.should.be.a.specificWallResource( storedName );
+          should.exist( c );
+          c.should.be.a.specificWallResource( storedName );
 
-            resourceChecked = true;
-        });
+          done();
+        },
+        done,
+        { once: true });
 
-        queue.once( 'boardcreator:displayed', function() {
-            queue.should.haveLogged([
-                    'wall:display'
-                  , 'wall:displayed'
-                  , 'boardselector:displayed'
-                  , 'wall:firsttime'
-                  , 'boardcreator:displayed'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'boardcreator:displayed', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
+      queue.publish( 'wall:display', storedWall.getId() );
     });
 
 }

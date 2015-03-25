@@ -1,3 +1,5 @@
+var hrtime = require('browser-process-hrtime');
+
 function ExecutionTimer( object, label ) {
     for ( var key in object ) {
         wrapMethod.call( this, label, object, key );
@@ -42,26 +44,26 @@ function wrapMethod( label, object, propertyName ) {
     if ( typeof( original ) !== 'function' ) return;
 
     object[ propertyName ] = function() {
-        var start = process.hrtime();
+        var start = hrtime();
 
         var output =  original.apply( object, arguments );
 
         if ( output.then ) {
             return output.then(function( resource ) {
-                complete.call( _this, label + '.' + propertyName + '.then(' + !!resource + ')', start );
+                complete( label + '.' + propertyName + '.then(' + !!resource + ')', start );
 
                 return resource;
             });
         }
 
-        // complete( label + '.' + propertyName + '(' + !!output + ')', start );
+        complete( label + '.' + propertyName + '(' + !!output + ')', start );
 
         return output;
     };
 }
 
 function complete( label, start ) {
-    var timing = Math.round(process.hrtime( start )[1] / 1000000);
+    var timing = Math.round( hrtime( start )[1] / 1000000 );
 
     console.log( label, timing + 'ms' );
 

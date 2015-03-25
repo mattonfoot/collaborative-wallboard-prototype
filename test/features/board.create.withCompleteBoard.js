@@ -10,26 +10,29 @@ var storedWall
 
 
 function features() {
-    var services = this.application.services
-      , belt = this.application.belt
-      , queue = this.queue
-      , scenarios = this.scenarios;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions()
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[1];
+      scenarios.TwoBoardsOneWithRegions.call( this )
+        .then(function( storage ) {
+            storedWall = storage.wall;
+            storedBoard = storage.boards[1];
 
-                queue.clearCalls();
-
-                done();
-            });
+            queue.clearCalls();
+        })
+        .then( done, done );
     });
 
     it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n',
         function( done ) {
+                var services = this.services;
+                var belt = this.application.belt;
+                var scenarios = this.scenarios;
+                var queue = this.queue;
 
             queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
 

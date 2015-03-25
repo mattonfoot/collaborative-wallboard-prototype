@@ -1,62 +1,49 @@
 var chai = require('chai')
   , should = chai.should();
 
-var resourceChecked = false
-  , queueChecked = false
-  , storedName = 'unedited wall'
+var storedName = 'unedited wall'
   , editedName = 'edited wall'
   , storedWall;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+  beforeEach(function(done) {
+    var services = this.services;
 
-        queue.once( 'boardcreator:displayed', function() {
-            queue.clearCalls();
+    services.createWall({ name: storedName })
+      .then(function( wall ) {
+        storedWall = wall;
 
-            done();
-        });
+        done();
+      });
+  });
 
-        services.createWall({ name: storedName })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
-    });
+  it('Emit a <wall:update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n', function(done) {
+    var queue = this.queue;
 
-    it('Emit a <wall:update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n',
-            function(done) {
+    queue.when([
+      'wall:update',
+      'wall:updated'
+    ],
+    function( a, b ) {
+      should.exist( a );
+      a.should.be.a.specificWallResource( editedName );
+      a.getId().should.equal( storedWall.getId() );
 
-        storedWall.name = editedName;
-        
-        queue.trigger( 'wall:update', storedWall );
+      should.exist( b );
+      b.should.be.a.specificWallResource( editedName );
+      b.getId().should.equal( storedWall.getId() );
 
-        queue.once( 'wall:updated', function( resource ) {
-            should.exist( resource );
+      done();
+    },
+    done,
+    { once: true });
 
-            resource.should.be.a.specificWallResource( editedName );
-            resource.getId().should.equal( storedWall.getId() );
+    storedWall.name = editedName;
 
-            resourceChecked = true;
-        });
+    queue.trigger( 'wall:update', storedWall );
 
-        queue.once( 'wall:updated', function() {
-            queue.should.haveLogged([
-                    'wall:update'
-                  , 'wall:updated'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'wall:updated', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-    });
+  });
 
 }
 

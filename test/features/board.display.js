@@ -10,10 +10,12 @@ var storedName = 'display board'
   , queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         services.createWall({ name: 'parent wall for board' })
             .then(function( wall ) {
@@ -40,6 +42,10 @@ function features() {
 
     it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n',
             function(done) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         queue.trigger( 'board:display', storedBoard.getId() );
 

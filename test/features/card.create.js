@@ -8,10 +8,12 @@ var storedName = 'new card'
 
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         queue.once( 'boardcreator:displayed', function() {
             queue.clearCalls();
@@ -27,6 +29,10 @@ function features() {
 
     it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
             function( done ) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 

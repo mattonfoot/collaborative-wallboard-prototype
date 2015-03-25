@@ -13,13 +13,14 @@ var storedName = 'new Region'
 
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions()
+        scenarios.TwoBoardsOneWithRegions.call( this )
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[1];
@@ -34,11 +35,16 @@ function features() {
                 queue.clearCalls();
 
                 done();
-            });
+            })
+            .catch( done );
     });
 
     it('Emit a <region:move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n',
         function( done ) {
+                var services = this.services;
+                var belt = this.application.belt;
+                var scenarios = this.scenarios;
+                var queue = this.queue;
 
             queue.trigger( 'region:move', update );
 

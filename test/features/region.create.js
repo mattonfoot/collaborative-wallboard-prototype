@@ -10,10 +10,12 @@ var storedName = 'Created Region'
   , queueChecked = false;
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         services.createWall({ name: 'Regions  wall' })
             .then(function( wall ) {
@@ -35,6 +37,10 @@ function features() {
 
     it('Emit a <region:create> event passing a data object with a valid Board id and a label attribute to trigger the process of creating a new Region\n',
             function( done ) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         queue.trigger( 'region:create', { board: storedBoard.getId(), label: storedName } );
 

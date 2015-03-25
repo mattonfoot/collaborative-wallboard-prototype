@@ -15,13 +15,14 @@ var storedName
 
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
-        scenarios.colorChangingBoard()
+        scenarios.colorChangingBoard.call( this )
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[0];
@@ -38,11 +39,16 @@ function features() {
                 queue.clearCalls();
 
                 done();
-            });
+            })
+            .catch( done );
     });
 
     it('Transforms setup on a Board will be activated when their criteria are met\n',
         function( done ) {
+                var services = this.services;
+                var belt = this.application.belt;
+                var scenarios = this.scenarios;
+                var queue = this.queue;
 
             queue.trigger( 'cardlocation:move', update );
 
@@ -60,8 +66,9 @@ function features() {
                         'cardlocation:move'
                       , 'cardlocation:updated'
                       , 'pocket:updated'
-                      , 'pocket:regionenter'
+                      , 'cardlocation:updated'
                       , 'pocket:updated'
+                      , 'pocket:regionenter'
                       , 'pocket:transformed'
                     ]);
 

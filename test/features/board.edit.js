@@ -10,10 +10,12 @@ var storedName = 'unedited board'
 
 
 function features() {
-    var services = this.application.services
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
 
         queue.once( 'board:created', function( board ) {
             storedBoard = board;
@@ -35,6 +37,10 @@ function features() {
 
     it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n',
             function(done) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         queue.trigger( 'board:edit', storedBoard.getId() );
 

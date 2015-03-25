@@ -13,28 +13,35 @@ var storedName = 'Board with regions'
   , cardCount = 0;
 
 function features() {
-    var services = this.application.services
-      , scenarios = this.scenarios
-      , queue = this.queue;
 
-    before(function(done) {
+    beforeEach(function(done) {
+            var services = this.services;
+            var belt = this.application.belt;
+            var scenarios = this.scenarios;
+            var queue = this.queue;
+
         queue.once('boardselector:displayed', function( board ) {
             queue.clearCalls();
 
             done();
         });
 
-        scenarios.TwoBoardsOneWithRegions()
+        scenarios.TwoBoardsOneWithRegions.call( this )
             .then(function( storage ) {
                 storedWall = storage.wall;
                 storedBoard = storage.boards[1];
 
                 queue.trigger( 'wall:display', storedWall.getId() );
-            });
+            })
+            .catch( done );
     });
 
     it('Any card and regions already associated with a board will also be displayed\n',
             function(done) {
+                    var services = this.services;
+                    var belt = this.application.belt;
+                    var scenarios = this.scenarios;
+                    var queue = this.queue;
 
         countCards();
         countRegions();
@@ -57,8 +64,6 @@ function features() {
         function checkQueue() {
             queue.should.haveLogged([
                     'board:display'
-                  , 'cardlocation:displayed'
-                  , 'cardlocation:displayed'
                   , 'board:displayed'
                   , 'controls:enabled'
                   , 'region:displayed'
