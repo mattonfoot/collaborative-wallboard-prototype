@@ -2,7 +2,7 @@ module.exports = function() {
 
     return {
         coverage: {
-            src:    [ 'test/**' ],
+            src:    [ 'test/**/*.*' ],
             dest:   'coverage/'
         }
 

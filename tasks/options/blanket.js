@@ -8,8 +8,8 @@ module.exports = function() {
         }
 
       , features: {
-            src:    [ 'test/lib/' ],
-            dest:   'coverage/test/lib/'
+            src:    [ 'test/' ],
+            dest:   'coverage/test/'
         }
 
     };
