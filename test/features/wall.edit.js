@@ -11,9 +11,10 @@ function features() {
     services.createWall({ name: storedName })
       .then(function( wall ) {
         storedWall = wall;
-
+        
         done();
-      });
+      })
+      .catch( done );
   });
 
   it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {

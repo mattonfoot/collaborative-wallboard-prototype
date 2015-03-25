@@ -1,61 +1,41 @@
 var chai = require('chai')
   , should = chai.should();
 
-var resourceChecked = false
-  , queueChecked = false
-  , storedWall;
+var storedWall;
 
 function features() {
 
     beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+      var services = this.services;
 
-        queue.once( 'boardcreator:displayed', function() {
-            queue.clearCalls();
+      services.createWall({ name: 'wall for board' })
+        .then(function( wall ) {
+            storedWall = wall;
 
             done();
-        });
-
-        services.createWall({ name: 'wall for board' })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
+        })
+        .catch( done );
     });
 
-    it('Emit a <wall:new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n',
-            function(done) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+    it('Emit a <wall:new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n', function(done) {
+      var queue = this.queue;
 
-        queue.trigger( 'board:new', storedWall.getId() );
+      queue.when([
+        'board:new',
+        'boardcreator:displayed'
+      ],
+      function( a, b ) {
+        should.exist( a  );
+        a.should.equal( storedWall.getId() );
 
-        queue.once( 'boardcreator:displayed', function( resource ) {
-            should.not.exist( resource );
+        b.should.be.instanceOf( queue.nodata );
 
-            resourceChecked = true;
-        });
+        done();
+      },
+      done,
+      { once: true });
 
-        queue.once( 'boardcreator:displayed', function() {
-            queue.should.haveLogged([
-                    'board:new'
-                  , 'boardcreator:displayed'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'boardcreator:displayed', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
+      queue.trigger( 'board:new', storedWall.getId() );
     });
 
 }

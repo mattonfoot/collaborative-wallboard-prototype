@@ -22,12 +22,13 @@ var features = [
   , require( './features/wall.display.withCompleteBoard' )
   , require( './features/wall.edit' )
   , require( './features/wall.update' )
-/*
+
   , require( './features/board.new' )
   , require( './features/board.create' )
   , require( './features/board.create.withCompleteBoard' )
   , require( './features/board.display' )
   , require( './features/board.display.withCompleteBoard' )
+/*
   , require( './features/board.edit' )
   , require( './features/board.update' )
 */

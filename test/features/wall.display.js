@@ -9,10 +9,12 @@ function features() {
       var services = this.services;
 
       services.createWall({ name: storedName })
-          .then(function( wall ) {
-              storedWall = wall;
-          })
-          .then( done, done );
+        .then(function( wall ) {
+          storedWall = wall;
+
+          done();
+        })
+        .catch( done );
     });
 
     it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {

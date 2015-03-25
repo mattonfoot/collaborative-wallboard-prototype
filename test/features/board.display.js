@@ -4,78 +4,54 @@ var chai = require('chai')
   , Promise = RSVP.Promise;
 
 var storedName = 'display board'
-  , storedWall
-  , storedBoard
-  , resourceChecked = false
-  , queueChecked = false;
+  , storedWall, storedBoard;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
+    var queue = this.queue;
 
-        services.createWall({ name: 'parent wall for board' })
-            .then(function( wall ) {
-                storedWall = wall;
+    services.createWall({ name: 'parent wall for board' })
+      .then(function( wall ) {
+        storedWall = wall;
 
-                var promises = [];
+        var promises = [
+          services.createBoard({ wall: wall.getId(), name: 'other board' }),
+          services.createBoard({ wall: wall.getId(), name: storedName })
+        ];
 
-                promises.push( services.createBoard({ wall: wall.getId(), name: 'other board' }) );
-                promises.push( services.createBoard({ wall: wall.getId(), name: storedName }) );
+        return RSVP.all( promises );
+      })
+      .then(function( boards ) {
+        storedBoard = boards[ 1 ];
 
-                return RSVP.all( promises );
-            })
-            .then(function( boards ) {
-                storedBoard = boards[1];
+        done();
+      })
+      .catch( done );
+  });
 
-                queue.once( 'controls:enabled', function() {
-                    queue.clearCalls();
+  it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n', function(done) {
+    var queue = this.queue;
 
-                    done();
-                });
-            })
-            .catch( done );
-    });
+    queue.when([
+      'board:display',
+      'board:displayed',
+      'controls:enabled'
+    ],
+    function( a, b, c ) {
+      should.exist( b );
 
-    it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n',
-            function(done) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+      b.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+      b.getId().should.equal( storedBoard.getId() );
 
-        queue.trigger( 'board:display', storedBoard.getId() );
+      done();
+    },
+    done,
+    { once: true });
 
-        queue.once( 'board:displayed', function( resource ) {
-            should.exist( resource );
-
-            resource.should.be.a.specificBoardResource( storedName, storedWall.getId() );
-            resource.getId().should.equal( storedBoard.getId() );
-
-            resourceChecked = true;
-        });
-
-        queue.once( 'controls:enabled', function() {
-            queue.should.haveLogged([
-                    'board:display'
-                  , 'board:displayed'
-                  , 'controls:enabled'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'controls:enabled', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+    queue.trigger( 'board:display', storedBoard.getId() );
+  });
 }
 
 features.title = 'Selecting a Board for display';

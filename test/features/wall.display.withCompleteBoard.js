@@ -12,8 +12,10 @@ function features() {
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.boards[0];
+
+        done();
       })
-      .then( done, done );
+      .catch( done );
   });
 
   it('Select and display the first associated board of a Wall\n', function(done) {

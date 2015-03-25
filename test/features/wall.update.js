@@ -15,7 +15,8 @@ function features() {
         storedWall = wall;
 
         done();
-      });
+      })
+      .catch( done );
   });
 
   it('Emit a <wall:update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n', function(done) {

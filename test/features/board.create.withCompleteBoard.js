@@ -1,73 +1,65 @@
 var chai = require('chai')
   , should = chai.should();
 
-var storedWall
-  , storedBoard
-  , storedName = 'board with cards added automatically'
-  , resourceChecked = false
-  , queueChecked = false;
-
-
+var storedWall, storedBoard, storedCards, storedRegions
+  , storedName = 'board with cards added automatically';
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var scenarios = this.scenarios;
 
-      scenarios.TwoBoardsOneWithRegions.call( this )
-        .then(function( storage ) {
-            storedWall = storage.wall;
-            storedBoard = storage.boards[1];
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[1];
 
-            queue.clearCalls();
-        })
-        .then( done, done );
-    });
+        storedCards = storage.pockets;
 
-    it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n',
-        function( done ) {
-                var services = this.services;
-                var belt = this.application.belt;
-                var scenarios = this.scenarios;
-                var queue = this.queue;
+        done();
+      })
+      .catch( done );
+  });
 
-            queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
+  it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n', function( done ) {
+    var queue = this.queue;
+    var cards = storedCards.map(function( pocket ){ return pocket.getId(); });
+    var cardsfound = false;
+    var queuechecked = false;
 
-            queue.once( 'board:added', function( resource ) {
-                should.exist( resource );
+    var subscription = queue.subscribe( 'cardlocation:created', function( resource ) {
+      var index = cards.indexOf( resource.getPocket() );
 
-                resource.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+      if ( index >= 0 ) {
+        cards.splice( index , 1 );
+      }
 
-                resourceChecked = true;
-            });
+      if ( !cards.length ) {
+        subscription.unsubscribe();
 
-            queue.once( 'cardlocation:created', function() {
-                // check on the second event
+        cardsfound = true;
+        if ( cardsfound && queuechecked ) done();
+      }
+    })
+    .catch( done );
 
-                queue.once( 'cardlocation:created', function() {
-                    queue.should.haveLogged([
-                            'board:create'
-                          , 'board:created'
-                          , 'board:added'
-                          , 'cardlocation:created'
-                          , 'cardlocation:created'
-                        ]);
+    queue.when([
+      'board:create',
+      'board:created',
+      'board:added'
+    ],
+    function( a, b, c, d, e ) {
+      should.exist( c );
+      c.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
-                    queueChecked = true;
-                });
+      queuechecked = true;
+      if ( cardsfound && queuechecked ) done();
+    },
+    done,
+    { once: true });
 
-                queue.once( 'cardlocation:created', function() {
-                    resourceChecked.should.equal( true );
-                    queueChecked.should.equal( true );
-
-                    done();
-                });
-            });
-
-        });
+    queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
+  });
 
 }
 

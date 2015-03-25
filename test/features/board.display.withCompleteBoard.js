@@ -3,112 +3,80 @@ var chai = require('chai')
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise;
 
-var storedName = 'Board with regions'
-  , storedWall
-  , storedBoard
-  , resourceChecked = false
-  , controlsChecked = false
-  , queueChecked = false
-  , regionCount = 0
-  , cardCount = 0;
+var storedWall, storedBoard, numCards = 0, numRegions = 0;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var scenarios = this.scenarios;
+    var queue = this.queue;
 
-        queue.once('boardselector:displayed', function( board ) {
-            queue.clearCalls();
+    queue.subscribe('boardselector:displayed', function( board ) {
+      done();
+    })
+    .once();
 
-            done();
-        });
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[ 1 ];
 
-        scenarios.TwoBoardsOneWithRegions.call( this )
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[1];
+        numCards = storage.pockets.length;
+        numRegions = storage.regions.length;
 
-                queue.trigger( 'wall:display', storedWall.getId() );
-            })
-            .catch( done );
-    });
+        queue.publish( 'wall:display', storedWall.getId() );
+      })
+      .catch( done );
+  });
 
-    it('Any card and regions already associated with a board will also be displayed\n',
-            function(done) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+  it('Any card and regions already associated with a board will also be displayed\n', function(done) {
+    var queue = this.queue;
+    var cardscount = 0;
+    var regionscount = 0;
+    var queuechecked = false;
 
-        countCards();
-        countRegions();
+    var locationSubscription = queue.subscribe( 'cardlocation:displayed', function( resource ) {
+      cardscount++;
 
-        queue.trigger( 'board:display', storedBoard.getId() );
+      if ( cardscount === numCards ) {
+        locationSubscription.unsubscribe();
 
-        queue.once( 'board:displayed', function( resource ) {
-            should.exist( resource );
+        if ( regionscount === numRegions && queuechecked ) done();
+      }
+    })
+    .distinct()
+    .catch( done );
 
-            resource.should.be.a.specificBoardResource( storedName, storedWall.getId() );
-            resource.getId().should.equal( storedBoard.getId() );
+    var regionSubscription = queue.subscribe( 'region:displayed', function( resource ) {
+      regionscount++;
 
-            resourceChecked = true;
-        });
+      if ( regionscount === numRegions ) {
+        regionSubscription.unsubscribe();
 
-        queue.once( 'controls:enabled', function() {
-            controlsChecked = true;
-        });
+        if ( cardscount === numCards && queuechecked ) done();
+      }
+    })
+    .distinct()
+    .catch( done );
 
-        function checkQueue() {
-            queue.should.haveLogged([
-                    'board:display'
-                  , 'board:displayed'
-                  , 'controls:enabled'
-                  , 'region:displayed'
-                  , 'region:displayed'
-                  , 'cardlocation:displayed'
-                  , 'cardlocation:displayed'
-                ]);
+    queue.when([
+        'board:display'
+      , 'board:displayed'
+      , 'controls:enabled'
+    ],
+    function( a, b, c ) {
+      should.exist( b );
+      b.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
+      b.getId().should.equal( storedBoard.getId() );
 
-            queueChecked = true;
+      queuechecked = true;
+      if ( cardscount === numCards && regionscount === numRegions && queuechecked ) done();
+    },
+    done,
+    { once: true });
 
-            resourceChecked.should.equal( true );
-            controlsChecked.should.equal( true );
-
-            done();
-        }
-
-        function countCards() {
-          queue.once( 'cardlocation:displayed', function() {
-            cardCount++;
-
-            if ( cardCount >= 2 && regionCount >= 1 ) {
-              checkQueue();
-
-              return;
-            }
-
-            countCards();
-          });
-        }
-
-        function countRegions() {
-          queue.once( 'region:displayed', function() {
-            regionCount++;
-
-            if ( cardCount >= 2 && regionCount >= 1 ) {
-              checkQueue();
-
-              return;
-            }
-
-            countRegions();
-          });
-        }
-
-    });
+    queue.trigger( 'board:display', storedBoard.getId() );
+  });
 }
 
 features.title = 'Selecting a pre populated Board for display';
