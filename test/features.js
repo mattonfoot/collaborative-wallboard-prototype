@@ -31,15 +31,17 @@ var features = [
   , require( './features/board.edit' )
   , require( './features/board.update' )
 
-/*
+  , require( './features/card.new' )
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )
+/*
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
   , require( './features/card.move.onABoardWithATransform' )
 */
 /*
+  , require( './features/region.new' )
   , require( './features/region.create' )
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
@@ -96,7 +98,7 @@ function generateCallList( calls ) {
         dbIndex++;
 
         var db = 'vuuse_features_' + dbIndex;
-        var channelName = 'vuuse_features_channel' + dbIndex;
+        var channelName = this.channelName = 'vuuse_features_channel' + dbIndex;
 
         if ( !process.browser ) {
           db = new PouchDB( db, { db: require('memdown') } );
@@ -135,6 +137,8 @@ function generateCallList( calls ) {
         var application = this.application;
 
         application.pauseListening();
+
+        queue.clearAll();
 
         var promises = [];
         [ 'region', 'cardlocation', 'pocket', 'board', 'wall' ].forEach(function( schema ) {

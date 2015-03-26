@@ -11,7 +11,7 @@ function features() {
     var scenarios = this.scenarios;
     var queue = this.queue;
 
-    queue.subscribe('boardselector:displayed', function( board ) {
+    queue.subscribe('controls:enabled', function( board ) {
       done();
     })
     .once();
@@ -65,6 +65,8 @@ function features() {
       , 'controls:enabled'
     ],
     function( a, b, c ) {
+      should.exist( a );
+
       should.exist( b );
       b.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
       b.getId().should.equal( storedBoard.getId() );

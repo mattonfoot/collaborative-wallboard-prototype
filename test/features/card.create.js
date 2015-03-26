@@ -2,65 +2,43 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new card'
-  , resourceChecked = false
-  , queueChecked = false;
-
-
+  ,  storedWall;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
 
-        queue.once( 'boardcreator:displayed', function() {
-            queue.clearCalls();
+    services.createWall({ name: 'parent wall for board' })
+      .then(function( wall ) {
+        storedWall = wall;
 
-            done();
-        });
+        done();
+      })
+      .catch( done );
+  });
 
-        services.createWall({ name: 'wall for card' })
-            .then(function( wall ) {
-                storedWall = wall;
-            });
-    });
+  it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+    var queue = this.queue;
 
-    it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
-            function( done ) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+    queue.when([
+      'pocket:create',
+      'pocket:created'
+    ],
+    function( a, b ) {
+      should.exist( a );
 
-        queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+      should.exist( b );
+      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
-        queue.once( 'pocket:created', function( resource ) {
-            should.exist( resource );
+      done();
+    },
+    done,
+    { once: true });
 
-            resource.should.be.a.specificCardResource( storedName, storedWall.getId() );
+    queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 
-            resourceChecked = true;
-        });
-
-        queue.once( 'pocket:created', function() {
-            queue.should.haveLogged([
-                    'pocket:create'
-                  , 'pocket:created'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'pocket:created', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+  });
 
 }
 

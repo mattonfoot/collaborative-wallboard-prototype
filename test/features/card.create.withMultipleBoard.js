@@ -2,86 +2,66 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new card'
-  , storedWall
-  , storedBoard
-  , storedPocket
-  , resourceChecked = false
-  , locationChecked = false
-  , queueChecked = false;
+  , storedWall, storedBoard, storedPocket, numBoards;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var scenarios = this.scenarios;
 
-        scenarios.TwoBoardsOneWithRegions.call( this )
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[0];
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[0];
 
-                queue.clearCalls();
+        numBoards = storage.boards.length;
 
-                done();
-            })
-            .catch( done );
-    });
+        done();
+      })
+      .catch( done );
+  });
 
-    it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
-        function( done ) {
-                var services = this.services;
-                var belt = this.application.belt;
-                var scenarios = this.scenarios;
-                var queue = this.queue;
+  it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+    var queue = this.queue;
+    var locationscount = 0;
 
+    var locationSubscription = queue.subscribe( 'cardlocation:created', function( resource ) {
+      should.exist( resource );
 
-            queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+      resource.should.respondTo( 'getId' );
+      resource.should.respondTo( 'getPocket' );
+      resource.should.respondTo( 'getBoard' );
+      resource.getPocket().should.equal( storedPocket.getId() );
 
-            queue.once( 'pocket:created', function( resource ) {
-                storedPocket = resource;
+      locationscount++;
 
-                should.exist( resource );
+      if ( locationscount === numBoards ) {
+        locationSubscription.unsubscribe();
 
-                resource.should.be.a.specificCardResource( storedName, storedWall.getId() );
+        done();
+      }
+    })
+    .catch( done )
+    .distinct();
 
-                resourceChecked = true;
-            });
+    queue.when([
+      'pocket:create',
+      'pocket:created'
+    ],
+    function( a, b ) {
+      should.exist( a );
 
-            queue.once( 'cardlocation:created', function( resource ) {
-                should.exist( resource );
+      should.exist( b );
+      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
-                resource.should.respondTo( 'getId' );
-                resource.should.respondTo( 'getPocket' );
-                resource.should.respondTo( 'getBoard' );
-                resource.getPocket().should.equal( storedPocket.getId() );
+      storedPocket = b;
+    },
+    done,
+    { once: true });
 
-                locationChecked = true;
-            });
+    queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 
-            queue.once( 'cardlocation:created', function() {
-                queue.once( 'cardlocation:created', function() {
-                    queue.should.haveLogged([
-                            'pocket:create'
-                          , 'pocket:created'
-                          , 'cardlocation:created'
-                          , 'cardlocation:created'
-                        ]);
-
-                    queueChecked = true;
-                });
-
-                queue.once( 'cardlocation:created', function() {
-                    resourceChecked.should.equal( true );
-                    locationChecked.should.equal( true );
-                    queueChecked.should.equal( true );
-
-                    done();
-                });
-            });
-
-        });
+  });
 
 }
 
