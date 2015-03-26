@@ -10,67 +10,50 @@ var storedName = 'unedited board'
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function( done ) {
+    var services = this.services;
+    var queue = this.queue;
 
-        queue.once( 'board:created', function( board ) {
-            storedBoard = board;
-        });
+    services.createWall({ name: 'parent wall for board' })
+      .then(function( wall ) {
+        storedWall = wall;
 
-        queue.once( 'controls:enabled', function() {
-            queue.clearCalls();
+        return services.createBoard({ wall: wall.getId(), name: storedName });
+      })
+      .then(function( board ) {
+        storedBoard = board;
 
-            done();
-        });
+        done();
+      })
+      .catch( done );
+  });
 
-        services.createWall({ name: 'parent wall for board' })
-            .then(function( wall ) {
-                storedWall = wall;
+  it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n', function(done) {
+    var queue = this.queue;
 
-                services.createBoard({ wall: wall.getId(), name: storedName });
-            });
-    });
+    queue.when([
+      'board:update',
+      'board:updated'
+    ],
+    function( a, b ) {
+      should.exist( a );
+      a.should.be.a.specificBoardResource( editedName, storedWall.getId() );
+      a.getId().should.equal( storedBoard.getId() );
 
-    it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n',
-            function(done) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+      should.exist( b );
+      b.should.be.a.specificBoardResource( editedName, storedWall.getId() );
+      b.getId().should.equal( storedBoard.getId() );
 
-        storedBoard.name = editedName;
+      done();
+    },
+    done,
+    { once: true });
 
-        queue.trigger( 'board:update', storedBoard );
+    storedBoard.name = editedName;
 
-        queue.once( 'board:updated', function( resource ) {
-            should.exist( resource );
+    queue.trigger( 'board:update', storedBoard );
 
-            resource.should.be.a.specificBoardResource( editedName, storedWall.getId() );
-            resource.getId().should.equal( storedBoard.getId() );
-
-            resourceChecked = true;
-        });
-
-        queue.once( 'board:updated', function() {
-            queue.should.haveLogged([
-                    'board:update'
-                  , 'board:updated'
-                ]);
-
-            queueChecked = true;
-        });
-
-        queue.once( 'board:updated', function() {
-            resourceChecked.should.equal( true );
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+  });
 
 }
 

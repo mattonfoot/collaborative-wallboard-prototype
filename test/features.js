@@ -28,10 +28,9 @@ var features = [
   , require( './features/board.create.withCompleteBoard' )
   , require( './features/board.display' )
   , require( './features/board.display.withCompleteBoard' )
-/*
   , require( './features/board.edit' )
   , require( './features/board.update' )
-*/
+
 /*
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )

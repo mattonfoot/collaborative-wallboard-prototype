@@ -2,64 +2,52 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'unedited board'
-  , storedWall
-  , storedBoard
-  , resourceChecked = false
-  , queueChecked = false;
+  , storedWall, storedBoard;
 
 
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
+    var queue = this.queue;
 
-        queue.once( 'board:created', function( board ) {
-            storedBoard = board;
-        });
+    services.createWall({ name: 'parent wall for board' })
+      .then(function( wall ) {
+        storedWall = wall;
 
-        queue.once( 'controls:enabled', function() {
-            queue.clearCalls();
+        return services.createBoard({ wall: wall.getId(), name: storedName });
+      })
+      .then(function( board ) {
+        storedBoard = board;
 
-            done();
-        });
+        done();
+      })
+      .catch( done );
+  });
 
-        services.createWall({ name: 'parent wall for board' })
-            .then(function( wall ) {
-                storedWall = wall;
+  it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n', function(done) {
+    var queue = this.queue;
 
-                services.createBoard({ wall: wall.getId(), name: storedName });
-            });
-    });
+    queue.when([
+      'board:edit',
+      'boardeditor:displayed'
+    ],
+    function( a, b ) {
+      should.exist( a );
+      a.should.equal( storedBoard.getId() );
 
-    it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n',
-            function(done) {
-                    var services = this.services;
-                    var belt = this.application.belt;
-                    var scenarios = this.scenarios;
-                    var queue = this.queue;
+      should.exist( b );
+      b.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
-        queue.trigger( 'board:edit', storedBoard.getId() );
+      done();
+    },
+    done,
+    { once: true });
 
-        queue.once( 'boardeditor:displayed', function() {
-            queue.should.haveLogged([
-                    'board:edit'
-                  , 'boardeditor:displayed'
-                ]);
+    queue.trigger( 'board:edit', storedBoard.getId() );
 
-            queueChecked = true;
-        });
-
-        queue.once( 'boardeditor:displayed', function() {
-            queueChecked.should.equal( true );
-
-            done();
-        });
-
-    });
+  });
 
 }
 

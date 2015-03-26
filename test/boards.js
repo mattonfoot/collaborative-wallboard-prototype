@@ -15,9 +15,9 @@ var should = require('chai').should()
   , CardLocation = require('../lib/models/cardlocation');
 
 describe.skip('using an adapter', function() {
-    var ids = {}
-      , dbname = 'vuuse_boards'
-      , opts = {};
+  var ids = {}
+    , dbname = 'vuuse_features_boards'
+    , opts = {};
 
     if ( !process.browser ) {
         opts.db = require('memdown');
