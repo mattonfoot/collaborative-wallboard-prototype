@@ -2,87 +2,79 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new card'
-  , storedWall
-  , storedBoard
-  , storedPocket
-  , storedLocation
-  , resourceChecked = false
-  , locationChecked = false
-  , queueChecked = false
-  , update;
-
-
+  , storedWall, storedBoard, storedPocket, storedLocation;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
+    var scenarios = this.scenarios;
+    var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions.call( this )
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[0];
-                storedPocket = storage.pockets[0];
-                storedLocation = storage.locations[0];
+    var locationscount = 0;
 
-                update = {
-                    id: storedLocation.getId(),
-                    x: 600,
-                    y: 600
-                };
+    var subscription = queue.subscribe('cardlocation:displayed', function() {
+      subscription.unsubscribe();
 
-                queue.clearCalls();
+      done();
+    })
+    .constraint(function( resource, envelope ) {
+      locationscount++;
 
-                done();
-            })
-            .catch( done );
-    });
+      return locationscount === numLocations;
+    })
+    .catch( done );
 
-    it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n',
-        function( done ) {
-                var services = this.services;
-                var belt = this.application.belt;
-                var scenarios = this.scenarios;
-                var queue = this.queue;
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[0];
+        storedPocket = storage.pockets[0];
+        storedLocation = storage.locations[0];
 
-            queue.trigger( 'cardlocation:move', update );
+        numBoards = storage.boards.length;
+        numLocations = storage.pockets.length;
 
-            queue.once( 'cardlocation:updated', function( resource ) {
-                should.exist( resource );
+        return services.displayWall( storedWall.getId() );
+      })
+      .catch( done );
+  });
 
-                resource.should.respondTo( 'getId' );
-                resource.should.respondTo( 'getPocket' );
-                resource.getPocket().should.equal( storedPocket.getId() );
-                resource.should.respondTo( 'getBoard' );
-                resource.getBoard().should.equal( storedBoard.getId() );
-                resource.should.respondTo( 'getX' );
-                resource.getX().should.equal( update.x );
-                resource.should.respondTo( 'getY' );
-                resource.getY().should.equal( update.y );
+  it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
+    var queue = this.queue;
 
-                locationChecked = true;
-            });
+    queue.when([
+        'cardlocation:move'
+      , 'cardlocation:updated'
+    ],
+    function( a, b ) {
+      should.exist( a );
+      a.should.respondTo( 'getId' );
+      a.should.respondTo( 'getPocket' );
+      a.getPocket().should.equal( storedPocket.getId() );
 
-            queue.once( 'cardlocation:updated', function() {
-                queue.should.haveLogged([
-                        'cardlocation:move'
-                      , 'cardlocation:updated'
-                    ]);
+      should.exist( b );
+      b.should.respondTo( 'getId' );
+      b.should.respondTo( 'getPocket' );
+      b.getPocket().should.equal( storedPocket.getId() );
+      b.should.respondTo( 'getBoard' );
+      b.getBoard().should.equal( storedBoard.getId() );
+      b.should.respondTo( 'getX' );
+      b.getX().should.equal( storedLocation.x );
+      b.should.respondTo( 'getY' );
+      b.getY().should.equal( storedLocation.y );
 
-                queueChecked = true;
-            });
+      done();
+    },
+    done,
+    { once: true });
 
-            queue.once( 'cardlocation:updated', function() {
-                locationChecked.should.equal( true );
-                queueChecked.should.equal( true );
+    storedLocation.x = 600;
+    storedLocation.y = 600;
 
-                done();
-            });
+    queue.trigger( 'cardlocation:move', storedLocation );
 
-        });
+  });
 
 }
 

@@ -10,10 +10,12 @@ var chai = require('chai')
   , Queue = require('../lib/queue');
 
 var debug = false;
+var queueDebug = false;
 
 var featureSet = {};
 
 var features = [
+
     require( './features/wall.new' )
   , require( './features/wall.create' )
   , require( './features/wall.select' )
@@ -34,10 +36,10 @@ var features = [
   , require( './features/card.new' )
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )
-/*
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
+/*
   , require( './features/card.move.onABoardWithATransform' )
 */
 /*
@@ -105,7 +107,7 @@ function generateCallList( calls ) {
         }
 
         var belt = this.belt = new Belt( db );
-        var queue = this.queue = new Queue({ channel: channelName, debug: debug });
+        var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
         var ui = this.ui = new UI( queue );
 
         var application = this.application = new Application( belt, queue, ui, { debug: debug } );
@@ -120,10 +122,12 @@ function generateCallList( calls ) {
         };
 
         if ( debug ) {
-          ExecutionTimer( belt, 'Belt' );
+          // ExecutionTimer( belt, 'Belt' );
           ExecutionTimer( application.commands, 'Commands' );
           ExecutionTimer( application.queries, 'Queries' );
           ExecutionTimer( application.interface, 'Interface' );
+          ExecutionTimer( application.movementTracker, 'MovementTracker' );
+          ExecutionTimer( application.transformManager, 'TransformManager' );
         }
 
         application.startListening();

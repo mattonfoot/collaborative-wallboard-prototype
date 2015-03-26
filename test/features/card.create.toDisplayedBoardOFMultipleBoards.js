@@ -2,105 +2,82 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new card'
-  , storedWall
-  , storedBoard
-  , storedPocket
-  , resourceChecked = false
-  , locationChecked = false
-  , queueChecked = false;
-
-
+  , storedWall, storedBoard, storedPocket, numBoards = 0, numLocations = 0;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
+    var scenarios = this.scenarios;
+    var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions.call( this )
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[0];
+    var locationscount = 0;
 
-                return services.displayWall( storedWall.getId() );
-            })
-            .then(function() {
-                return services.displayBoard( storedBoard.getId() );
-            })
-            .then(function() {
-                queue.clearCalls();
+    var subscription = queue.subscribe('cardlocation:displayed', function() {
+      subscription.unsubscribe();
 
-                done();
-            })
-            .catch( done );
+      done();
+    })
+    .constraint(function( resource, envelope ) {
+      locationscount++;
+
+      return locationscount === numLocations;
     });
 
-    it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n',
-        function( done ) {
-                var services = this.services;
-                var belt = this.application.belt;
-                var scenarios = this.scenarios;
-                var queue = this.queue;
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[0];
 
-            queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+        numBoards = storage.boards.length;
+        numLocations = storage.pockets.length;
 
-            queue.once( 'pocket:created', function( resource ) {
-                storedPocket = resource;
+        return services.displayWall( storedWall.getId() );
+      })
+      .catch( done );
+  });
 
-                should.exist( resource );
+  it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+    var queue = this.queue;
+    var locationscount = 0;
 
-                resource.should.be.a.specificCardResource( storedName, storedWall.getId() );
+    var locationSubscription = queue.subscribe( 'cardlocation:created', function( resource ) {
+      should.exist( resource );
 
-                resourceChecked = true;
-            });
+      resource.should.respondTo( 'getId' );
+      resource.should.respondTo( 'getPocket' );
+      resource.should.respondTo( 'getBoard' );
+      resource.getPocket().should.equal( storedPocket.getId() );
 
-            queue.once( 'cardlocation:created', function( resource ) {
-                should.exist( resource );
+      locationscount++;
 
-                resource.should.respondTo( 'getId' );
-                resource.should.respondTo( 'getPocket' );
-                resource.getPocket().should.equal( storedPocket.getId() );
-                resource.should.respondTo( 'getBoard' );
-                resource.getBoard().should.equal( storedBoard.getId() );
+      if ( locationscount === numBoards ) {
+        locationSubscription.unsubscribe();
 
-                queue.once( 'cardlocation:created', function( resource ) {
-                    should.exist( resource );
+        done();
+      }
+    })
+    .catch( done )
+    .distinct();
 
-                    resource.should.respondTo( 'getId' );
-                    resource.should.respondTo( 'getPocket' );
-                    resource.getPocket().should.equal( storedPocket.getId() );
-                    resource.should.respondTo( 'getBoard' );
-                    resource.getBoard().should.not.equal( storedBoard.getId() );
+    queue.when([
+      'pocket:create',
+      'pocket:created'
+    ],
+    function( a, b ) {
+      should.exist( a );
 
-                    locationChecked = true;
-                });
+      should.exist( b );
+      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
-                queue.once( 'cardlocation:created', function() {
-                    queue.should.haveLogged([
-                            'pocket:create'
-                          , 'cardlocation:displayed'  // muddy event from displayWall
-                          , 'cardlocation:displayed'  // muddy event from displayWall
-                          , 'pocket:created'
-                          , 'cardlocation:created'
-                          , 'cardlocation:displayed'
-                          , 'cardlocation:created'
-                        ]);
+      storedPocket = b;
+    },
+    done,
+    { once: true });
 
-                    queueChecked = true;
-                });
+    queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
 
-                queue.once( 'cardlocation:created', function() {
-                    resourceChecked.should.equal( true );
-                    locationChecked.should.equal( true );
-                    queueChecked.should.equal( true );
-
-                    done();
-                });
-            });
-
-        });
+  });
 
 }
 
