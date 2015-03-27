@@ -37,16 +37,17 @@ var features = [
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
+/*
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
-/*
-  , require( './features/card.move.onABoardWithATransform' )
 */
-/*
   , require( './features/region.new' )
   , require( './features/region.create' )
+/*
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
+
+  , require( './features/card.move.onABoardWithATransform' )
 */
   /*
     CARD --> EDIT, UPDATE

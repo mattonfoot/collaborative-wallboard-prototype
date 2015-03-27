@@ -32,7 +32,8 @@
     "postal.when": "git+https://github.com/mattonfoot/postal.when.git",
     "pouchdb": "~3.0.6",
     "rsvp": "^3.0.17",
-    "setimmediate": "^1.0.2"
+    "setimmediate": "^1.0.2",
+    "uuid": "^2.0.1"
   },
   "devDependencies": {
     "browser-process-hrtime": "^0.1.1",
