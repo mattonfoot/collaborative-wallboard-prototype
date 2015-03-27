@@ -16,6 +16,7 @@ var featureSet = {};
 
 var features = [
 
+  /* Walls features */
     require( './features/wall.new' )
   , require( './features/wall.create' )
   , require( './features/wall.select' )
@@ -25,6 +26,7 @@ var features = [
   , require( './features/wall.edit' )
   , require( './features/wall.update' )
 
+  /* Board features */
   , require( './features/board.new' )
   , require( './features/board.create' )
   , require( './features/board.create.withCompleteBoard' )
@@ -33,6 +35,7 @@ var features = [
   , require( './features/board.edit' )
   , require( './features/board.update' )
 
+  /* Card features */
   , require( './features/card.new' )
   , require( './features/card.create' )
   , require( './features/card.create.withMultipleBoard' )
@@ -41,18 +44,23 @@ var features = [
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
 */
+
+  /* Region features */
   , require( './features/region.new' )
   , require( './features/region.create' )
 /*
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
-
-  , require( './features/card.move.onABoardWithATransform' )
 */
+
+  /* Transforming cards
+  , require( './features/card.move.onABoardWithATransform' )
+  , require( './features/region.move.onABoardWithATransform' )
+  */
   /*
     CARD --> EDIT, UPDATE
 
-    REGION --> EDIT, UPDATE, UPDATE
+    REGION --> EDIT, UPDATE
 
     TRANSFORM --> CREATE, UNLINK
   */
