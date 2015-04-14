@@ -14,6 +14,7 @@ function features() {
     queue.subscribe('controls:enabled', function( board ) {
       done();
     })
+    .catch( done )
     .once();
 
     scenarios.TwoBoardsOneWithRegions.call( this )
@@ -44,8 +45,8 @@ function features() {
         if ( regionscount === numRegions && queuechecked ) done();
       }
     })
-    .distinct()
-    .catch( done );
+    .catch( done )
+    .distinct();
 
     var regionSubscription = queue.subscribe( 'region:displayed', function( resource ) {
       regionscount++;
@@ -56,8 +57,8 @@ function features() {
         if ( cardscount === numCards && queuechecked ) done();
       }
     })
-    .distinct()
-    .catch( done );
+    .catch( done )
+    .distinct();
 
     queue.when([
         'board:display'

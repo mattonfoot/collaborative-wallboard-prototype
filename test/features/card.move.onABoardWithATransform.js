@@ -43,7 +43,8 @@ function features() {
       card.getColor().should.not.contain( regionEntered.getColor() );
 
       checkRegionEnter = true;
-    }).once()
+    })
+    .once()
     .catch( done );
 
     queue.when([

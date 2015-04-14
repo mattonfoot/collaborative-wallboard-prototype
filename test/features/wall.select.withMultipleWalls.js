@@ -45,7 +45,8 @@ function features() {
       queue.unsubscribe( subscription );
 
       done();
-    });
+    })
+    .catch( done );
 
     queue.publish( 'wall:select' );
 

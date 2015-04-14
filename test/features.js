@@ -113,8 +113,11 @@ function generateCallList( calls ) {
 
         if ( !process.browser ) {
           db = new PouchDB( db, { db: require('memdown') } );
+        } else {
+          db = new PouchDB( db );
         }
 
+        var pouch = this.pouch = db;
         var belt = this.belt = new Belt( db );
         var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
         var ui = this.ui = new UI( queue );
@@ -153,20 +156,10 @@ function generateCallList( calls ) {
 
         queue.clearAll();
 
-        var promises = [];
-        [ 'region', 'cardlocation', 'pocket', 'board', 'wall' ].forEach(function( schema ) {
-            belt.findMany( schema )
-                .then(function( resources ) {
-                    resources.forEach(function( resource ) {
-                        promises.push( belt.delete( schema, resource.getId() ) );
-                    });
-                });
-        });
-
-        RSVP.all( promises ).then(function( responses ) {
-          done();
-        })
-        .catch( done );
+        this.pouch.destroy()
+          .then(function () {
+            done();
+          }).catch( done );
       });
 
       feature();
@@ -209,33 +202,51 @@ function setupMultipleWallScenario() {
     application.pauseListening();
 
     return new Promise(function( resolve, reject ) {
-        var storage = {}
-          , promises = [];
+      var storage = {
+        walls: [],
+        boards: [],
+        regions: [],
+        pockets: [],
+        locations: []
+      };
 
-        promises.push( belt.create('wall', { name: 'Multiple Wall Scenario One' }) );
-        promises.push( belt.create('wall', { name: 'Multiple Wall Scenario two' }) );
-        promises.push( belt.create('wall', { name: 'Multiple Wall Scenario Three' }) );
+      belt
+        .create('wall', { name: 'Multiple Wall Scenario One' })
+        .then(function( wall ) {
+          storage.wall = wall;
+          storage.walls.push( wall );
 
-        RSVP.all( promises )
-            .then(function( resources ) {
-                storage.walls = resources;
+          return belt.create('wall', { name: 'Multiple Wall Scenario two' });
+        })
+        .then(function( wall ) {
+          storage.walls.push( wall );
 
-                var promises = [];
+          return belt.create('wall', { name: 'Multiple Wall Scenario Three' });
+        })
+        .then(function( wall ) {
+          storage.walls.push( wall );
 
-                promises.push( belt.create('board', { wall: resources[0].getId(), name: 'Empty Board One' }) );
-                promises.push( belt.create('board', { wall: resources[1].getId(), name: 'Empty Board Two' }) );
-                promises.push( belt.create('board', { wall: resources[2].getId(), name: 'Empty Board Three' }) );
+          return belt.create('board', { wall: storage.walls[0].getId(), name: 'Empty Board One' });
+        })
+        .then(function( board ){
+          storage.wall = board;
+          storage.boards.push( board );
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.boards = resources;
+          return belt.create('board', { wall: storage.walls[1].getId(), name: 'Empty Board Two' });
+        })
+        .then(function( board ){
+          storage.boards.push( board );
 
-                application.startListening();
+          return belt.create('board', { wall: storage.walls[2].getId(), name: 'Empty Board Three' });
+        })
+        .then(function( board ){
+          storage.boards.push( board );
 
-                resolve( storage );
-            })
-            .catch( reject );
+          application.startListening();
+
+          resolve( storage );
+        })
+        .catch( reject );
     });
 }
 
@@ -247,27 +258,36 @@ function setupEmptyBoardScenario() {
   var services = this.services;
   var scenarios = this.scenarios;
 
-    application.pauseListening();
+  application.pauseListening();
 
-    return new Promise(function( resolve, reject ) {
-        var storage = {};
+  return new Promise(function( resolve, reject ) {
+    var storage = {
+      walls: [],
+      boards: [],
+      regions: [],
+      pockets: [],
+      locations: []
+    };
 
-        // one wall
-        belt.create( 'wall', { name: 'Empty Board Scenario' })
-            .then(function( resource ) {
-                storage.wall = resource;
+    // one wall
+    belt
+      .create( 'wall', { name: 'Empty Board Scenario' })
+      .then(function( wall ) {
+        storage.wall = wall;
+        storage.walls.push( wall );
 
-                return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
-            })
-            .then(function( resources ) {
-                storage.boards = resources;
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
+      })
+      .then(function( board ) {
+        storage.board = board;
+        storage.boards.push( board );
 
-                application.startListening();
+        application.startListening();
 
-                resolve( storage );
-            })
-            .catch( reject );
-    });
+        resolve( storage );
+      })
+      .catch( reject );
+  });
 }
 
 function setupPopulatedBoardScenario() {
@@ -278,64 +298,81 @@ function setupPopulatedBoardScenario() {
   var services = this.services;
   var scenarios = this.scenarios;
 
-    application.pauseListening();
+  application.pauseListening();
 
-    return new Promise(function( resolve, reject ) {
-        var storage = {};
+  return new Promise(function( resolve, reject ) {
+    var storage = {
+      walls: [],
+      boards: [],
+      regions: [],
+      pockets: [],
+      locations: []
+    };
 
-        // one wall
-        belt.create( 'wall', { name: 'Populated Board Scenario' })
-            .then(function( resource ) {
-                storage.wall = resource;
+    // one wall
+    belt
+      .create( 'wall', { name: 'Populated Board Scenario' })
+      .then(function( wall ) {
+        storage.wall = wall;
+        storage.walls.push( wall );
 
-                var promises = [];
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with cards only' });
+      })
+      .then(function( board ) {
+        storage.board = board;
+        storage.boards.push( board );
 
-                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Board with cards only' }) );
-                promises.push( belt.create('board', { wall: storage.wall.getId(), name: 'Board with regions' }) );
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with regions' });
+      })
+      .then(function( board ) {
+        storage.boards.push( board );
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.boards = resources;
+        return belt.create('region', { board: storage.boards[1].getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 });
+      })
+      .then(function( region ) {
+        storage.regions.push( region );
 
-                var promises = [], board = storage.boards[1];
+        return belt.create('region', { board: storage.boards[1].getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 });
+      })
+      .then(function( region ) {
+        storage.regions.push( region );
 
-                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 }) );
-                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 }) );
+        return belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' });
+      })
+      .then(function( pocket ) {
+        storage.pockets.push( pocket );
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.regions = resources;
+        return belt.create('pocket', { wall: storage.wall.getId(), title: 'Second Card' });
+      })
+      .then(function( pocket ) {
+        storage.pockets.push( pocket );
 
-                var promises = [];
+        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:50, y:50 });
+      })
+      .then(function( location ) {
+        storage.locations.push( location );
 
-                promises.push( belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' }) );
-                promises.push( belt.create('pocket', { wall: storage.wall.getId(), title: 'Second Card' }) );
+        return belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[0].getId(), x:50, y:50 });
+      })
+      .then(function( location ) {
+        storage.locations.push( location );
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.pockets = resources;
+        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[1].getId(), x:400, y:50 });
+      })
+      .then(function( location ) {
+        storage.locations.push( location );
 
-                var promises = [];
+        return belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[1].getId(), x:400, y:50 });
+      })
+      .then(function( location ) {
+        storage.locations.push( location );
 
-                promises.push( belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:50, y:50 }) );
-                promises.push( belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[0].getId(), x:50, y:50 }) );
-                promises.push( belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[1].getId(), x:400, y:50 }) );
-                promises.push( belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[1].getId(), x:400, y:50 }) );
+        application.startListening();
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.locations = resources;
-
-                application.startListening();
-
-                resolve( storage );
-            })
-            .catch( reject );
-    });
+        resolve( storage );
+      })
+      .catch( reject );
+  });
 }
 
 function setupColorChangingBoardScenario() {
@@ -346,56 +383,63 @@ function setupColorChangingBoardScenario() {
   var services = this.services;
   var scenarios = this.scenarios;
 
-    application.pauseListening();
+  application.pauseListening();
 
-    return new Promise(function( resolve, reject ) {
-        var storage = {
-            boards: [],
-            pockets: [],
-            locations: []
-        };
+  return new Promise(function( resolve, reject ) {
+    var storage = {
+      walls: [],
+      boards: [],
+      regions: [],
+      pockets: [],
+      locations: []
+    };
 
-        // one wall
-        belt.create( 'wall', { name: 'Color Changing Board Scenario' })
-            .then(function( resource ) {
-                storage.wall = resource;
+    // one wall
+    belt
+      .create( 'wall', { name: 'Color Changing Board Scenario' })
+      .then(function( wall ) {
+        storage.wall = wall;
+        storage.walls.push( wall );
 
-                return belt.create('board', { wall: storage.wall.getId(), name: 'Board with color Transform' });
-            })
-            .then(function( resource ) {
-                storage.boards.push( resource );
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with color Transform' });
+      })
+      .then(function( board ) {
+        storage.board = board;
+        storage.boards.push( board );
 
-                var promises = [], board = storage.boards[0];
+        return belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 });
+      })
+      .then(function( region ) {
+        storage.region = region;
+        storage.regions.push( region );
 
-                promises.push( belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 }) );
-                promises.push( belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 }) );
+        return belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 });
+      })
+      .then(function( region ) {
+        storage.region = region;
+        storage.regions.push( region );
 
-                return RSVP.all( promises );
-            })
-            .then(function( resources ) {
-                storage.regions = resources;
+        return belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' });
+      })
+      .then(function( resource ) {
+        storage.pockets.push( resource );
 
-                return belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' });
-            })
-            .then(function( resource ) {
-                storage.pockets.push( resource );
+        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:400, y:50 });
+      })
+      .then(function( resource ) {
+        storage.locations.push( resource );
 
-                return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:400, y:50 });
-            })
-            .then(function( resource ) {
-                storage.locations.push( resource );
+        var boardid = storage.boards[0].getId();
 
-                var boardid = storage.boards[0].getId();
+        return belt.create('transform', { board: boardid, phrase: 'get color from color of region on board #' + boardid + ' when within region' });
+      })
+      .then(function( resources ) {
+          application.startListening();
 
-                return belt.create('transform', { board: boardid, phrase: 'get color from color of region on board #' + boardid + ' when within region' });
-            })
-            .then(function( resources ) {
-                application.startListening();
-
-                resolve( storage );
-            })
-            .catch( reject );
-    });
+          resolve( storage );
+      })
+      .catch( reject );
+  });
 }
 
 
