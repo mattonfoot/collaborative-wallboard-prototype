@@ -41,6 +41,8 @@ var features = [
   , require( './features/card.create.withMultipleBoard' )
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
 /*
+  CARD --> EDIT, UPDATE
+
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
 */
@@ -49,22 +51,19 @@ var features = [
   , require( './features/region.new' )
   , require( './features/region.create' )
 /*
+    REGION --> EDIT, UPDATE
+
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
 */
 
-  /* Transforming cards
+  /* Transforming cards */
+/*
+    TRANSFORM --> CREATE, UNLINK
+
   , require( './features/card.move.onABoardWithATransform' )
   , require( './features/region.move.onABoardWithATransform' )
-  */
-  /*
-    CARD --> EDIT, UPDATE
-
-    REGION --> EDIT, UPDATE
-
-    TRANSFORM --> CREATE, UNLINK
-  */
-
+*/
 ];
 
 features.forEach(function( features ) {
