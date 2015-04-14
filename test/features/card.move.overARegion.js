@@ -48,9 +48,10 @@ function features() {
       'cardlocation:move',
       'cardlocation:updated',
       'pocket:updated',
-      'pocket:regionenter'
+      'pocket:regionenter',
+      'pocket:transformed'
     ],
-    function( a, b, c, d ) {
+    function( a, b, c, d, e ) {
       should.exist( a );
       a.should.respondTo( 'getId' );
       a.should.respondTo( 'getPocket' );
@@ -71,10 +72,12 @@ function features() {
       c.getId().should.equal( storedPocket.getId() );
       c.getRegions().should.contain( storedRegion.getId() );
 
-
       should.exist( d );
       d.pocket.getId().should.equal( storedPocket.getId() );
       d.region.getId().should.equal( storedRegion.getId() );
+
+      should.exist( e );
+      e.getColor().should.equal( storedRegion.getColor() );
 
       done();
     },

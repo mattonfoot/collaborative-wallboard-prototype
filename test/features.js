@@ -42,20 +42,18 @@ var features = [
   , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
 /*
   CARD --> EDIT, UPDATE
-
+*/
   , require( './features/card.move.intoEmptyArea' )
   , require( './features/card.move.overARegion' )
-*/
 
   /* Region features */
   , require( './features/region.new' )
   , require( './features/region.create' )
 /*
     REGION --> EDIT, UPDATE
-
+*/
   , require( './features/region.move.intoEmptyArea' )
   , require( './features/region.move.UnderACard' )
-*/
 
   /* Transforming cards */
 /*

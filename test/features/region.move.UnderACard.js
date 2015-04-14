@@ -2,105 +2,91 @@ var chai = require('chai')
   , should = chai.should();
 
 var storedName = 'new region'
-  , storedWall
-  , storedBoard
-  , storedPocket
-  , storedRegion
-  , storedLocation
-  , resourceChecked = false
-  , locationChecked = false
-  , queueChecked = false
-  , update;
+  , storedWall, storedBoard, storedPocket, storedRegion, storedLocation;
 
 function features() {
 
-    beforeEach(function(done) {
-            var services = this.services;
-            var belt = this.application.belt;
-            var scenarios = this.scenarios;
-            var queue = this.queue;
+  beforeEach(function(done) {
+    var services = this.services;
+    var scenarios = this.scenarios;
+    var queue = this.queue;
 
-        scenarios.TwoBoardsOneWithRegions.call( this )
-            .then(function( storage ) {
-                storedWall = storage.wall;
-                storedBoard = storage.boards[1];
-                storedPocket = storage.pockets[0];
-                storedRegion = storage.regions[0];
-                storedLocation = storage.locations[2];
+    var locationscount = 0, numBoards = 0, numLocations = 0;
 
-                update = {
-                    id: storedRegion.getId(),
-                    x: 400,
-                    y: 0
-                };
+    var subscription = queue.subscribe('cardlocation:displayed', function() {
+      subscription.unsubscribe();
 
-                queue.clearCalls();
+      done();
+    })
+    .constraint(function( resource, envelope ) {
+      locationscount++;
 
-                done();
-            })
-            .catch( done );
-    });
+      return locationscount === numLocations;
+    })
+    .catch( done );
 
-    it('Emit a <region:move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n',
-        function( done ) {
-                var services = this.services;
-                var belt = this.application.belt;
-                var scenarios = this.scenarios;
-                var queue = this.queue;
+    scenarios.TwoBoardsOneWithRegions.call( this )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.boards[1];
+        storedPocket = storage.pockets[0];
+        storedRegion = storage.regions[0];
+        storedLocation = storage.locations[2];
 
-            queue.trigger( 'region:move', update );
+        numBoards = storage.boards.length;
+        numLocations = storage.pockets.length;
 
-            queue.once( 'region:updated', function( resource ) {
-                should.exist( resource );
+        return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
+        done();
+      })
+      .catch( done );
+  });
 
-                resource.should.respondTo( 'getId' );
-                resource.should.respondTo( 'getBoard' );
-                resource.getBoard().should.equal( storedBoard.getId() );
-                resource.should.respondTo( 'getX' );
-                resource.getX().should.equal( update.x );
-                resource.should.respondTo( 'getY' );
-                resource.getY().should.equal( update.y );
+  it('Emit a <region:move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n', function( done ) {
+    var queue = this.queue;
 
-                locationChecked = true;
-            });
+    queue.when([
+            'region:move'
+          , 'region:updated'
+          , 'pocket:updated'
+          , 'pocket:regionenter'
+          , 'pocket:transformed'
+    ],
+    function( a, b, c, d, e ) {
+      should.exist( a );
+      a.should.respondTo( 'getId' );
+      a.should.respondTo( 'getBoard' );
+      a.getBoard().should.equal( storedBoard.getId() );
 
-            queue.once( 'region:updated', function( resource ) {
-                resource.getId().should.equal( storedRegion.getId() );
+      should.exist( b );
+      b.should.respondTo( 'getId' );
+      b.should.respondTo( 'getBoard' );
+      b.getBoard().should.equal( storedBoard.getId() );
+      b.should.respondTo( 'getX' );
+      b.getX().should.equal( storedRegion.x );
+      b.should.respondTo( 'getY' );
+      b.getY().should.equal( storedRegion.y );
 
-                resourceChecked = true;
-            });
+      should.exist( d );
+      d.pocket.getId().should.equal( storedPocket.getId() );
+      d.region.getId().should.equal( storedRegion.getId() );
 
-            queue.once( 'pocket:regionenter', function( info ) {
-                info.pocket.getId().should.equal( storedPocket.getId() );
-                info.region.getId().should.equal( storedRegion.getId() );
-                // info.region.getPockets().should.contain( storedPocket.getId() );
+      should.exist( e );
+      e.getColor().should.equal( storedRegion.getColor() );
 
-                queue.should.haveLogged([
-                        'region:move'
-                      , 'region:updated'
-                      , 'pocket:updated'
-                      , 'pocket:regionenter'
-                      , 'pocket:updated'
-                      , 'pocket:regionenter'
-                      , 'pocket:updated'
-                      , 'pocket:transformed'
-                      , 'pocket:updated'
-                      , 'pocket:transformed'
-                    ]);
+      done();
+    },
+    done,
+    { once: true });
 
-                queueChecked = true;
-            });
+    storedRegion.x = 400;
+    storedRegion.y = 0;
 
-            queue.once( 'pocket:regionenter', function() {
-                resourceChecked.should.equal( true );
-                locationChecked.should.equal( true );
-                queueChecked.should.equal( true );
+    queue.trigger( 'region:move', storedRegion );
 
-                done();
-            });
-
-        });
-
+  });
 }
 
 features.title = 'Moving a displayed Region under a Card on the displayed Board';
