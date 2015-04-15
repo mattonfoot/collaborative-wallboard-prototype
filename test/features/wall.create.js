@@ -8,8 +8,9 @@ var storedName = 'new wall'
 function features() {
 
   it('Emit a <wall:create> event passing a data object with a name attribute to trigger the process of creating a new wall\n', function( done ) {
-
     var queue = this.queue;
+
+    queue.subscribe( '#.fail', done );
 
     queue.when([
       'wall:created',

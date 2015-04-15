@@ -28,6 +28,8 @@ function features() {
   it('If there are several walls configured then the Wall Selector input control will display all available walls\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     var subscription = queue.subscribe( 'wallselector:displayed' );
     subscription.subscribe(function( resources ) {
       should.exist( resources );

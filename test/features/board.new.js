@@ -20,6 +20,8 @@ function features() {
     it('Emit a <wall:new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n', function(done) {
       var queue = this.queue;
 
+      queue.subscribe( '#.fail', done );
+
       queue.when([
         'board:new',
         'boardcreator:displayed'

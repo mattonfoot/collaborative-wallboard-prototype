@@ -20,6 +20,8 @@ function features() {
     it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {
       var queue = this.queue;
 
+      queue.subscribe( '#.fail', done );
+
       queue.when([
             'wall:displayed'
           , 'boardselector:displayed'

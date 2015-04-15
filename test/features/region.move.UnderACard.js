@@ -29,7 +29,7 @@ function features() {
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.boards[1];
-        storedPocket = storage.pockets[0];
+        storedPocket = storage.pockets[1];
         storedRegion = storage.regions[0];
         storedLocation = storage.locations[2];
 
@@ -47,12 +47,14 @@ function features() {
   it('Emit a <region:move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n', function( done ) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
-            'region:move'
-          , 'region:updated'
-          , 'pocket:updated'
-          , 'pocket:regionenter'
-          , 'pocket:transformed'
+      'region.move',
+      'region.updated',
+      'pocket.regionenter',
+      'pocket.updated',
+      'pocket.transformed'
     ],
     function( a, b, c, d, e ) {
       should.exist( a );
@@ -69,9 +71,9 @@ function features() {
       b.should.respondTo( 'getY' );
       b.getY().should.equal( storedRegion.y );
 
-      should.exist( d );
-      d.pocket.getId().should.equal( storedPocket.getId() );
-      d.region.getId().should.equal( storedRegion.getId() );
+      should.exist( c );
+      c.pocket.getId().should.equal( storedPocket.getId() );
+      c.region.getId().should.equal( storedRegion.getId() );
 
       should.exist( e );
       e.getColor().should.equal( storedRegion.getColor() );

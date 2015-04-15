@@ -21,6 +21,8 @@ function features() {
   it('Select and display the first associated board of a Wall\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'wall:displayed',
       'boardselector:displayed',

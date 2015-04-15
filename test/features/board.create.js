@@ -21,6 +21,8 @@ function features() {
   it('Emit a <board:create> event passing a data object with a valid wall id and a name attribute to trigger the process of creating a new board\n', function( done ) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'board:create',
       'board:created',

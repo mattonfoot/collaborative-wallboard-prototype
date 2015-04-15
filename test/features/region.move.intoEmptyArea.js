@@ -45,6 +45,8 @@ function features() {
   it('Emit a <region:move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n', function( done ) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
         'region:move'
       , 'region:updated'

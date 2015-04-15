@@ -7,8 +7,9 @@ var resourceChecked = false
 function features() {
 
   it('Emit a <wall:new> event - no data object is needed - to access an input control allowing you to enter details required to create a new Wall\n', function(done) {
-
     var queue = this.queue;
+
+    queue.subscribe( '#.fail', done );
 
     queue.when([
       'wall:new',

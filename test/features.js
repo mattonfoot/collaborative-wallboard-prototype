@@ -58,7 +58,6 @@ var features = [
   /* Transforming cards */
 /*
     TRANSFORM --> CREATE, UNLINK
-
   , require( './features/card.move.onABoardWithATransform' )
   , require( './features/region.move.onABoardWithATransform' )
 */

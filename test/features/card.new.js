@@ -24,6 +24,8 @@ function features() {
   it('Emit a <pocket:new> event passing a valid board id to access an input control allowing you to enter details required to create a new Card\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'pocket:new',
       'pocketcreator:displayed'

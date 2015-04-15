@@ -29,6 +29,8 @@ function features() {
   it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'board:edit',
       'boardeditor:displayed'

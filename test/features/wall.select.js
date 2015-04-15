@@ -20,6 +20,8 @@ function features() {
   it('Emit a <wall:select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     var subscription = queue.subscribe( 'wallselector:displayed' );
     subscription.subscribe(function( a ) {
       should.exist( a );

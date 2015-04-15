@@ -34,6 +34,8 @@ function features() {
   it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n', function(done) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'board:display',
       'board:displayed',

@@ -26,6 +26,8 @@ function features() {
   it('Emit a <region:create> event passing a data object with a valid board id and a label attribute to trigger the process of creating a new Region\n', function( done ) {
     var queue = this.queue;
 
+    queue.subscribe( '#.fail', done );
+
     queue.when([
       'region:create',
       'region:created'
