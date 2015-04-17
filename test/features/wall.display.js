@@ -1,51 +1,46 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall');
 
 var storedName = 'display wall'
   , storedWall;
 
 function features() {
-    beforeEach(function(done) {
-      var services = this.services;
+  beforeEach(function( done ) {
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
 
-      services.createWall({ name: storedName })
-        .then(function( wall ) {
-          storedWall = wall;
+        done();
+      })
+      .catch( done );
+  });
 
-          done();
-        })
-        .catch( done );
-    });
+  it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {
+    var queue = this.queue;
 
-    it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {
-      var queue = this.queue;
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
-      queue.subscribe( '#.fail', done );
+    queue.when([
+      'wall:displayed',
+      'wall:firsttime',
+      'boardcreator:displayed'
+    ],
+    function( a, b, c ) {
+      should.exist( a );
+      a.should.be.a.specificWallResource( storedName );
 
-      queue.when([
-            'wall:displayed'
-          , 'boardselector:displayed'
-          , 'wall:firsttime'
-          , 'boardcreator:displayed'
-        ], function( a, b, c, d ) {
-          should.exist( a );
-          a.should.be.a.specificWallResource( storedName );
+      should.exist( b );
+      b.should.be.a.specificWallResource( storedName );
 
-          should.exist( b );
-          b.should.be.an.instanceOf( Array );
-          b.length.should.equal( 0 );
+      done();
+    },
+    done,
+    { once: true });
 
-          should.exist( c );
-          c.should.be.a.specificWallResource( storedName );
-
-          done();
-        },
-        done,
-        { once: true });
-
-      queue.publish( 'wall:display', storedWall.getId() );
-    });
-
+    queue.publish( 'wall:display', storedWall.getId() );
+  });
 }
 
 features.title = 'Displaying a wall';

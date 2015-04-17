@@ -44,7 +44,8 @@ function features() {
   it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates within a Region on the same Board to trigger the process of moving a Card over a Region on a Board\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'cardlocation:move',

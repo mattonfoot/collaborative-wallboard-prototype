@@ -1,18 +1,16 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall');
 
 var storedName = 'new card'
-  ,  storedWall;
+  , storedWall;
 
 function features() {
-
-  beforeEach(function(done) {
-    var services = this.services;
-
-    services.createWall({ name: 'parent wall for board' })
-      .then(function( wall ) {
-        storedWall = wall;
-
+  beforeEach(function( done ) {
+    fixture( this, 'Wall for board' )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        
         done();
       })
       .catch( done );
@@ -21,7 +19,8 @@ function features() {
   it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'pocket:create',
@@ -39,11 +38,9 @@ function features() {
     { once: true });
 
     queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
-
   });
-
 }
 
-features.title = 'Creating a Card on a Board';
+features.title = 'Creating a Card on a Wall';
 
 module.exports = features;

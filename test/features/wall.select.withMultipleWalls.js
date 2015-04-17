@@ -1,24 +1,18 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/MultipleWall.WithOneBoard');
 
-var queueChecked = false;
+var storedName = 'display wall'
+  , storedWall, storedWalls, len;
 
 function features() {
-  var storedWalls, len;
-
   beforeEach(function( done ) {
-    var scenarios = this.scenarios;
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedWalls = storage.walls;
 
-    scenarios
-      .multipleWalls.call( this )
-      .then(function( resources ) {
-        should.exist( resources );
-        should.exist( resources.walls );
-        resources.walls.should.be.instanceOf( Array );
-        resources.walls.length.should.be.greaterThan( 1 );
-
-        storedWalls = resources.walls;
-        len = resources.walls.length;
+        len = storedWalls.length;
 
         done();
       })
@@ -28,7 +22,8 @@ function features() {
   it('If there are several walls configured then the Wall Selector input control will display all available walls\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var subscription = queue.subscribe( 'wallselector:displayed' );
     subscription.subscribe(function( resources ) {
@@ -51,9 +46,7 @@ function features() {
     .catch( done );
 
     queue.publish( 'wall:select' );
-
   });
-
 }
 
 features.title = 'Selecting a Wall from multiple';

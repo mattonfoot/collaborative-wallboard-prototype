@@ -41,7 +41,8 @@ function features() {
     var queue = this.queue;
     var locationscount = 0;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var locationSubscription = queue.subscribe( 'cardlocation:created', function( resource ) {
       should.exist( resource );

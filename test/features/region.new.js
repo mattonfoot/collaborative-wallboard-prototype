@@ -1,21 +1,17 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithOneBoard');
 
-var storedWall;
+var storedWall, storedBoard;
 
 function features() {
-
-  beforeEach(function(done) {
-    var services = this.services;
-
-    services.createWall({ name: 'parent wall for board' })
-      .then(function( wall ) {
-        storedWall = wall;
-
-        return services.createBoard({ wall: wall.getId(), name: 'board for region' });
+  beforeEach(function( done ) {
+    fixture( this, 'board for region' )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.board;
       })
       .then(function( board ) {
-
         done();
       })
       .catch( done );
@@ -24,7 +20,8 @@ function features() {
   it('Emit a <region:new> event passing a valid board id to access an input control allowing you to enter details required to create a new Region\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'region:new',
@@ -32,7 +29,7 @@ function features() {
     ],
     function( a, b ) {
       should.exist( a );
-      a.should.equal( storedWall.getId() );
+      a.should.equal( storedBoard.getId() );
 
       b.should.be.instanceOf( queue.nodata );
 
@@ -41,9 +38,8 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'region:new', storedWall.getId() );
+    queue.trigger( 'region:new', storedBoard.getId() );
   });
-
 }
 
 features.title = 'Accessing the region creator input control';

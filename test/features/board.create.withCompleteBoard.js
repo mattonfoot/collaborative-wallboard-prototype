@@ -27,7 +27,8 @@ function features() {
     var cardsfound = false;
     var queuechecked = false;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var subscription = queue.subscribe( 'cardlocation:created', function( resource ) {
       var index = cards.indexOf( resource.getPocket() );

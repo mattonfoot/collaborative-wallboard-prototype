@@ -36,7 +36,8 @@ function features() {
     var regionscount = 0;
     var queuechecked = false;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var locationSubscription = queue.subscribe( 'cardlocation:displayed', function( resource ) {
       cardscount++;

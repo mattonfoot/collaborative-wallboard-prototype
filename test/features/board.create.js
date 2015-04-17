@@ -1,19 +1,17 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall');
 
-var storedName = 'new board'
+var storedName = "display board"
   , storedWall;
 
 function features() {
+  beforeEach(function( done ) {
+    fixture( this, 'Wall for board' )
+      .then(function( storage ) {
+        storedWall = storage.wall;
 
-  beforeEach(function(done) {
-    var services = this.services;
-
-    services.createWall({ name: 'wall for board' })
-      .then(function( wall ) {
-          storedWall = wall;
-
-          done();
+        done();
       })
       .catch( done );
   });
@@ -21,7 +19,8 @@ function features() {
   it('Emit a <board:create> event passing a data object with a valid wall id and a name attribute to trigger the process of creating a new board\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'board:create',
@@ -40,9 +39,7 @@ function features() {
     { once: true });
 
     queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
-
   });
-
 }
 
 features.title = 'Creating a board';

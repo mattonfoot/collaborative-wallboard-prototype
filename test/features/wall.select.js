@@ -1,26 +1,26 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall');
+
+var storedName = 'display wall'
+  , storedWall;
 
 function features() {
-  var storedName = 'display wall';
-  var storedWall;
+  beforeEach(function( done ) {
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
 
-  beforeEach(function(done) {
-    var services = this.services;
-
-    services.createWall({ name: storedName })
-        .then(function( wall ) {
-            storedWall = wall;
-
-            done();
-        })
-        .catch( done );
+        done();
+      })
+      .catch( done );
   });
 
   it('Emit a <wall:select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var subscription = queue.subscribe( 'wallselector:displayed' );
     subscription.subscribe(function( a ) {
@@ -38,7 +38,6 @@ function features() {
 
     queue.publish( 'wall:select' );
   });
-
 }
 
 features.title = 'Selecting a Wall';

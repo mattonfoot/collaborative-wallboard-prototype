@@ -2,15 +2,14 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithOneBoard');
 
-var storedName = 'new region'
-  , storedWall, storedBoard;
+var storedName = 'new card'
+  , storedWall;
 
 function features() {
   beforeEach(function( done ) {
-    fixture( this, 'board for region' )
+    fixture( this, 'Wall for board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.board;
       })
       .then(function( board ) {
         done();
@@ -18,31 +17,31 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region:create> event passing a data object with a valid board id and a label attribute to trigger the process of creating a new Region\n', function( done ) {
+  it('The process of creating a card on a wall that already has one board set up will trigger the assignment of a card location to that board\n', function( done ) {
     var queue = this.queue;
 
     queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
     queue.when([
-      'region:create',
-      'region:created'
+      'pocket:create',
+      'pocket:created'
     ],
     function( a, b ) {
       should.exist( a );
 
       should.exist( b );
-      b.should.be.a.specificRegionResource( storedName, storedBoard.getId() );
+      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
       done();
     },
     done,
     { once: true });
 
-    queue.trigger( 'region:create', { board: storedBoard.getId(), label: storedName } );
+    queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
   });
 }
 
-features.title = 'Creating a Region on a Board';
+features.title = 'Creating a Card on a Wall that has a board already setup';
 
 module.exports = features;

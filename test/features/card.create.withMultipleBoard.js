@@ -8,14 +8,18 @@ function features() {
 
   beforeEach(function(done) {
     var scenarios = this.scenarios;
+    var services = this.services;
 
-    scenarios.TwoBoardsOneWithRegions.call( this )
+    scenarios.multipleBoards.call( this )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[0];
+        storedBoard = storage.board;
 
         numBoards = storage.boards.length;
 
+        return services.displayBoard( storedBoard.getId() );
+      })
+      .then(function() {
         done();
       })
       .catch( done );
@@ -25,7 +29,8 @@ function features() {
     var queue = this.queue;
     var locationscount = 0;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     var locationSubscription = queue.subscribe( 'cardlocation:created', function( resource ) {
       should.exist( resource );

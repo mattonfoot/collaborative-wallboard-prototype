@@ -1,28 +1,19 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithOneBoard');
 
 var storedName = 'unedited board'
   , editedName = 'edited board'
-  , storedWall
-  , storedBoard
-  , resourceChecked = false
-  , queueChecked = false;
+  , storedWall, storedBoard;
 
 function features() {
-
   beforeEach(function( done ) {
-    var services = this.services;
-    var queue = this.queue;
-
-    services.createWall({ name: 'parent wall for board' })
-      .then(function( wall ) {
-        storedWall = wall;
-
-        return services.createBoard({ wall: wall.getId(), name: storedName });
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.board;
       })
       .then(function( board ) {
-        storedBoard = board;
-
         done();
       })
       .catch( done );
@@ -31,7 +22,8 @@ function features() {
   it('Emit a <board:update> event passing an updated data object with a valid board id trigger the process of updating the stored data for an existing Board\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'board:update',

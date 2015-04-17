@@ -30,7 +30,8 @@ function features() {
     var queue = this.queue;
     var checkRegionEnter = false;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.subscribe( 'pocket:regionenter', function( data ) {
       var card = data.pocket;

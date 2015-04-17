@@ -1,16 +1,15 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall');
 
-var storedName = 'display wall', storedWall;
+var storedName = 'display wall'
+  , storedWall;
 
 function features() {
-
-  beforeEach(function(done) {
-    var services = this.services;
-
-    services.createWall({ name: storedName })
-      .then(function( wall ) {
-        storedWall = wall;
+  beforeEach(function( done ) {
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
 
         done();
       })
@@ -20,7 +19,8 @@ function features() {
   it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'wall:edit',
@@ -39,9 +39,7 @@ function features() {
     { once: true });
 
     queue.trigger( 'wall:edit', storedWall.getId() );
-
   });
-
 }
 
 features.title = 'Accessing the wall editor input control';

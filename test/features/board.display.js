@@ -1,31 +1,18 @@
-var chai = require('chai')
-  , should = chai.should()
-  , RSVP = require('rsvp')
-  , Promise = RSVP.Promise;
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards');
 
 var storedName = 'display board'
   , storedWall, storedBoard;
 
 function features() {
-
-  beforeEach(function(done) {
-    var services = this.services;
-    var queue = this.queue;
-
-    services.createWall({ name: 'parent wall for board' })
-      .then(function( wall ) {
-        storedWall = wall;
-
-        var promises = [
-          services.createBoard({ wall: wall.getId(), name: 'other board' }),
-          services.createBoard({ wall: wall.getId(), name: storedName })
-        ];
-
-        return RSVP.all( promises );
+  beforeEach(function( done ) {
+    fixture( this, storedName )
+      .then(function( storage ) {
+        storedWall = storage.wall;
+        storedBoard = storage.board;
       })
-      .then(function( boards ) {
-        storedBoard = boards[ 1 ];
-
+      .then(function( board ) {
         done();
       })
       .catch( done );
@@ -34,7 +21,8 @@ function features() {
   it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#.fail', done );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
 
     queue.when([
       'board:display',

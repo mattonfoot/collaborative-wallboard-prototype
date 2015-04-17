@@ -17,50 +17,59 @@ var featureSet = {};
 var features = [
 
   /* Walls features */
-    require( './features/wall.new' )
-  , require( './features/wall.create' )
-  , require( './features/wall.select' )
-  , require( './features/wall.select.withMultipleWalls' )
-  , require( './features/wall.display' )
-  , require( './features/wall.display.withCompleteBoard' )
-  , require( './features/wall.edit' )
-  , require( './features/wall.update' )
+  require( './features/wall.new' ),      // Nothing
+  require( './features/wall.create' ),   // Nothing
+  require( './features/wall.edit' ),     // BasicWall
+  require( './features/wall.update' ),   // BasicWall
 
   /* Board features */
-  , require( './features/board.new' )
-  , require( './features/board.create' )
-  , require( './features/board.create.withCompleteBoard' )
-  , require( './features/board.display' )
-  , require( './features/board.display.withCompleteBoard' )
-  , require( './features/board.edit' )
-  , require( './features/board.update' )
+  require( './features/board.new' ),     // BasicWall
+  require( './features/board.create' ),  // BasicWall
+  require( './features/board.edit' ),    // BasicWall.WithOneBoard
+  require( './features/board.update' ),  // BasicWall.WithOneBoard
 
   /* Card features */
-  , require( './features/card.new' )
-  , require( './features/card.create' )
-  , require( './features/card.create.withMultipleBoard' )
-  , require( './features/card.create.toDisplayedBoardOFMultipleBoards' )
-/*
-  CARD --> EDIT, UPDATE
-*/
-  , require( './features/card.move.intoEmptyArea' )
-  , require( './features/card.move.overARegion' )
+  require( './features/card.new' ),      // BasicWall
+  require( './features/card.create' ),   // BasicWall
+  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard
+  /*
+    CARD --> EDIT, UPDATE
+  */
 
   /* Region features */
-  , require( './features/region.new' )
-  , require( './features/region.create' )
-/*
+  require( './features/region.new' ),    // BasicWall.WithOneBoard
+  require( './features/region.create' ), // BasicWall.WithOneBoard
+  /*
     REGION --> EDIT, UPDATE
-*/
-  , require( './features/region.move.intoEmptyArea' )
-  , require( './features/region.move.UnderACard' )
+  */
+
+  /* Select and Display */
+  require( './features/wall.select' ),   // BasicWall
+  require( './features/wall.display' ),  // BasicWall
+  require( './features/board.display' ), // BasicWall.WithMultipleBoards
+
+  /* advanced features */
+  require( './features/wall.select.withMultipleWalls' ),   // three walls, one board each
+
+  /*  */
+  require( './features/card.create.withMultipleBoard' ),   // multipleBoards
+//  require( './features/wall.display.withCompleteBoard' ),  // TwoBoardsOneWithRegions
+  require( './features/board.create.withCompleteBoard' ),  // TwoBoardsOneWithRegions
+//  require( './features/board.display.withCompleteBoard' ), // TwoBoardsOneWithRegions
+//  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // TwoBoardsOneWithRegions
+//  require( './features/card.move.intoEmptyArea' ),         // TwoBoardsOneWithRegions
+//  require( './features/card.move.overARegion' ),           // TwoBoardsOneWithRegions
+//  require( './features/region.move.intoEmptyArea' ),       // TwoBoardsOneWithRegions
+//  require( './features/region.move.UnderACard' ),          // TwoBoardsOneWithRegions
 
   /* Transforming cards */
-/*
-    TRANSFORM --> CREATE, UNLINK
+  /*
   , require( './features/card.move.onABoardWithATransform' )
   , require( './features/region.move.onABoardWithATransform' )
-*/
+  */
+  /*
+    TRANSFORM --> CREATE, UNLINK
+  */
 ];
 
 features.forEach(function( features ) {
@@ -116,7 +125,7 @@ function generateCallList( calls ) {
         var pouch = this.pouch = db;
         var belt = this.belt = new Belt( db );
         var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
-        var ui = this.ui = new UI( queue );
+        var ui = this.ui = new UI();
 
         var application = this.application = new Application( belt, queue, ui, { debug: debug } );
 
@@ -126,6 +135,7 @@ function generateCallList( calls ) {
             TwoBoardsOneWithRegions: setupPopulatedBoardScenario
           , OneEmptyBoard: setupEmptyBoardScenario
           , multipleWalls: setupMultipleWallScenario
+          , multipleBoards: setupMultipleBoardScenario
           , colorChangingBoard: setupColorChangingBoardScenario
         };
 
@@ -286,6 +296,51 @@ function setupEmptyBoardScenario() {
   });
 }
 
+function setupMultipleBoardScenario() {
+  var belt = this.belt;
+  var queue = this.queue;
+  var ui = this.ui;
+  var application = this.application;
+  var services = this.services;
+  var scenarios = this.scenarios;
+
+  application.pauseListening();
+
+  return new Promise(function( resolve, reject ) {
+    var storage = {
+      walls: [],
+      boards: [],
+      regions: [],
+      pockets: [],
+      locations: []
+    };
+
+    // one wall
+    belt
+      .create( 'wall', { name: 'Empty Board Scenario' })
+      .then(function( wall ) {
+        storage.wall = wall;
+        storage.walls.push( wall );
+
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
+      })
+      .then(function( board ) {
+        storage.board = board;
+        storage.boards.push( board );
+
+        return belt.create('board', { wall: storage.wall.getId(), name: 'Second Empty Board' })
+      })
+      .then(function( board ) {
+        storage.boards.push( board );
+
+        application.startListening();
+
+        resolve( storage );
+      })
+      .catch( reject );
+  });
+}
+
 function setupPopulatedBoardScenario() {
   var belt = this.belt;
   var queue = this.queue;
@@ -363,11 +418,17 @@ function setupPopulatedBoardScenario() {
       .then(function( location ) {
         storage.locations.push( location );
 
+        return application.services.displayWall( storage.wall.getId() );
+      })
+      .then(function() {
         application.startListening();
 
         resolve( storage );
       })
-      .catch( reject );
+      .catch(function( error ) {
+        console.log( 'createscenario.error' );
+        reject( error );
+      });
   });
 }
 
@@ -442,37 +503,6 @@ function setupColorChangingBoardScenario() {
 
 
 // additional assertions
-
-chai.Assertion.addMethod('haveLogged', shouldHaveLogged);
-
-function shouldHaveLogged( events ) {
-    var queue = this._obj.getCalls();
-
-    var i = 0, len = events.length;
-
-    for (; i < len; i++) {
-        queue[i].event.should.equal( events[i], 'expected queued event ' + i + ' to equal ' + events[i] + '\n' );
-    }
-
-    queue.length.should.equal( len, 'expected number of queued event to equal ' + len + '\n'  );
-}
-
-chai.Assertion.addMethod('containTheSequence', shouldContainTheSequence);
-
-function shouldContainTheSequence( events ) {
-    var queue = this._obj.getCalls();
-
-    var i = 0, len = events.length - 1;
-
-    for (; i < len; i++) {
-      var index = queue.indexOf( events[ i ] );
-      var nextIndex = queue.indexOf( events[ i + 1 ], index );
-
-      console.log( index, nextIndex, i, i + 1 );
-
-      nextIndex.should.be.greaterThan( index, 'expected event ' + events[ i + 1 ] + ' to be after ' + events[ i ] + '\n' );
-    }
-}
 
 chai.Assertion.addMethod('specificWallResource', shouldBeSpecificWallResource);
 
