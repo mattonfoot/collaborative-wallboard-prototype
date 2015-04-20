@@ -46,17 +46,19 @@ var features = [
     REGION --> EDIT, UPDATE
   */
 
-  /* advanced features */
+  /* complex actions */
   require( './features/wall.select.withMultipleWalls' ),     // MultipleWall.WithOneBoard
   require( './features/card.create.withMultipleBoard' ),     // BasicWall.WithMultipleBoards
   require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/board.create.withCompleteBoard' ),    // TwoBoardsOneWithRegions
-//  require( './features/board.display.withCompleteBoard' ),   // TwoBoardsOneWithRegions
-  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // TwoBoardsOneWithRegions
-  require( './features/card.move.intoEmptyArea' ),           // TwoBoardsOneWithRegions
-//  require( './features/card.move.overARegion' ),             // TwoBoardsOneWithRegions
-  require( './features/region.move.intoEmptyArea' ),         // TwoBoardsOneWithRegions
-//  require( './features/region.move.UnderACard' ),            // TwoBoardsOneWithRegions
+  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+
+  /* moving items on boards */
+  require( './features/card.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/region.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+//  require( './features/card.move.overARegion' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+//  require( './features/region.move.UnderACard' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* Transforming cards */
 //  require( './features/card.move.onABoardWithATransform' ),

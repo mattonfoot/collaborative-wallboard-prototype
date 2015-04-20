@@ -1,42 +1,28 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
 var storedName = 'new card'
-  , storedWall, storedBoard, storedPocket, storedRegion, storedLocation;
+  , storedWall, storedBoard, storedCard, storedRegion;
 
 function features() {
-
-  beforeEach(function(done) {
+  beforeEach(function( done ) {
     var services = this.services;
-    var scenarios = this.scenarios;
-    var queue = this.queue;
 
-    var locationscount = 0;
-
-    var subscription = queue.subscribe('cardlocation:displayed', function() {
-      subscription.unsubscribe();
-
-      done();
-    })
-    .constraint(function( resource, envelope ) {
-      locationscount++;
-
-      return locationscount === numLocations;
-    })
-    .catch( done );
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+    fixture( this, 'Wall for displaying a board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[1];
-        storedPocket = storage.pockets[0];
-        storedRegion = storage.regions[0];
-        storedLocation = storage.locations[2];
+        storedBoard = storage.board;
+        storedRegion = storage.region;
+        storedCard = storage.card[0];
 
-        numBoards = storage.boards.length;
-        numLocations = storage.pockets.length;
+        numCards = storage.cards.length;
+        numRegions = storage.regions.length;
 
         return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
+        done();
       })
       .catch( done );
   });
@@ -47,53 +33,21 @@ function features() {
     queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'cardlocation:move',
-      'cardlocation:updated',
-      'pocket:updated',
-      'pocket:regionenter',
-      'pocket:transformed'
-    ],
-    function( a, b, c, d, e ) {
-      should.exist( a );
-      a.should.respondTo( 'getId' );
-      a.should.respondTo( 'getPocket' );
-      a.getPocket().should.equal( storedPocket.getId() );
-
-      should.exist( b );
-      b.should.respondTo( 'getId' );
-      b.should.respondTo( 'getPocket' );
-      b.getPocket().should.equal( storedPocket.getId() );
-      b.should.respondTo( 'getBoard' );
-      b.getBoard().should.equal( storedBoard.getId() );
-      b.should.respondTo( 'getX' );
-      b.getX().should.equal( storedLocation.x );
-      b.should.respondTo( 'getY' );
-      b.getY().should.equal( storedLocation.y );
-
-      should.exist( c );
-      c.getId().should.equal( storedPocket.getId() );
-      c.getRegions().should.contain( storedRegion.getId() );
-
-      should.exist( d );
-      d.pocket.getId().should.equal( storedPocket.getId() );
-      d.region.getId().should.equal( storedRegion.getId() );
-
-      should.exist( e );
-      e.getColor().should.equal( storedRegion.getColor() );
+    queue.subscribe( 'pocket:regionenter', function( info ) {
+      should.exist( info );
+      info.pocket.getId().should.equal( storedCard.getPocket() );
+      info.region.getId().should.equal( storedRegion.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    storedLocation.x = storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 );
-    storedLocation.y = storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 );
+    storedCard.x = storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 );
+    storedCard.y = storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 );
 
-    queue.trigger( 'cardlocation:move', storedLocation );
-
+    queue.trigger( 'cardlocation:move', storedCard );
   });
-
 }
 
 features.title = 'Moving a displayed card over a region on the displayed board';

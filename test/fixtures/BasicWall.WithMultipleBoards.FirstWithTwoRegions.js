@@ -42,12 +42,12 @@ function fixture( ctx, storedName ) {
       })
       .then(function( card ) {
         storage.card = card;
-        storage.card.push( card );
+        storage.cards.push( card );
 
         return services.createPocket({ wall: storage.wall.getId(), title: 'Second Card', x: 210, y: 210 });
       })
       .then(function( card ) {
-        storage.card.push( card );
+        storage.cards.push( card );
 
         resolve( storage );
       })

@@ -1,31 +1,25 @@
-var chai = require('chai')
-  , should = chai.should()
-  , RSVP = require('rsvp')
-  , Promise = RSVP.Promise;
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
 var storedWall, storedBoard, numCards = 0, numRegions = 0;
 
 function features() {
+  beforeEach(function( done ) {
+    var services = this.services;
 
-  beforeEach(function(done) {
-    var scenarios = this.scenarios;
-    var queue = this.queue;
-
-    queue.subscribe('controls:enabled', function( board ) {
-      done();
-    })
-    .catch( done )
-    .once();
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+    fixture( this, 'Wall for displaying a board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[ 1 ];
+        storedBoard = storage.board;
 
-        numCards = storage.pockets.length;
+        numCards = storage.cards.length;
         numRegions = storage.regions.length;
 
-        queue.publish( 'wall:display', storedWall.getId() );
+        return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
+        done();
       })
       .catch( done );
   });

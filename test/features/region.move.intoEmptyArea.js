@@ -1,38 +1,22 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName = 'new Region'
+var storedName = 'new card'
   , storedWall, storedBoard, storedRegion;
 
 function features() {
-
-  beforeEach(function(done) {
+  beforeEach(function( done ) {
     var services = this.services;
-    var scenarios = this.scenarios;
-    var queue = this.queue;
 
-    var locationscount = 0, numBoards = 0, numLocations = 0;
-
-    var subscription = queue.subscribe('cardlocation:displayed', function() {
-      subscription.unsubscribe();
-
-      done();
-    })
-    .constraint(function( resource, envelope ) {
-      locationscount++;
-
-      return locationscount === numLocations;
-    })
-    .catch( done );
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+    fixture( this, 'Wall for displaying a board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[1];
-        storedRegion = storage.regions[1];
+        storedBoard = storage.board;
+        storedRegion = storage.region;
 
-        numBoards = storage.boards.length;
-        numLocations = storage.pockets.length;
+        numCards = storage.cards.length;
+        numRegions = storage.regions.length;
 
         return services.displayWall( storedWall.getId() );
       })

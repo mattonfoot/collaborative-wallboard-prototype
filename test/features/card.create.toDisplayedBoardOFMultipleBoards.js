@@ -1,38 +1,26 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
 var storedName = 'new card'
-  , storedWall, storedBoard, storedPocket, numBoards = 0, numLocations = 0;
+  , storedWall, storedBoard, storedCard, numBoards = 0, numLocations = 0;
 
 function features() {
-
-  beforeEach(function(done) {
+  beforeEach(function( done ) {
     var services = this.services;
-    var scenarios = this.scenarios;
-    var queue = this.queue;
 
-    var locationscount = 0;
-
-    var subscription = queue.subscribe('cardlocation:displayed', function() {
-      subscription.unsubscribe();
-
-      done();
-    })
-    .constraint(function( resource, envelope ) {
-      locationscount++;
-
-      return locationscount === numLocations;
-    });
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+    fixture( this, 'Wall for displaying a board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[0];
+        storedBoard = storage.board;
 
         numBoards = storage.boards.length;
-        numLocations = storage.pockets.length;
+        numLocations = storage.cards.length;
 
         return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
+        done();
       })
       .catch( done );
   });
@@ -79,9 +67,7 @@ function features() {
     { once: true });
 
     queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
-
   });
-
 }
 
 features.title = 'Creating a Card for a displayed board when there are multiple other Boards';
