@@ -1,20 +1,18 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedWall, storedBoard, storedCards, storedRegions
-  , storedName = 'board with cards added automatically';
+var storedName = 'board with cards added automatically'
+  , storedWall, storedBoard, storedCards, storedRegions;
 
 function features() {
-
-  beforeEach(function(done) {
-    var scenarios = this.scenarios;
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+  beforeEach(function( done ) {
+    fixture( this, 'Wall for new board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[1];
+        storedBoard = storage.board;
 
-        storedCards = storage.pockets;
+        storedCards = storage.cards;
 
         done();
       })
@@ -23,7 +21,7 @@ function features() {
 
   it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n', function( done ) {
     var queue = this.queue;
-    var cards = storedCards.map(function( pocket ){ return pocket.getId(); });
+    var cards = storedCards.map(function( card ){ return card.getId(); });
     var cardsfound = false;
     var queuechecked = false;
 

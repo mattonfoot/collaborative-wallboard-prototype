@@ -1,21 +1,20 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards');
 
 var storedName = 'new card'
-  , storedWall, storedBoard, storedPocket, numBoards;
+  , storedWall, storedBoard, storedPocket, len;
 
 function features() {
-
-  beforeEach(function(done) {
-    var scenarios = this.scenarios;
+  beforeEach(function( done ) {
     var services = this.services;
 
-    scenarios.multipleBoards.call( this )
+    fixture( this, 'Wall for card' )
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
 
-        numBoards = storage.boards.length;
+        len = storage.boards.length;
 
         return services.displayBoard( storedBoard.getId() );
       })
@@ -42,7 +41,7 @@ function features() {
 
       locationscount++;
 
-      if ( locationscount === numBoards ) {
+      if ( locationscount === len ) {
         locationSubscription.unsubscribe();
 
         done();
@@ -67,9 +66,7 @@ function features() {
     { once: true });
 
     queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
-
   });
-
 }
 
 features.title = 'Creating a Card on a wall with multiple Boards';

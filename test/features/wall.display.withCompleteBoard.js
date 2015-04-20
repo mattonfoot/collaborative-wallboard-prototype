@@ -1,17 +1,16 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedWall, storedBoard;
+var storedName = 'display wall'
+  , storedWall, storedBoard;
 
 function features() {
-
-  beforeEach(function(done) {
-    var scenarios = this.scenarios;
-
-    scenarios.TwoBoardsOneWithRegions.call( this )
+  beforeEach(function( done ) {
+    fixture( this, storedName )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[0];
+        storedBoard = storage.board;
 
         done();
       })
@@ -26,20 +25,15 @@ function features() {
 
     queue.when([
       'wall:displayed',
-      'boardselector:displayed',
       'board:displayed',
       'controls:enabled'
     ],
-    function( a, b, c, d ) {
+    function( a, b, c ) {
       should.exist( a );
       a.should.be.a.specificWallResource( storedWall.getName() );
 
       should.exist( b );
-      b.should.be.an.instanceOf( Array );
-      b.length.should.equal( 2 );
-
-      should.exist( c );
-      c.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
+      b.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
 
       done();
     },

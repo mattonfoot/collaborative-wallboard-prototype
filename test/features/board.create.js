@@ -25,9 +25,7 @@ function features() {
     queue.when([
       'board:create',
       'board:created',
-      'board:added',
-      'board:displayed',
-      'controls:enabled'
+      'board:added'
     ],
     function( a, b, c, d, e ) {
       should.exist( c );

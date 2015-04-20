@@ -6,10 +6,14 @@ var storedWall, storedBoard;
 
 function features() {
   beforeEach(function( done ) {
+    var services = this.services;
+
     fixture( this, 'board for region' )
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
+
+        return services.displayBoard( storedBoard.getId() );
       })
       .then(function( board ) {
         done();
