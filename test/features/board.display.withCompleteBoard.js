@@ -30,10 +30,9 @@ function features() {
     var regionscount = 0;
     var queuechecked = false;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    var locationSubscription = queue.subscribe( 'cardlocation:displayed', function( resource ) {
+    var locationSubscription = queue.subscribe( 'cardlocation.displayed', function( resource ) {
       cardscount++;
 
       if ( cardscount === numCards ) {
@@ -45,7 +44,7 @@ function features() {
     .catch( done )
     .distinct();
 
-    var regionSubscription = queue.subscribe( 'region:displayed', function( resource ) {
+    var regionSubscription = queue.subscribe( 'region.displayed', function( resource ) {
       regionscount++;
 
       if ( regionscount === numRegions ) {
@@ -58,16 +57,13 @@ function features() {
     .distinct();
 
     queue.when([
-        'board:display'
-      , 'board:displayed'
-      , 'controls:enabled'
+      'board.displayed',
+      'controls.enabled'
     ],
-    function( a, b, c ) {
-      should.exist( a );
-
-      should.exist( b );
-      b.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
-      b.getId().should.equal( storedBoard.getId() );
+    function( displayed, enabled ) {
+      should.exist( displayed );
+      displayed.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
+      displayed.getId().should.equal( storedBoard.getId() );
 
       queuechecked = true;
       if ( cardscount === numCards && regionscount === numRegions && queuechecked ) done();
@@ -75,7 +71,7 @@ function features() {
     done,
     { once: true });
 
-    queue.publish( 'board:display', storedBoard.getId() );
+    queue.publish( 'board.display', storedBoard.getId() );
   });
 }
 

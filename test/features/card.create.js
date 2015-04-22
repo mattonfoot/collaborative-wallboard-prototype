@@ -21,28 +21,21 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+  it('Emit a <pocket.create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'pocket:create',
-      'pocket:created'
-    ],
-    function( a, b ) {
-      should.exist( a );
-
-      should.exist( b );
-      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
+    queue.subscribe( 'pocket.created', function( created ) {
+      should.exist( created );
+      created.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    queue.publish( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+    queue.publish( 'pocket.create', { wall: storedWall.getId(), title: storedName } );
   });
 }
 

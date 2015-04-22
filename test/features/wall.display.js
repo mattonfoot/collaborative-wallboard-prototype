@@ -16,16 +16,15 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <wall:display> event with a valid wall id to open the wall\n', function(done) {
+  it('Emit a <wall.display> event with a valid wall id to open the wall\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
     queue.when([
-      'wall:displayed',
-      'wall:firsttime',
-      'boardcreator:displayed'
+      'wall.displayed',
+      'wall.firsttime',
+      'boardcreator.displayed'
     ],
     function( a, b, c ) {
       should.exist( a );
@@ -39,7 +38,7 @@ function features() {
     done,
     { once: true });
 
-    queue.publish( 'wall:display', storedWall.getId() );
+    queue.publish( 'wall.display', storedWall.getId() );
   });
 }
 

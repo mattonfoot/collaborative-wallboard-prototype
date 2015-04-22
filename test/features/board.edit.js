@@ -22,29 +22,21 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <board:edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n', function(done) {
+  it('Emit a <board.edit> event with a valid board id to access an input control allowing you to enter new details for a Board\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'board:edit',
-      'boardeditor:displayed'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.equal( storedBoard.getId() );
-
-      should.exist( b );
-      b.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+    queue.subscribe('boardeditor.displayed', function( board ) {
+      should.exist( board );
+      board.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    queue.publish( 'board:edit', storedBoard.getId() );
+    queue.publish( 'board.edit', storedBoard.getId() );
   });
 }
 

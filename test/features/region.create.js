@@ -22,28 +22,21 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region:create> event passing a data object with a valid board id and a label attribute to trigger the process of creating a new Region\n', function( done ) {
+  it('Emit a <region.create> event passing a data object with a valid board id and a label attribute to trigger the process of creating a new Region\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'region:create',
-      'region:created'
-    ],
-    function( a, b ) {
-      should.exist( a );
-
-      should.exist( b );
-      b.should.be.a.specificRegionResource( storedName, storedBoard.getId() );
+    queue.subscribe( 'region.created', function( created ) {
+      should.exist( created );
+      created.should.be.a.specificRegionResource( storedName, storedBoard.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    queue.publish( 'region:create', { board: storedBoard.getId(), label: storedName } );
+    queue.publish( 'region.create', { board: storedBoard.getId(), label: storedName } );
   });
 }
 

@@ -16,27 +16,24 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <wall:select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n', function(done) {
+  it('Emit a <wall.select> event - no data object is needed - to access an input control allowing you to select a Wall for display\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    var subscription = queue.subscribe( 'wallselector:displayed' );
-    subscription.subscribe(function( a ) {
-      should.exist( a );
-      a.should.be.instanceOf( Array );
-      a.length.should.equal( 1 );
+    queue.subscribe( 'wallselector.displayed', function( displayed ) {
+      should.exist( displayed );
+      displayed.should.be.instanceOf( Array );
+      displayed.length.should.equal( 1 );
 
-      a[0].should.be.specificWallResource( storedWall.getName() );
-
-      queue.unsubscribe( subscription );
+      displayed[0].should.be.specificWallResource( storedWall.getName() );
 
       done();
     })
-    .catch( done );
+    .catch( done )
+    .once();
 
-    queue.publish( 'wall:select' );
+    queue.publish( 'wall.select' );
   });
 }
 

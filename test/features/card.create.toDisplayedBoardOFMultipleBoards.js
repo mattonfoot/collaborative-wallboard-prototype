@@ -25,14 +25,13 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <pocket:create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+  it('Emit a <pocket.create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
     var queue = this.queue;
     var locationscount = 0;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    var locationSubscription = queue.subscribe( 'cardlocation:created', function( resource ) {
+    var locationSubscription = queue.subscribe( 'cardlocation.created', function( resource ) {
       should.exist( resource );
 
       resource.should.respondTo( 'getId' );
@@ -51,22 +50,16 @@ function features() {
     .catch( done )
     .distinct();
 
-    queue.when([
-      'pocket:create',
-      'pocket:created'
-    ],
-    function( a, b ) {
-      should.exist( a );
+    queue.subscribe( 'pocket.created', function( created ) {
+      should.exist( created );
+      created.should.be.a.specificCardResource( storedName, storedWall.getId() );
 
-      should.exist( b );
-      b.should.be.a.specificCardResource( storedName, storedWall.getId() );
+      storedPocket = created;
+    })
+    .catch( done )
+    .once();
 
-      storedPocket = b;
-    },
-    done,
-    { once: true });
-
-    queue.publish( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+    queue.publish( 'pocket.create', { wall: storedWall.getId(), title: storedName } );
   });
 }
 

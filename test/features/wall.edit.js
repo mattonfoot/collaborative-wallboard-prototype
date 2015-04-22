@@ -8,7 +8,7 @@ var storedName = 'display wall'
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
-    
+
     fixture( this, storedName )
       .then(function( storage ) {
         storedWall = storage.wall;
@@ -21,29 +21,21 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <wall:edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {
+  it('Emit a <wall.edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'wall:edit',
-      'walleditor:displayed'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.equal( storedWall.getId() );
-
-      should.exist( b );
-      b.should.be.a.specificWallResource( storedName );
+    queue.subscribe( 'walleditor.displayed', function( displayed ) {
+      should.exist( displayed );
+      displayed.should.be.a.specificWallResource( storedName );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    queue.publish( 'wall:edit', storedWall.getId() );
+    queue.publish( 'wall.edit', storedWall.getId() );
   });
 }
 

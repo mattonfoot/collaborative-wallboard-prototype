@@ -22,11 +22,9 @@ function features() {
   it('If there are several walls configured then the Wall Selector input control will display all available walls\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    var subscription = queue.subscribe( 'wallselector:displayed' );
-    subscription.subscribe(function( resources ) {
+    queue.subscribe( 'wallselector.displayed', function( resources ) {
       should.exist( resources );
       resources.should.be.instanceOf( Array );
       resources.length.should.equal( len );
@@ -39,13 +37,12 @@ function features() {
         names.should.include( resource.getName() );
       });
 
-      queue.unsubscribe( subscription );
-
       done();
     })
-    .catch( done );
+    .catch( done )
+    .once();
 
-    queue.publish( 'wall:select' );
+    queue.publish( 'wall.select' );
   });
 }
 

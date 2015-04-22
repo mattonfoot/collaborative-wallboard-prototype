@@ -21,28 +21,20 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region:new> event passing a valid board id to access an input control allowing you to enter details required to create a new Region\n', function(done) {
+  it('Emit a <region.new> event passing a valid board id to access an input control allowing you to enter details required to create a new Region\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'region:new',
-      'regioncreator:displayed'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.equal( storedBoard.getId() );
-
-      b.should.be.instanceOf( queue.nodata );
+    queue.subscribe( 'regioncreator.displayed', function( displayed ) {
+      displayed.should.be.instanceOf( queue.nodata );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    queue.publish( 'region:new', storedBoard.getId() );
+    queue.publish( 'region.new', storedBoard.getId() );
   });
 }
 

@@ -20,40 +20,30 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region:move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n', function( done ) {
+  it('Emit a <region.move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-        'region:move'
-      , 'region:updated'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.respondTo( 'getId' );
-      a.should.respondTo( 'getBoard' );
-      a.getBoard().should.equal( storedRegion.getBoard() );
-
-      should.exist( b );
-      b.should.respondTo( 'getId' );
-      b.should.respondTo( 'getBoard' );
-      b.getBoard().should.equal( storedRegion.getBoard() );
-      b.should.respondTo( 'getX' );
-      b.getX().should.equal( storedRegion.x );
-      b.should.respondTo( 'getY' );
-      b.getY().should.equal( storedRegion.y );
+    queue.subscribe( 'region.updated', function( updated ) {
+      should.exist( updated );
+      updated.should.respondTo( 'getId' );
+      updated.should.respondTo( 'getBoard' );
+      updated.getBoard().should.equal( storedRegion.getBoard() );
+      updated.should.respondTo( 'getX' );
+      updated.getX().should.equal( storedRegion.x );
+      updated.should.respondTo( 'getY' );
+      updated.getY().should.equal( storedRegion.y );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
     storedRegion.x = 600;
     storedRegion.y = 600;
 
-    queue.publish( 'region:move', storedRegion );
+    queue.publish( 'region.move', storedRegion );
   });
 }
 

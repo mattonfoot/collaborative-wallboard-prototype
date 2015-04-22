@@ -9,7 +9,7 @@ var storedName = 'unedited wall'
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
-    
+
     fixture( this, storedName )
       .then(function( storage ) {
         storedWall = storage.wall;
@@ -22,33 +22,24 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <wall:update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n', function(done) {
+  it('Emit a <wall.update> event passing an updated data object with a valid wall id trigger the process of updating the stored data for an existing wall\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'wall:update',
-      'wall:updated'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.be.a.specificWallResource( editedName );
-      a.getId().should.equal( storedWall.getId() );
-
-      should.exist( b );
-      b.should.be.a.specificWallResource( editedName );
-      b.getId().should.equal( storedWall.getId() );
+    queue.subscribe( 'wall.updated', function( updated ) {
+      should.exist( updated );
+      updated.should.be.a.specificWallResource( editedName );
+      updated.getId().should.equal( storedWall.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
     storedWall.name = editedName;
 
-    queue.publish( 'wall:update', storedWall );
+    queue.publish( 'wall.update', storedWall );
   });
 }
 

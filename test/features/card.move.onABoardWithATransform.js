@@ -30,10 +30,9 @@ function features() {
   it('Transforms setup on a Board will be activated when their criteria are met\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket:transformed', function( card ) {
+    queue.subscribe( 'pocket.transformed', function( card ) {
       should.exist( card );
 
       card.should.be.a.specificCardResource( storedCard.getTitle(), storedWall.getId() );
@@ -50,7 +49,7 @@ function features() {
       y: storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 )
     };
 
-    queue.publish( 'cardlocation:move', data );
+    queue.publish( 'cardlocation.move', data );
   });
 
 }

@@ -18,29 +18,27 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <board:display> event passing a valid board id to trigger the process of rendering an existing Board\n', function(done) {
+  it('Emit a <board.display> event passing a valid board id to trigger the process of rendering an existing Board\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
     queue.when([
-      'board:display',
-      'board:displayed',
-      'controls:enabled'
+      'board.displayed',
+      'controls.enabled'
     ],
-    function( a, b, c ) {
-      should.exist( b );
+    function( displayed, enabled ) {
+      should.exist( displayed );
 
-      b.should.be.a.specificBoardResource( storedName, storedWall.getId() );
-      b.getId().should.equal( storedBoard.getId() );
+      displayed.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+      displayed.getId().should.equal( storedBoard.getId() );
 
       done();
     },
     done,
     { once: true });
 
-    queue.publish( 'board:display', storedBoard.getId() );
+    queue.publish( 'board.display', storedBoard.getId() );
   });
 }
 

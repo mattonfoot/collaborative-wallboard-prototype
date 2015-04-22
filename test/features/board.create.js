@@ -21,27 +21,25 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <board:create> event passing a data object with a valid wall id and a name attribute to trigger the process of creating a new board\n', function( done ) {
+  it('Emit a <board.create> event passing a data object with a valid wall id and a name attribute to trigger the process of creating a new board\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
     queue.when([
-      'board:create',
-      'board:created',
-      'board:added'
+      'board.created',
+      'board.added'
     ],
-    function( a, b, c, d, e ) {
-      should.exist( c );
-      c.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+    function( created, added ) {
+      should.exist( added );
+      added.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
       done();
     },
     done,
     { once: true });
 
-    queue.publish( 'board:create', { wall: storedWall.getId(), name: storedName } );
+    queue.publish( 'board.create', { wall: storedWall.getId(), name: storedName } );
   });
 }
 

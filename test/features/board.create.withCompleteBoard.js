@@ -32,10 +32,9 @@ function features() {
     var cardsfound = false;
     var queuechecked = false;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    var subscription = queue.subscribe( 'cardlocation:created', function( resource ) {
+    var subscription = queue.subscribe( 'cardlocation.created', function( resource ) {
       var index = cards.indexOf( resource.getPocket() );
 
       if ( index >= 0 ) {
@@ -52,13 +51,12 @@ function features() {
     .catch( done );
 
     queue.when([
-      'board:create',
-      'board:created',
-      'board:added'
+      'board.created',
+      'board.added'
     ],
-    function( a, b, c, d, e ) {
-      should.exist( c );
-      c.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+    function( created, added ) {
+      should.exist( added );
+      added.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
       queuechecked = true;
       if ( cardsfound && queuechecked ) done();
@@ -66,7 +64,7 @@ function features() {
     done,
     { once: true });
 
-    queue.publish( 'board:create', { wall: storedWall.getId(), name: storedName } );
+    queue.publish( 'board.create', { wall: storedWall.getId(), name: storedName } );
   });
 
 }

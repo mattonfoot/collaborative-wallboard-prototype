@@ -26,13 +26,12 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <cardlocation:move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
+  it('Emit a <cardlocation.move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'cardlocation:updated', function( b ) {
+    queue.subscribe( 'cardlocation.updated', function( b ) {
       should.exist( b );
       b.should.respondTo( 'getId' );
       b.should.respondTo( 'getPocket' );
@@ -55,7 +54,7 @@ function features() {
       y: 600
     };
 
-    queue.publish( 'cardlocation:move', data );
+    queue.publish( 'cardlocation.move', data );
 
   });
 

@@ -20,13 +20,12 @@ function features() {
   it('Select and display the first associated board of a Wall\n', function(done) {
     var queue = this.queue;
 
-    queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
     queue.when([
-      'wall:displayed',
-      'board:displayed',
-      'controls:enabled'
+      'wall.displayed',
+      'board.displayed',
+      'controls.enabled'
     ],
     function( a, b, c ) {
       should.exist( a );
@@ -40,7 +39,7 @@ function features() {
     done,
     { once: true });
 
-    queue.publish( 'wall:display', storedWall.getId() );
+    queue.publish( 'wall.display', storedWall.getId() );
 
   });
 
