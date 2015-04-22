@@ -18,9 +18,15 @@ function features() {
       'wall.firsttime',
       'boardcreator.displayed',
     ],
-    function( wall ) {
+    function( wall, displayed, firsttime ) {
       should.exist( wall );
       wall.getName().should.equal( storedName );
+
+      should.exist( displayed );
+      displayed.should.equal( wall.getId() );
+
+      should.exist( firsttime );
+      firsttime.should.equal( wall.getId() );
 
       done();
     },

@@ -26,12 +26,12 @@ function features() {
       'wall.firsttime',
       'boardcreator.displayed'
     ],
-    function( a, b, c ) {
-      should.exist( a );
-      a.should.be.a.specificWallResource( storedName );
+    function( displayed, firsttime ) {
+      should.exist( displayed );
+      displayed.should.equal( storedWall.getId() );
 
-      should.exist( b );
-      b.should.be.a.specificWallResource( storedName );
+      should.exist( firsttime );
+      firsttime.should.equal( storedWall.getId() );
 
       done();
     },

@@ -27,12 +27,12 @@ function features() {
       'board.displayed',
       'controls.enabled'
     ],
-    function( a, b, c ) {
-      should.exist( a );
-      a.should.be.a.specificWallResource( storedWall.getName() );
+    function( wall, board ) {
+      should.exist( wall );
+      wall.should.equal( storedWall.getId() );
 
-      should.exist( b );
-      b.should.equal( storedBoard.getId() );
+      should.exist( board );
+      board.should.equal( storedBoard.getId() );
 
       done();
     },
@@ -40,9 +40,7 @@ function features() {
     { once: true });
 
     queue.publish( 'wall.display', storedWall.getId() );
-
   });
-
 }
 
 features.title = 'Displaying a wall with multiple boards containing cards and regions';

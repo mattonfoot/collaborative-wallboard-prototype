@@ -28,7 +28,7 @@ function features() {
 
     queue.subscribe( 'walleditor.displayed', function( displayed ) {
       should.exist( displayed );
-      displayed.should.be.a.specificWallResource( storedName );
+      displayed.should.equal( storedWall.getId() );
 
       done();
     })
