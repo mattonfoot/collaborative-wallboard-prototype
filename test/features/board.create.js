@@ -7,10 +7,15 @@ var storedName = "display board"
 
 function features() {
   beforeEach(function( done ) {
+    var services = this.services;
+    
     fixture( this, 'Wall for board' )
       .then(function( storage ) {
         storedWall = storage.wall;
 
+        return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
         done();
       })
       .catch( done );

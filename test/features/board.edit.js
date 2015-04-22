@@ -7,12 +7,16 @@ var storedName = 'unedited board'
 
 function features() {
   beforeEach(function( done ) {
+    var services = this.services;
+
     fixture( this, storedName )
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
+
+        return services.displayBoard( storedBoard.getId() );
       })
-      .then(function( board ) {
+      .then(function() {
         done();
       })
       .catch( done );

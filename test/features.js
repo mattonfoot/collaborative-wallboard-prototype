@@ -19,50 +19,50 @@ var features = [
   /* Walls features */
   require( './features/wall.new' ),      // Nothing
   require( './features/wall.create' ),   // Nothing
-  require( './features/wall.edit' ),     // BasicWall
-  require( './features/wall.update' ),   // BasicWall
   require( './features/wall.select' ),   // BasicWall
+  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
   require( './features/wall.display' ),  // BasicWall
+  require( './features/wall.edit' ),     // BasicWall + display
+  require( './features/wall.update' ),   // BasicWall + display
 
   /* Board features */
-  require( './features/board.new' ),     // BasicWall
-  require( './features/board.create' ),  // BasicWall
-  require( './features/board.edit' ),    // BasicWall.WithOneBoard
-  require( './features/board.update' ),  // BasicWall.WithOneBoard
+  require( './features/board.new' ),     // BasicWall + display
+  require( './features/board.create' ),  // BasicWall + display
   require( './features/board.display' ), // BasicWall.WithMultipleBoards
+  require( './features/board.edit' ),    // BasicWall.WithOneBoard + display
+  require( './features/board.update' ),  // BasicWall.WithOneBoard + display
 
   /* Card features */
-  require( './features/card.new' ),      // BasicWall
-  require( './features/card.create' ),   // BasicWall
-  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard
+  require( './features/card.new' ),      // BasicWall + display
+  require( './features/card.create' ),   // BasicWall + display
+  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard + display
+  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards + display
   /*
     CARD --> EDIT, UPDATE
   */
 
   /* Region features */
-  require( './features/region.new' ),    // BasicWall.WithOneBoard
-  require( './features/region.create' ), // BasicWall.WithOneBoard
+  require( './features/region.new' ),    // BasicWall.WithOneBoard + display
+  require( './features/region.create' ), // BasicWall.WithOneBoard + display
   /*
     REGION --> EDIT, UPDATE
   */
 
   /* complex actions */
-  require( './features/wall.select.withMultipleWalls' ),     // MultipleWall.WithOneBoard
-  require( './features/card.create.withMultipleBoard' ),     // BasicWall.WithMultipleBoards
   require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* moving items on boards */
-  require( './features/card.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.move.intoEmptyArea' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-//  require( './features/card.move.overARegion' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-//  require( './features/region.move.UnderACard' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.move.overARegion' ),      // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/region.move.UnderACard' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* Transforming cards */
-//  require( './features/card.move.onABoardWithATransform' ),
-//  require( './features/region.move.onABoardWithATransform' ),
+  require( './features/card.move.onABoardWithATransform' ),
+  require( './features/region.move.onABoardWithATransform' ),
   /*
     TRANSFORM --> CREATE, UNLINK
   */
@@ -127,14 +127,6 @@ function generateCallList( calls ) {
 
         var services = this.services = this.application.services;
 
-        this.scenarios = {
-            TwoBoardsOneWithRegions: setupPopulatedBoardScenario
-          , OneEmptyBoard: setupEmptyBoardScenario
-          , multipleWalls: setupMultipleWallScenario
-          , multipleBoards: setupMultipleBoardScenario
-          , colorChangingBoard: setupColorChangingBoardScenario
-        };
-
         if ( debug ) {
           // ExecutionTimer( belt, 'Belt' );
           ExecutionTimer( application.commands, 'Commands' );
@@ -187,314 +179,6 @@ function underline( title, format, indent, endWith ) {
         new Array( title.length + 1 ).join( format ) +
         endWith;
 }
-
-
-
-
-// setup routines
-
-function setupMultipleWallScenario() {
-  var belt = this.belt;
-  var queue = this.queue;
-  var ui = this.ui;
-  var application = this.application;
-  var services = this.services;
-  var scenarios = this.scenarios;
-
-    application.pauseListening();
-
-    return new Promise(function( resolve, reject ) {
-      var storage = {
-        walls: [],
-        boards: [],
-        regions: [],
-        pockets: [],
-        locations: []
-      };
-
-      belt
-        .create('wall', { name: 'Multiple Wall Scenario One' })
-        .then(function( wall ) {
-          storage.wall = wall;
-          storage.walls.push( wall );
-
-          return belt.create('wall', { name: 'Multiple Wall Scenario two' });
-        })
-        .then(function( wall ) {
-          storage.walls.push( wall );
-
-          return belt.create('wall', { name: 'Multiple Wall Scenario Three' });
-        })
-        .then(function( wall ) {
-          storage.walls.push( wall );
-
-          return belt.create('board', { wall: storage.walls[0].getId(), name: 'Empty Board One' });
-        })
-        .then(function( board ){
-          storage.wall = board;
-          storage.boards.push( board );
-
-          return belt.create('board', { wall: storage.walls[1].getId(), name: 'Empty Board Two' });
-        })
-        .then(function( board ){
-          storage.boards.push( board );
-
-          return belt.create('board', { wall: storage.walls[2].getId(), name: 'Empty Board Three' });
-        })
-        .then(function( board ){
-          storage.boards.push( board );
-
-          application.startListening();
-
-          resolve( storage );
-        })
-        .catch( reject );
-    });
-}
-
-function setupEmptyBoardScenario() {
-  var belt = this.belt;
-  var queue = this.queue;
-  var ui = this.ui;
-  var application = this.application;
-  var services = this.services;
-  var scenarios = this.scenarios;
-
-  application.pauseListening();
-
-  return new Promise(function( resolve, reject ) {
-    var storage = {
-      walls: [],
-      boards: [],
-      regions: [],
-      pockets: [],
-      locations: []
-    };
-
-    // one wall
-    belt
-      .create( 'wall', { name: 'Empty Board Scenario' })
-      .then(function( wall ) {
-        storage.wall = wall;
-        storage.walls.push( wall );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
-      })
-      .then(function( board ) {
-        storage.board = board;
-        storage.boards.push( board );
-
-        application.startListening();
-
-        resolve( storage );
-      })
-      .catch( reject );
-  });
-}
-
-function setupMultipleBoardScenario() {
-  var belt = this.belt;
-  var queue = this.queue;
-  var ui = this.ui;
-  var application = this.application;
-  var services = this.services;
-  var scenarios = this.scenarios;
-
-  application.pauseListening();
-
-  return new Promise(function( resolve, reject ) {
-    var storage = {
-      walls: [],
-      boards: [],
-      regions: [],
-      pockets: [],
-      locations: []
-    };
-
-    // one wall
-    belt
-      .create( 'wall', { name: 'Empty Board Scenario' })
-      .then(function( wall ) {
-        storage.wall = wall;
-        storage.walls.push( wall );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Empty Board' })
-      })
-      .then(function( board ) {
-        storage.board = board;
-        storage.boards.push( board );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Second Empty Board' })
-      })
-      .then(function( board ) {
-        storage.boards.push( board );
-
-        application.startListening();
-
-        resolve( storage );
-      })
-      .catch( reject );
-  });
-}
-
-function setupPopulatedBoardScenario() {
-  var belt = this.belt;
-  var queue = this.queue;
-  var ui = this.ui;
-  var application = this.application;
-  var services = this.services;
-  var scenarios = this.scenarios;
-
-  application.pauseListening();
-
-  return new Promise(function( resolve, reject ) {
-    var storage = {
-      walls: [],
-      boards: [],
-      regions: [],
-      pockets: [],
-      locations: []
-    };
-
-    // one wall
-    belt
-      .create( 'wall', { name: 'Populated Board Scenario' })
-      .then(function( wall ) {
-        storage.wall = wall;
-        storage.walls.push( wall );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with cards only' });
-      })
-      .then(function( board ) {
-        storage.board = board;
-        storage.boards.push( board );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with regions' });
-      })
-      .then(function( board ) {
-        storage.boards.push( board );
-
-        return belt.create('region', { board: storage.boards[1].getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 });
-      })
-      .then(function( region ) {
-        storage.regions.push( region );
-
-        return belt.create('region', { board: storage.boards[1].getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 });
-      })
-      .then(function( region ) {
-        storage.regions.push( region );
-
-        return belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' });
-      })
-      .then(function( pocket ) {
-        storage.pockets.push( pocket );
-
-        return belt.create('pocket', { wall: storage.wall.getId(), title: 'Second Card' });
-      })
-      .then(function( pocket ) {
-        storage.pockets.push( pocket );
-
-        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:50, y:50 });
-      })
-      .then(function( location ) {
-        storage.locations.push( location );
-
-        return belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[0].getId(), x:50, y:50 });
-      })
-      .then(function( location ) {
-        storage.locations.push( location );
-
-        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[1].getId(), x:400, y:50 });
-      })
-      .then(function( location ) {
-        storage.locations.push( location );
-
-        return belt.create('cardlocation', { pocket: storage.pockets[1].getId(), board: storage.boards[1].getId(), x:400, y:50 });
-      })
-      .then(function( location ) {
-        storage.locations.push( location );
-
-        return application.services.displayWall( storage.wall.getId() );
-      })
-      .then(function() {
-        application.startListening();
-
-        resolve( storage );
-      })
-      .catch(function( error ) {
-        console.log( 'createscenario.error' );
-        reject( error );
-      });
-  });
-}
-
-function setupColorChangingBoardScenario() {
-  var belt = this.belt;
-  var queue = this.queue;
-  var ui = this.ui;
-  var application = this.application;
-  var services = this.services;
-  var scenarios = this.scenarios;
-
-  application.pauseListening();
-
-  return new Promise(function( resolve, reject ) {
-    var storage = {
-      walls: [],
-      boards: [],
-      regions: [],
-      pockets: [],
-      locations: []
-    };
-
-    // one wall
-    belt
-      .create( 'wall', { name: 'Color Changing Board Scenario' })
-      .then(function( wall ) {
-        storage.wall = wall;
-        storage.walls.push( wall );
-
-        return belt.create('board', { wall: storage.wall.getId(), name: 'Board with color Transform' });
-      })
-      .then(function( board ) {
-        storage.board = board;
-        storage.boards.push( board );
-
-        return belt.create('region', { board: board.getId(), label: 'Red Region', value: 1, color: 'red', x: 300, y:50, width:200, height:200 });
-      })
-      .then(function( region ) {
-        storage.region = region;
-        storage.regions.push( region );
-
-        return belt.create('region', { board: board.getId(), label: 'Blue Region', value: 2, color: 'blue', x: 300, y:300, width:200, height:200 });
-      })
-      .then(function( region ) {
-        storage.region = region;
-        storage.regions.push( region );
-
-        return belt.create('pocket', { wall: storage.wall.getId(), title: 'First Card' });
-      })
-      .then(function( resource ) {
-        storage.pockets.push( resource );
-
-        return belt.create('cardlocation', { pocket: storage.pockets[0].getId(), board: storage.boards[0].getId(), x:400, y:50 });
-      })
-      .then(function( resource ) {
-        storage.locations.push( resource );
-
-        var boardid = storage.boards[0].getId();
-
-        return belt.create('transform', { board: boardid, phrase: 'get color from color of region on board #' + boardid + ' when within region' });
-      })
-      .then(function( resources ) {
-          application.startListening();
-
-          resolve( storage );
-      })
-      .catch( reject );
-  });
-}
-
 
 
 

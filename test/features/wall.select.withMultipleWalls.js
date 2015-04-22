@@ -1,6 +1,6 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/MultipleWall.WithOneBoard');
+var fixture = require('../fixtures/MultipleWalls');
 
 var storedName = 'display wall'
   , storedWall, storedWalls, len;

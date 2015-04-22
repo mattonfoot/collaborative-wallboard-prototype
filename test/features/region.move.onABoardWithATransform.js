@@ -2,24 +2,24 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedLocation, storedRegion;
+var storedWall, storedLocation, storedRegion, storedCard;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
     var queries = this.application.queries;
 
-    var wall;
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        wall = storage.wall;
+        storedWall = storage.wall;
         storedRegion = storage.region;
+        storedCard = storage.card;
 
-        return queries.getCardLocation( storage.card.getCardLocations()[0] );
+        return queries.getCardLocation( storedCard.getCardLocations()[0] );
       }).then(function( location ) {
         storedLocation = location;
 
-        return services.displayWall( wall.getId() );
+        return services.displayWall( storedWall.getId() );
       })
       .then(function() {
         done();
@@ -27,16 +27,20 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region:move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n', function( done ) {
+  it('Transforms setup on a Board will be activated when their criteria are met\n', function( done ) {
     var queue = this.queue;
 
     queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket:regionenter', function( info ) {
-      should.exist( info );
-      info.card.should.equal( storedLocation.getPocket() );
-      info.region.should.equal( storedRegion.getId() );
+    queue.subscribe( '#:fail', done ).once();
+    queue.subscribe( '#.fail', done ).once();
+
+    queue.subscribe( 'pocket:transformed', function( card ) {
+      should.exist( card );
+
+      card.should.be.a.specificCardResource( storedCard.getTitle(), storedWall.getId() );
+      card.getColor().should.equal( storedRegion.getColor() );
 
       done();
     })
@@ -51,6 +55,6 @@ function features() {
   });
 }
 
-features.title = 'Moving a displayed Region under a Card on the displayed Board';
+features.title = 'Activating a Transform defined for a board by moving a region beneath a card';
 
 module.exports = features;

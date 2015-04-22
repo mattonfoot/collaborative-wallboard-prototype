@@ -6,10 +6,15 @@ var storedWall;
 
 function features() {
   beforeEach(function( done ) {
+    var services = this.services;
+
     fixture( this, 'Wall for card' )
       .then(function( storage ) {
         storedWall = storage.wall;
 
+        return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
         done();
       })
       .catch( done );

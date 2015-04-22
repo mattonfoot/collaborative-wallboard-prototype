@@ -2,24 +2,24 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName = 'new card'
-  , storedWall, storedBoard, storedCard, storedRegion;
+var storedLocation, storedRegion;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
+    var queries = this.application.queries;
 
-    fixture( this, 'Wall for displaying a board' )
+    var wall;
+    fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
+        wall = storage.wall;
         storedRegion = storage.region;
-        storedCard = storage.card[0];
 
-        numCards = storage.cards.length;
-        numRegions = storage.regions.length;
+        return queries.getCardLocation( storage.card.getCardLocations()[0] );
+      }).then(function( location ) {
+        storedLocation = location;
 
-        return services.displayWall( storedWall.getId() );
+        return services.displayWall( wall.getId() );
       })
       .then(function() {
         done();
@@ -35,18 +35,21 @@ function features() {
 
     queue.subscribe( 'pocket:regionenter', function( info ) {
       should.exist( info );
-      info.pocket.getId().should.equal( storedCard.getPocket() );
-      info.region.getId().should.equal( storedRegion.getId() );
+      info.card.should.equal( storedLocation.getPocket() );
+      info.region.should.equal( storedRegion.getId() );
 
       done();
     })
     .catch( done )
     .once();
 
-    storedCard.x = storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 );
-    storedCard.y = storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 );
+    var data = {
+      id: storedLocation.getId(),
+      x: storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 ),
+      y: storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 )
+    };
 
-    queue.trigger( 'cardlocation:move', storedCard );
+    queue.trigger( 'cardlocation:move', data );
   });
 }
 

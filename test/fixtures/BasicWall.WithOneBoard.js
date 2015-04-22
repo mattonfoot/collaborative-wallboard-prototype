@@ -19,7 +19,10 @@ function fixture( ctx, storedName ) {
         storage.wall = wall;
         storage.walls.push( wall );
 
-        return services.createBoard({ wall: wall.getId(), name: storedName });
+        return services.displayWall( wall.getId() );
+      })
+      .then(function() {
+        return services.createBoard({ wall: storage.wall.getId(), name: storedName });
       })
       .then(function( board ) {
         storage.board = board;

@@ -7,11 +7,16 @@ var storedName = 'new card'
 
 function features() {
   beforeEach(function( done ) {
-    fixture( this, 'Wall for board' )
+    var services = this.services;
+
+    fixture( this, 'Wall for card' )
       .then(function( storage ) {
         storedWall = storage.wall;
+        storedBoard = storage.board;
+
+        return services.displayBoard( storedBoard.getId() );
       })
-      .then(function( board ) {
+      .then(function() {
         done();
       })
       .catch( done );

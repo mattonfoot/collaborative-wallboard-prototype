@@ -7,16 +7,23 @@ var storedName = 'board with cards added automatically'
 
 function features() {
   beforeEach(function( done ) {
-    fixture( this, 'Wall for new board' )
-      .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
+    var services = this.services;
 
-        storedCards = storage.cards;
+  fixture( this, 'Wall for new board' )
+    .then(function( storage ) {
+      storedWall = storage.wall;
+      storedBoard = storage.board;
+      storedCards = storage.cards;
 
-        done();
-      })
-      .catch( done );
+      numCards = storage.cards.length;
+      numRegions = storage.regions.length;
+
+      return services.displayWall( storedWall.getId() );
+    })
+    .then(function() {
+      done();
+    })
+    .catch( done );
   });
 
   it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n', function( done ) {

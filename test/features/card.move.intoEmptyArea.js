@@ -2,23 +2,23 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName = 'new card'
-  , storedWall, storedBoard, storedCard;
+var storedLocation;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
+    var queries = this.application.queries;
 
-    fixture( this, 'Wall for displaying a board' )
+    var wall;
+    fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
-        storedCard = storage.card[0];
+        wall = storage.wall;
 
-        numCards = storage.cards.length;
-        numRegions = storage.regions.length;
+        return queries.getCardLocation( storage.card.getCardLocations()[0] );
+      }).then(function( location ) {
+        storedLocation = location;
 
-        return services.displayWall( storedWall.getId() );
+        return services.displayWall( wall.getId() );
       })
       .then(function() {
         done();
@@ -32,36 +32,30 @@ function features() {
     queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-        'cardlocation:move'
-      , 'cardlocation:updated'
-    ],
-    function( a, b ) {
-      should.exist( a );
-      a.should.respondTo( 'getId' );
-      a.should.respondTo( 'getPocket' );
-      a.getPocket().should.equal( storedCard.getPocket() );
-
+    queue.subscribe( 'cardlocation:updated', function( b ) {
       should.exist( b );
       b.should.respondTo( 'getId' );
       b.should.respondTo( 'getPocket' );
-      b.getPocket().should.equal( storedCard.getPocket() );
+      b.getPocket().should.equal( storedLocation.getPocket() );
       b.should.respondTo( 'getBoard' );
-      b.getBoard().should.equal( storedBoard.getId() );
+      b.getBoard().should.equal( storedLocation.getBoard() );
       b.should.respondTo( 'getX' );
-      b.getX().should.equal( storedCard.x );
+      b.getX().should.equal( data.x );
       b.should.respondTo( 'getY' );
-      b.getY().should.equal( storedCard.y );
+      b.getY().should.equal( data.y );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    storedCard.x = 600;
-    storedCard.y = 600;
+    var data = {
+      id: storedLocation.getId(),
+      x: 600,
+      y: 600
+    };
 
-    queue.trigger( 'cardlocation:move', storedCard );
+    queue.trigger( 'cardlocation:move', data );
 
   });
 

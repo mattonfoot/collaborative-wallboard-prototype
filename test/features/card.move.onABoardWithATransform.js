@@ -1,26 +1,27 @@
-var chai = require('chai')
-  , should = chai.should();
+var chai = require('chai');
+var should = chai.should();
+var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName
-  , storedWall
-  , storedBoard, storedPocket, storedRegion, storedLocation;
+var storedWall, storedLocation, storedRegion, storedCard;
 
 function features() {
+  beforeEach(function( done ) {
+    var services = this.services;
+    var queries = this.application.queries;
 
-  beforeEach(function(done) {
-    var scenarios = this.scenarios;
-
-    scenarios.colorChangingBoard.call( this )
+    fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
         storedWall = storage.wall;
-        storedBoard = storage.boards[0];
-        storedPocket = storage.pockets[0];
-        storedRegion = storage.regions[0];
-        storedLocation = storage.locations[0];
+        storedRegion = storage.region;
+        storedCard = storage.card;
 
-        should.not.exist( storedPocket.getColor() )
-        should.exist( storedRegion.getColor() );
+        return queries.getCardLocation( storedCard.getCardLocations()[0] );
+      }).then(function( location ) {
+        storedLocation = location;
 
+        return services.displayWall( storedWall.getId() );
+      })
+      .then(function() {
         done();
       })
       .catch( done );
@@ -28,52 +29,32 @@ function features() {
 
   it('Transforms setup on a Board will be activated when their criteria are met\n', function( done ) {
     var queue = this.queue;
-    var checkRegionEnter = false;
 
     queue.subscribe( '#:fail', done ).once();
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket:regionenter', function( data ) {
-      var card = data.pocket;
-      var regionEntered = data.region;
-
+    queue.subscribe( 'pocket:transformed', function( card ) {
       should.exist( card );
-      card.should.be.a.specificCardResource( storedPocket.getTitle(), storedWall.getId() );
 
-      should.exist( regionEntered );
-      regionEntered.should.be.a.specificRegionResource( storedRegion.getLabel(), storedBoard.getId() );
-
-      card.getColor().should.not.contain( regionEntered.getColor() );
-
-      checkRegionEnter = true;
-    })
-    .once()
-    .catch( done );
-
-    queue.when([
-      "pocket.regionenter",
-      "pocket.transformed"
-    ],
-    function( a, TransformedCard ) {
-      checkRegionEnter.should.be.true;
-
-      should.exist( TransformedCard );
-      TransformedCard.should.be.a.specificCardResource( storedPocket.getTitle(), storedWall.getId() );
-      TransformedCard.getColor().should.contain( storedRegion.getColor() );
+      card.should.be.a.specificCardResource( storedCard.getTitle(), storedWall.getId() );
+      card.getColor().should.equal( storedRegion.getColor() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
-    storedLocation.x = storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 );
-    storedLocation.y = storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 );
+    var data = {
+      id: storedLocation.getId(),
+      x: storedRegion.x + Math.round( ( storedRegion.width - 100 ) / 2 ),
+      y: storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 )
+    };
 
-    queue.trigger( 'cardlocation:move', storedLocation );
+    queue.trigger( 'cardlocation:move', data );
   });
 
 }
 
-features.title = 'Activating a Transform defined for a board';
+features.title = 'Activating a Transform defined for a board by moving a card over a region';
 
 module.exports = features;

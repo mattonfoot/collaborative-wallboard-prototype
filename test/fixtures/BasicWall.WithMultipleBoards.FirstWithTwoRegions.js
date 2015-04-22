@@ -19,10 +19,18 @@ function fixture( ctx, storedName ) {
         storage.wall = wall;
         storage.walls.push( wall );
 
-        return services.createBoard({ wall: wall.getId(), name: 'board for cards and regions' });
+        return services.displayWall( wall.getId() );
+      })
+      .then(function() {
+        return services.createBoard({ wall: storage.wall.getId(), name: 'board for cards and regions' });
       })
       .then(function( board ) {
         storage.board = board;
+        storage.boards.push( board );
+
+        return services.createBoard({ wall: storage.wall.getId(), name: 'empty board' });
+      })
+      .then(function( board ) {
         storage.boards.push( board );
 
         return services.createRegion({ board: storage.board.getId(), label: 'Red Region', color: 'red', value: 'one',

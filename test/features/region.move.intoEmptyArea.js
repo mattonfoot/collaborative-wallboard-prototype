@@ -2,23 +2,17 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName = 'new card'
-  , storedWall, storedBoard, storedRegion;
+var storedRegion;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
 
-    fixture( this, 'Wall for displaying a board' )
+    fixture( this, 'Wall for moving a region on' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
         storedRegion = storage.region;
 
-        numCards = storage.cards.length;
-        numRegions = storage.regions.length;
-
-        return services.displayWall( storedWall.getId() );
+        return services.displayWall( storage.wall.getId() );
       })
       .then(function() {
         done();
@@ -40,12 +34,12 @@ function features() {
       should.exist( a );
       a.should.respondTo( 'getId' );
       a.should.respondTo( 'getBoard' );
-      a.getBoard().should.equal( storedBoard.getId() );
+      a.getBoard().should.equal( storedRegion.getBoard() );
 
       should.exist( b );
       b.should.respondTo( 'getId' );
       b.should.respondTo( 'getBoard' );
-      b.getBoard().should.equal( storedBoard.getId() );
+      b.getBoard().should.equal( storedRegion.getBoard() );
       b.should.respondTo( 'getX' );
       b.getX().should.equal( storedRegion.x );
       b.should.respondTo( 'getY' );
