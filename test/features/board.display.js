@@ -30,8 +30,7 @@ function features() {
     function( displayed, enabled ) {
       should.exist( displayed );
 
-      displayed.should.be.a.specificBoardResource( storedName, storedWall.getId() );
-      displayed.getId().should.equal( storedBoard.getId() );
+      displayed.should.equal( storedBoard.getId() );
 
       done();
     },

@@ -32,7 +32,7 @@ function features() {
       a.should.be.a.specificWallResource( storedWall.getName() );
 
       should.exist( b );
-      b.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
+      b.should.equal( storedBoard.getId() );
 
       done();
     },

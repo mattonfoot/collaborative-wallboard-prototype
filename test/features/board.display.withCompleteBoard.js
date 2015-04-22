@@ -62,8 +62,7 @@ function features() {
     ],
     function( displayed, enabled ) {
       should.exist( displayed );
-      displayed.should.be.a.specificBoardResource( storedBoard.getName(), storedWall.getId() );
-      displayed.getId().should.equal( storedBoard.getId() );
+      displayed.should.equal( storedBoard.getId() );
 
       queuechecked = true;
       if ( cardscount === numCards && regionscount === numRegions && queuechecked ) done();

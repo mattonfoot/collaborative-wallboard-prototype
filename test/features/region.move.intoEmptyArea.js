@@ -25,7 +25,7 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'region.updated', function( updated ) {
+    queue.subscribe( 'region.moved', function( updated ) {
       should.exist( updated );
       updated.should.respondTo( 'getId' );
       updated.should.respondTo( 'getBoard' );
