@@ -31,17 +31,12 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'cardlocation.updated', function( b ) {
-      should.exist( b );
-      b.should.respondTo( 'getId' );
-      b.should.respondTo( 'getPocket' );
-      b.getPocket().should.equal( storedLocation.getPocket() );
-      b.should.respondTo( 'getBoard' );
-      b.getBoard().should.equal( storedLocation.getBoard() );
-      b.should.respondTo( 'getX' );
-      b.getX().should.equal( data.x );
-      b.should.respondTo( 'getY' );
-      b.getY().should.equal( data.y );
+    queue.subscribe( 'cardlocation.moved', function( moved ) {
+      should.exist( moved );
+      moved.card.should.equal( storedLocation.getPocket() );
+      moved.board.should.equal( storedLocation.getBoard() );
+      moved.x.should.equal( data.x );
+      moved.y.should.equal( data.y );
 
       done();
     })
@@ -50,6 +45,8 @@ function features() {
 
     var data = {
       id: storedLocation.getId(),
+      card: storedLocation.getPocket(),
+      board: storedLocation.getBoard(),
       x: 600,
       y: 600
     };
