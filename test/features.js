@@ -136,8 +136,6 @@ function generateCallList( calls ) {
           ExecutionTimer( application.transformManager, 'TransformManager' );
         }
 
-        application.startListening();
-
         done();
       });
 
@@ -145,8 +143,6 @@ function generateCallList( calls ) {
         var belt = this.belt;
         var queue = this.queue;
         var application = this.application;
-
-        application.pauseListening();
 
         queue.clearAll();
 
