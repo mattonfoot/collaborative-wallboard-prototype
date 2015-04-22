@@ -25,7 +25,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'wall:new' );
+    queue.publish( 'wall:new' );
 
   });
 

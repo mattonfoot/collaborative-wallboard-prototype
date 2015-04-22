@@ -66,7 +66,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
+    queue.publish( 'board:create', { wall: storedWall.getId(), name: storedName } );
   });
 
 }

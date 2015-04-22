@@ -46,7 +46,7 @@ function features() {
     storedRegion.x = 0;
     storedRegion.y = 0;
 
-    queue.trigger( 'region:move', storedRegion );
+    queue.publish( 'region:move', storedRegion );
 
   });
 }

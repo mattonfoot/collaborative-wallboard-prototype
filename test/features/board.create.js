@@ -8,7 +8,7 @@ var storedName = "display board"
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
-    
+
     fixture( this, 'Wall for board' )
       .then(function( storage ) {
         storedWall = storage.wall;
@@ -41,7 +41,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'board:create', { wall: storedWall.getId(), name: storedName } );
+    queue.publish( 'board:create', { wall: storedWall.getId(), name: storedName } );
   });
 }
 

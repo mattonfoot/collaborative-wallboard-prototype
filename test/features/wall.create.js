@@ -28,7 +28,7 @@ function features() {
     done,
     { once: true, timeout: 1000 });
 
-    queue.trigger( 'wall:create', { name: storedName } );
+    queue.publish( 'wall:create', { name: storedName } );
 
   });
 

@@ -43,7 +43,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'wall:edit', storedWall.getId() );
+    queue.publish( 'wall:edit', storedWall.getId() );
   });
 }
 

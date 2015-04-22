@@ -40,7 +40,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'wall:display', storedWall.getId() );
+    queue.publish( 'wall:display', storedWall.getId() );
 
   });
 

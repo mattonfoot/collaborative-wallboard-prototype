@@ -43,7 +43,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'region:create', { board: storedBoard.getId(), label: storedName } );
+    queue.publish( 'region:create', { board: storedBoard.getId(), label: storedName } );
   });
 }
 

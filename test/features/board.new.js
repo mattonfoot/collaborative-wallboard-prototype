@@ -41,7 +41,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'board:new', storedWall.getId() );
+    queue.publish( 'board:new', storedWall.getId() );
   });
 }
 

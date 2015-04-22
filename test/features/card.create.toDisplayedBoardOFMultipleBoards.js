@@ -66,7 +66,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
+    queue.publish( 'pocket:create', { wall: storedWall.getId(), title: storedName } );
   });
 }
 

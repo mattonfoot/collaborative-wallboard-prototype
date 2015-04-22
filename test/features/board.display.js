@@ -40,7 +40,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'board:display', storedBoard.getId() );
+    queue.publish( 'board:display', storedBoard.getId() );
   });
 }
 

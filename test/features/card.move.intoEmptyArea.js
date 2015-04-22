@@ -55,7 +55,7 @@ function features() {
       y: 600
     };
 
-    queue.trigger( 'cardlocation:move', data );
+    queue.publish( 'cardlocation:move', data );
 
   });
 

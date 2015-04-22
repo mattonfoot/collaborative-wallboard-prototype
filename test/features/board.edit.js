@@ -44,7 +44,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'board:edit', storedBoard.getId() );
+    queue.publish( 'board:edit', storedBoard.getId() );
   });
 }
 

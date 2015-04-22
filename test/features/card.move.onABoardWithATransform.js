@@ -50,7 +50,7 @@ function features() {
       y: storedRegion.y + Math.round( ( storedRegion.height - 65 ) / 2 )
     };
 
-    queue.trigger( 'cardlocation:move', data );
+    queue.publish( 'cardlocation:move', data );
   });
 
 }

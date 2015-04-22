@@ -49,7 +49,7 @@ function features() {
 
     storedBoard.name = editedName;
 
-    queue.trigger( 'board:update', storedBoard );
+    queue.publish( 'board:update', storedBoard );
 
   });
 

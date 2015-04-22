@@ -48,7 +48,7 @@ function features() {
 
     storedWall.name = editedName;
 
-    queue.trigger( 'wall:update', storedWall );
+    queue.publish( 'wall:update', storedWall );
   });
 }
 

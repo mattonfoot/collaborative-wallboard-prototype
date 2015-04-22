@@ -42,7 +42,7 @@ function features() {
     done,
     { once: true });
 
-    queue.trigger( 'region:new', storedBoard.getId() );
+    queue.publish( 'region:new', storedBoard.getId() );
   });
 }
 
