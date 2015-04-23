@@ -11,10 +11,7 @@ function features() {
     fixture( this, 'Wall for board' )
       .then(function( storage ) {
         storedWall = storage.wall;
-
-        return services.displayWall( storedWall.getId() );
-      })
-      .then(function() {
+        
         done();
       })
       .catch( done );

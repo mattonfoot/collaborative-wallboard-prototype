@@ -11,8 +11,7 @@ function features() {
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
-      })
-      .then(function( board ) {
+        
         done();
       })
       .catch( done );

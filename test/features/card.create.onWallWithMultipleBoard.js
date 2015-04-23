@@ -15,10 +15,7 @@ function features() {
         storedBoard = storage.board;
 
         len = storage.boards.length;
-
-        return services.displayBoard( storedBoard.getId() );
-      })
-      .then(function() {
+        
         done();
       })
       .catch( done );

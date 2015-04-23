@@ -12,25 +12,14 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'wall.created',
-      'wall.displayed',
-      'wall.firsttime'
-    ],
-    function( wall, displayed, firsttime ) {
+    queue.subscribe( 'wall.created', function( wall ) {
       should.exist( wall );
-      wall.getName().should.equal( storedName );
-
-      should.exist( displayed );
-      displayed.should.equal( wall.getId() );
-
-      should.exist( firsttime );
-      firsttime.should.equal( wall.getId() );
+      wall.name.should.equal( storedName );
 
       done();
-    },
-    done,
-    { once: true, timeout: 100 });
+    })
+    .catch( done )
+    .once();
 
     queue.publish( 'wall.create', { name: storedName } );
 

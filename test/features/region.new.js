@@ -12,10 +12,7 @@ function features() {
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
-
-        return services.displayBoard( storedBoard.getId() );
-      })
-      .then(function( board ) {
+        
         done();
       })
       .catch( done );

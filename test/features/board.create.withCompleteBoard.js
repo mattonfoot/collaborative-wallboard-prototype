@@ -17,10 +17,7 @@ function features() {
 
       numCards = storage.cards.length;
       numRegions = storage.regions.length;
-
-      return services.displayWall( storedWall.getId() );
-    })
-    .then(function() {
+      
       done();
     })
     .catch( done );

@@ -17,10 +17,7 @@ function features() {
         return queries.getCardLocation( storage.card.getCardLocations()[0] );
       }).then(function( location ) {
         storedLocation = location;
-
-        return services.displayWall( wall.getId() );
-      })
-      .then(function() {
+        
         done();
       })
       .catch( done );

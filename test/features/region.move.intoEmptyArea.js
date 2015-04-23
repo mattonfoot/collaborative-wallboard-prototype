@@ -11,10 +11,7 @@ function features() {
     fixture( this, 'Wall for moving a region on' )
       .then(function( storage ) {
         storedRegion = storage.region;
-
-        return services.displayWall( storage.wall.getId() );
-      })
-      .then(function() {
+        
         done();
       })
       .catch( done );

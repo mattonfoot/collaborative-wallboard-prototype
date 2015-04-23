@@ -16,12 +16,10 @@ function features() {
         storedCard = storage.card;
 
         return queries.getCardLocation( storedCard.getCardLocations()[0] );
-      }).then(function( location ) {
+      })
+      .then(function( location ) {
         storedLocation = location;
 
-        return services.displayWall( storedWall.getId() );
-      })
-      .then(function() {
         done();
       })
       .catch( done );
