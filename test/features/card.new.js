@@ -26,7 +26,8 @@ function features() {
     queue.subscribe( '#.fail', done ).once();
 
     queue.subscribe( 'pocketcreator.displayed', function( displayed ) {
-      displayed.should.be.instanceOf( queue.nodata );
+      should.exist( displayed );
+      displayed.should.equal( storedWall.getId() );
 
       done();
     })
