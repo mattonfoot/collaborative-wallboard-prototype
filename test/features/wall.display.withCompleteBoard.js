@@ -24,8 +24,7 @@ function features() {
 
     queue.when([
       'wall.displayed',
-      'board.displayed',
-      'controls.enabled'
+      'board.displayed'
     ],
     function( wall, board ) {
       should.exist( wall );

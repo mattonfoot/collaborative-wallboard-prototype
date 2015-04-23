@@ -23,19 +23,15 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'board.displayed',
-      'controls.enabled'
-    ],
-    function( displayed, enabled ) {
+    queue.subscribe('board.displayed', function( displayed ) {
       should.exist( displayed );
 
       displayed.should.equal( storedBoard.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
     queue.publish( 'board.display', storedBoard.getId() );
   });

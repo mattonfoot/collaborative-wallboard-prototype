@@ -56,19 +56,16 @@ function features() {
     .catch( done )
     .distinct();
 
-    queue.when([
-      'board.displayed',
-      'controls.enabled'
-    ],
-    function( displayed, enabled ) {
+    queue.subscribe('board.displayed', function( displayed ) {
       should.exist( displayed );
+
       displayed.should.equal( storedBoard.getId() );
 
       queuechecked = true;
       if ( cardscount === numCards && regionscount === numRegions && queuechecked ) done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
     queue.publish( 'board.display', storedBoard.getId() );
   });

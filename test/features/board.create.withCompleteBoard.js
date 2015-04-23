@@ -56,8 +56,6 @@ function features() {
 
       queuechecked = true;
       if ( cardsfound && queuechecked ) done();
-
-      done();
     })
     .catch( done )
     .once();

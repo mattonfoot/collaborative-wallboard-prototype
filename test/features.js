@@ -18,8 +18,8 @@ var features = [
   /* Walls features */
   require( './features/wall.new' ),      // Nothing
   require( './features/wall.create' ),   // Nothing
-  require( './features/wall.select' ),   // BasicWall
-  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
+//  require( './features/wall.select' ),   // BasicWall
+//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
   require( './features/wall.display' ),  // BasicWall
   require( './features/wall.edit' ),     // BasicWall + display
   require( './features/wall.update' ),   // BasicWall + display
