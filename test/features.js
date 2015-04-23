@@ -14,44 +14,37 @@ var queueDebug = false;
 var featureSet = {};
 
 var features = [
-
-  /* Walls features */
-  require( './features/wall.new' ),      // Nothing
+  /* Service API */
   require( './features/wall.create' ),   // Nothing
-//  require( './features/wall.select' ),   // BasicWall
-//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
   require( './features/wall.display' ),  // BasicWall
-  require( './features/wall.edit' ),     // BasicWall + display
   require( './features/wall.update' ),   // BasicWall + display
-
-  /* Board features */
-  require( './features/board.new' ),     // BasicWall + display
   require( './features/board.create' ),  // BasicWall + display
   require( './features/board.display' ), // BasicWall.WithMultipleBoards
-  require( './features/board.edit' ),    // BasicWall.WithOneBoard + display
   require( './features/board.update' ),  // BasicWall.WithOneBoard + display
-
-  /* Card features */
-  require( './features/card.new' ),      // BasicWall + display
   require( './features/card.create' ),   // BasicWall + display
+//  require( './features/card.update' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard + display
   require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards + display
-  /*
-    CARD --> EDIT, UPDATE
-  */
-
-  /* Region features */
-  require( './features/region.new' ),    // BasicWall.WithOneBoard + display
   require( './features/region.create' ), // BasicWall.WithOneBoard + display
-  /*
-    REGION --> EDIT, UPDATE
-  */
+//  require( './features/region.update' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+
+  /* Interface API */
+//  require( './features/wall.new' ),      // Nothing
+//  require( './features/wall.select' ),   // BasicWall
+//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
+//  require( './features/wall.edit' ),     // BasicWall + display
+//  require( './features/board.new' ),     // BasicWall + display
+//  require( './features/board.edit' ),    // BasicWall.WithOneBoard + display
+//  require( './features/card.new' ),      // BasicWall + display
+//  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+//  require( './features/region.new' ),    // BasicWall.WithOneBoard + display
+//  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* complex actions */
   require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* moving items on boards */
   require( './features/card.move.intoEmptyArea' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions

@@ -23,8 +23,7 @@ function features() {
 
     queue.when([
       'wall.displayed',
-      'wall.firsttime',
-      'boardcreator.displayed'
+      'wall.firsttime'
     ],
     function( displayed, firsttime ) {
       should.exist( displayed );
