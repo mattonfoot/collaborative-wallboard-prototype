@@ -32,11 +32,17 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket.transformed', function( card ) {
-      should.exist( card );
+    queue.subscribe( 'pocket.transformed', function( transform ) {
+      should.exist( transform );
 
-      card.should.be.a.specificCardResource( storedCard.getTitle(), storedWall.getId() );
-      card.getColor().should.equal( storedRegion.getColor() );
+      transform.should.have.property( 'op' );
+      transform.op.should.equal( 'set' );
+      transform.should.have.property( 'card' );
+      transform.card.should.equal( storedCard.getId() );
+      transform.should.have.property( 'property' );
+      transform.property.should.equal( 'color' );
+      transform.should.have.property( 'value' );
+      transform.value.should.equal( storedRegion.getColor() );
 
       done();
     })
