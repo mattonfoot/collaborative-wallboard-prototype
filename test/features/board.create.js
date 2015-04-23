@@ -26,18 +26,14 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'board.created',
-      'board.added'
-    ],
-    function( created, added ) {
-      should.exist( added );
-      added.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+    queue.subscribe('board.created', function( created ) {
+      should.exist( created );
+      created.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
       done();
-    },
-    done,
-    { once: true });
+    })
+    .catch( done )
+    .once();
 
     queue.publish( 'board.create', { wall: storedWall.getId(), name: storedName } );
   });

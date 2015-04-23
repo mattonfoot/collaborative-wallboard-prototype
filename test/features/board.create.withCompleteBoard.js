@@ -50,19 +50,17 @@ function features() {
     })
     .catch( done );
 
-    queue.when([
-      'board.created',
-      'board.added'
-    ],
-    function( created, added ) {
-      should.exist( added );
-      added.should.be.a.specificBoardResource( storedName, storedWall.getId() );
+    queue.subscribe('board.created', function( created ) {
+      should.exist( created );
+      created.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
       queuechecked = true;
       if ( cardsfound && queuechecked ) done();
-    },
-    done,
-    { once: true });
+
+      done();
+    })
+    .catch( done )
+    .once();
 
     queue.publish( 'board.create', { wall: storedWall.getId(), name: storedName } );
   });
