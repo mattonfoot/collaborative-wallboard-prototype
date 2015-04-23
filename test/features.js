@@ -6,7 +6,6 @@ var chai = require('chai')
   , Belt = require('belt')
   , ExecutionTimer = require('./executionTimer')
   , Application = require('../lib/application')
-  , UI = require('../lib/interface')
   , Queue = require('../lib/queue');
 
 var debug = false;
@@ -121,9 +120,8 @@ function generateCallList( calls ) {
         var pouch = this.pouch = db;
         var belt = this.belt = new Belt( db );
         var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
-        var ui = this.ui = new UI();
 
-        var application = this.application = new Application( belt, queue, ui, { debug: debug } );
+        var application = this.application = new Application( belt, queue, null, { debug: debug } );
 
         var services = this.services = this.application.services;
 
