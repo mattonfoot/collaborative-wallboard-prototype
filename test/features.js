@@ -241,7 +241,6 @@ function shouldBeSpecificRegionResource( expectedLabel, expectedBoardId ) {
     resource.should.respondTo( 'getColor' );
     resource.should.respondTo( 'getValue' );
     resource.should.respondTo( 'getPosition' );
-    resource.should.respondTo( 'getHeight' );
-    resource.should.respondTo( 'getWidth' );
+    resource.should.respondTo( 'getSize' );
     resource.should.respondTo( 'getPockets' );
 }
