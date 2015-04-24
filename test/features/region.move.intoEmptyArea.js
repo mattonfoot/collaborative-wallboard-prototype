@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedRegion;
+var region;
 
 function features() {
   beforeEach(function( done ) {
@@ -10,8 +10,8 @@ function features() {
 
     fixture( this, 'Wall for moving a region on' )
       .then(function( storage ) {
-        storedRegion = storage.region;
-        
+        region = storage.region;
+
         done();
       })
       .catch( done );
@@ -19,28 +19,33 @@ function features() {
 
   it('Emit a <region.move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n', function( done ) {
     var queue = this.queue;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'region.moved', function( updated ) {
-      should.exist( updated );
-      updated.should.respondTo( 'getId' );
-      updated.should.respondTo( 'getBoard' );
-      updated.getBoard().should.equal( storedRegion.getBoard() );
-      updated.should.respondTo( 'getX' );
-      updated.getX().should.equal( storedRegion.x );
-      updated.should.respondTo( 'getY' );
-      updated.getY().should.equal( storedRegion.y );
+    queue.subscribe( 'region.moved', function( moved ) {
+      should.exist( moved );
+
+      moved.should.have.property( 'id', move.id );
+      moved.should.have.property( 'x', move.x );
+      moved.should.have.property( 'y', move.y );
+
+      var position = region.getPosition();
+      position.x.should.equal( move.x );
+      position.y.should.equal( move.y );
 
       done();
     })
     .catch( done )
     .once();
 
-    storedRegion.x = 600;
-    storedRegion.y = 600;
+    var move = {
+      id: region.getId(),
+      x: 600,
+      y: 600
+    };
 
-    queue.publish( 'region.move', storedRegion );
+    services.moveRegion( move );
   });
 }
 

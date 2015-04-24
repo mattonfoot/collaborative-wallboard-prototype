@@ -15,10 +15,10 @@ function features() {
         storedRegion = storage.region;
         storedCard = storage.card;
 
-        return queries.getCardLocation( storedCard.getCardLocations()[0] );
+        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
       }).then(function( location ) {
         storedLocation = location;
-        
+
         done();
       })
       .catch( done );

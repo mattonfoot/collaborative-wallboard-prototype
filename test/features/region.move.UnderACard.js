@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedLocation, storedRegion;
+var location, region;
 
 function features() {
   beforeEach(function( done ) {
@@ -13,12 +13,12 @@ function features() {
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
         wall = storage.wall;
-        storedRegion = storage.region;
+        region = storage.region;
 
-        return queries.getCardLocation( storage.card.getCardLocations()[0] );
+        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
       })
-      .then(function( location ) {
-        storedLocation = location;
+      .then(function( resource ) {
+        location = resource;
 
         done();
       })
@@ -27,23 +27,28 @@ function features() {
 
   it('Emit a <region.move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n', function( done ) {
     var queue = this.queue;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
     queue.subscribe( 'pocket.regionenter', function( info ) {
       should.exist( info );
-      info.card.should.equal( storedLocation.getPocket() );
-      info.region.should.equal( storedRegion.getId() );
+
+      info.should.have.property( 'card', location.getPocket() );
+      info.should.have.property( 'region', move.id );
 
       done();
     })
     .catch( done )
     .once();
 
-    storedRegion.x = 0;
-    storedRegion.y = 0;
+    var move = {
+      id: region.getId(),
+      x: 5,
+      y: 5
+    };
 
-    queue.publish( 'region.move', storedRegion );
+    services.moveRegion( move );
 
   });
 }

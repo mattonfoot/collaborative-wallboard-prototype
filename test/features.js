@@ -15,16 +15,26 @@ var featureSet = {};
 
 var features = [
   /* Service API */
+
+  // Nothing
   require( './features/wall.create' ),   // Nothing
-  require( './features/wall.update' ),   // BasicWall + display
-  require( './features/board.create' ),  // BasicWall + display
-  require( './features/board.update' ),  // BasicWall.WithOneBoard + display
-  require( './features/card.create' ),   // BasicWall + display
-//  require( './features/card.update' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard + display
-  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards + display
-  require( './features/region.create' ), // BasicWall.WithOneBoard + display
-//  require( './features/region.update' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+
+  // BasicWall
+  require( './features/wall.update' ),   // BasicWall
+  require( './features/board.create' ),  // BasicWall
+  require( './features/card.create' ),   // BasicWall
+
+  // BasicWall.WithOneBoard
+  require( './features/board.update' ),  // BasicWall.WithOneBoard
+  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard
+  require( './features/region.create' ), // BasicWall.WithOneBoard
+
+  // BasicWall.WithMultipleBoards
+  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
+
+  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.update' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/region.update' ), // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
@@ -32,28 +42,33 @@ var features = [
   require( './features/card.move.intoEmptyArea' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.move.overARegion' ),      // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/region.move.UnderACard' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/region.move.UnderACard' ),     // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
-  /* Transforming cards */
+  /* Transforming cards
   require( './features/card.move.onABoardWithATransform' ),
   require( './features/region.move.onABoardWithATransform' )
-
+  */
   /*
     TRANSFORM --> CREATE, UNLINK
   */
 
   /* Interface API */
 //  require( './features/wall.new' ),      // Nothing
+
 //  require( './features/wall.select' ),   // BasicWall
-//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
 //  require( './features/wall.display' ),  // BasicWall
-//  require( './features/wall.edit' ),     // BasicWall + display
-//  require( './features/board.new' ),     // BasicWall + display
+//  require( './features/wall.edit' ),     // BasicWall
+//  require( './features/board.new' ),     // BasicWall
+//  require( './features/card.new' ),      // BasicWall
+
+//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
+
+//  require( './features/board.edit' ),    // BasicWall.WithOneBoard
+//  require( './features/region.new' ),    // BasicWall.WithOneBoard
+
 //  require( './features/board.display' ), // BasicWall.WithMultipleBoards
-//  require( './features/board.edit' ),    // BasicWall.WithOneBoard + display
-//  require( './features/card.new' ),      // BasicWall + display
+
 //  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-//  require( './features/region.new' ),    // BasicWall.WithOneBoard + display
 //  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
@@ -225,8 +240,7 @@ function shouldBeSpecificRegionResource( expectedLabel, expectedBoardId ) {
     resource.getBoard().should.equal( expectedBoardId );
     resource.should.respondTo( 'getColor' );
     resource.should.respondTo( 'getValue' );
-    resource.should.respondTo( 'getX' );
-    resource.should.respondTo( 'getY' );
+    resource.should.respondTo( 'getPosition' );
     resource.should.respondTo( 'getHeight' );
     resource.should.respondTo( 'getWidth' );
     resource.should.respondTo( 'getPockets' );

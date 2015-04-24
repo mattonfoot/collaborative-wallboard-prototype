@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedLocation;
+var location;
 
 function features() {
   beforeEach(function( done ) {
@@ -14,44 +14,48 @@ function features() {
       .then(function( storage ) {
         wall = storage.wall;
 
-        return queries.getCardLocation( storage.card.getCardLocations()[0] );
-      }).then(function( location ) {
-        storedLocation = location;
-        
+        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
+      }).then(function( resource ) {
+        location = resource;
+
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <cardlocation.move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
+  it('Emit a <card.move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
     var queue = this.queue;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'cardlocation.moved', function( moved ) {
+    queue.subscribe( 'card.moved', function( moved ) {
       should.exist( moved );
-      moved.card.should.equal( storedLocation.getPocket() );
-      moved.board.should.equal( storedLocation.getBoard() );
-      moved.x.should.equal( data.x );
-      moved.y.should.equal( data.y );
+
+      moved.should.have.property( 'card', move.card );
+      moved.should.have.property( 'board', move.board );
+      moved.should.have.property( 'x', move.x );
+      moved.should.have.property( 'y', move.y );
+
+      var position = location.getPosition();
+      position.x.should.equal( move.x );
+      position.y.should.equal( move.y );
 
       done();
     })
     .catch( done )
     .once();
 
-    var data = {
-      id: storedLocation.getId(),
-      card: storedLocation.getPocket(),
-      board: storedLocation.getBoard(),
+    var move = {
+      id: location.getId(),
+      card: location.getPocket(),
+      board: location.getBoard(),
       x: 600,
       y: 600
     };
 
-    queue.publish( 'cardlocation.move', data );
-
+    services.moveCard( move );
   });
-
 }
 
 features.title = 'Moving a displayed card into an empty area on the displayed board';
