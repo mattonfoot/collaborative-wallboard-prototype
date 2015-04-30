@@ -2,42 +2,34 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall');
 
-var storedName = 'display wall'
-  , storedWall;
+var wall;
 
 function features() {
   beforeEach(function( done ) {
-    fixture( this, storedName )
+    fixture( this, 'display wall' )
       .then(function( storage ) {
-        storedWall = storage.wall;
+        wall = storage.wall;
 
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <wall.display> event with a valid wall id to open the wall\n', function(done) {
+  it('Pass a valid wall id to open the wall\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.when([
-      'wall.displayed',
-      'wall.firsttime'
-    ],
-    function( displayed, firsttime ) {
-      should.exist( displayed );
-      displayed.should.equal( storedWall.getId() );
+    interface.displayWall( wall.getId() )
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayWall', 'displayViewCreator' ] );
+        ui.calledWith.should.deep.equal( [ wall, wall ] );
 
-      should.exist( firsttime );
-      firsttime.should.equal( storedWall.getId() );
-
-      done();
-    },
-    done,
-    { once: true });
-
-    queue.publish( 'wall.display', storedWall.getId() );
+        done();
+      })
+      .catch( done );
   });
 }
 

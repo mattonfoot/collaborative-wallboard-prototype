@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall');
 
-var storedWall;
+var wall;
 
 function features() {
   beforeEach(function( done ) {
@@ -10,8 +10,8 @@ function features() {
 
     fixture( this, 'Wall for board' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        
+        wall = storage.wall;
+
         done();
       })
       .catch( done );
@@ -19,19 +19,19 @@ function features() {
 
   it('Emit a <wall.new> event passing a valid wall id to access an input control allowing you to enter details required to create a new Board\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'boardcreator.displayed', function( displayed ) {
-      should.exist( displayed );
-      displayed.should.equal( storedWall.getId() );
+    interface.newView( wall.getId() )
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayViewCreator' ] );
+        ui.calledWith.should.deep.equal( [ wall ] );
 
-      done();
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'board.new', storedWall.getId() );
+        done();
+      })
+      .catch( done );
   });
 }
 

@@ -2,17 +2,16 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/MultipleWalls');
 
-var storedName = 'display wall'
-  , storedWall, storedWalls, len;
+var wall, walls, len;
 
 function features() {
   beforeEach(function( done ) {
-    fixture( this, storedName )
+    fixture( this, 'display wall' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedWalls = storage.walls;
+        wall = storage.wall;
+        walls = storage.walls;
 
-        len = storedWalls.length;
+        len = walls.length;
 
         done();
       })
@@ -21,28 +20,19 @@ function features() {
 
   it('If there are several walls configured then the Wall Selector input control will display all available walls\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'wallselector.displayed', function( resources ) {
-      should.exist( resources );
-      resources.should.be.instanceOf( Array );
-      resources.length.should.equal( len );
+    interface.selectWalls()
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayWallSelector' ] );
+        ui.calledWith.should.deep.equal( [ walls ] );
 
-      var names = storedWalls.map(function( wall ) {
-        return wall.getName();
-      });
-
-      resources.forEach(function( resource ) {
-        names.should.include( resource.getName() );
-      });
-
-      done();
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'wall.select' );
+        done();
+      })
+      .catch( done );
   });
 }
 

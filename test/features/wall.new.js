@@ -6,20 +6,20 @@ var resourceChecked = false
 
 function features() {
 
-  it('Emit a <wall.new> event - no data object is needed - to access an input control allowing you to enter details required to create a new Wall\n', function(done) {
+  it('Request to create a New Wall\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'wallcreator.displayed', function( displayed ) {
-      displayed.should.be.instanceOf( queue.nodata );
+    interface.newWall()
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayWallCreator' ] );
 
-      done();
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'wall.new' );
+        done();
+      })
+      .catch( done );
   });
 }
 

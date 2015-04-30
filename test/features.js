@@ -4,6 +4,7 @@ var chai = require('chai')
   , Promise = RSVP.Promise
   , ExecutionTimer = require('./executionTimer')
   , Application = require('../lib/application')
+  , UI = require('./fakeUI')
   , Queue = require('../lib/queue');
 
 var debug = false;
@@ -11,7 +12,7 @@ var queueDebug = false;
 
 var featureSet = {};
 
-var features = [
+var serviceFeatures = [
   /* Service API */
 
   // Nothing
@@ -36,27 +37,29 @@ var features = [
   require( './features/card.move.overARegion' ),      // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.UnderACard' ),     // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
-  /* Transforming cards */
-  require( './features/card.move.onABoardWithATransform' ),
-  require( './features/region.move.onABoardWithATransform' )
-
   /*
     TRANSFORM --> CREATE, UNLINK
   */
 
+  /* Transforming cards */
+  require( './features/card.move.onABoardWithATransform' ),
+  require( './features/region.move.onABoardWithATransform' )
+];
+
+var interfaceFeatures = [
   /* Interface API */
-//  require( './features/wall.new' ),      // Nothing
+  require( './features/wall.new' ),      // Nothing
 
-//  require( './features/wall.select' ),   // BasicWall
-//  require( './features/wall.display' ),  // BasicWall
-//  require( './features/wall.edit' ),     // BasicWall
-//  require( './features/board.new' ),     // BasicWall
-//  require( './features/card.new' ),      // BasicWall
+  require( './features/wall.select' ),   // BasicWall
+  require( './features/wall.display' ),  // BasicWall
+  require( './features/wall.edit' ),     // BasicWall
+  require( './features/view.new' ),      // BasicWall
+  require( './features/card.new' ),      // BasicWall
 
-//  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
+  require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
 
-//  require( './features/board.edit' ),    // BasicWall.WithOneBoard
-//  require( './features/region.new' ),    // BasicWall.WithOneBoard
+  require( './features/view.edit' ),     // BasicWall.WithOneBoard
+  require( './features/region.new' ),    // BasicWall.WithOneBoard
 
 //  require( './features/board.display' ), // BasicWall.WithMultipleBoards
 //  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
@@ -69,16 +72,20 @@ var features = [
 //  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 ];
 
-features.forEach(function( features ) {
-    if (!features.length) {
-        features = [ features ];
-    }
+serviceFeatures.forEach(function( feature ) {
+    featureSet[ feature.title ] = featureSet[ feature.title ] || [];
 
-    features.forEach(function( feature ) {
-        featureSet[feature.title] = featureSet[feature.title] || [];
+    feature.type = 'service';
 
-        featureSet[feature.title].push( feature );
-    });
+    featureSet[ feature.title ].push( feature );
+});
+
+interfaceFeatures.forEach(function( feature ) {
+    featureSet[ feature.title ] = featureSet[ feature.title ] || [];
+
+    feature.type = 'interface';
+
+    featureSet[ feature.title ].push( feature );
 });
 
 Fixture('Application service API Features', function() {
@@ -111,17 +118,18 @@ function generateCallList( calls ) {
         dbIndex++;
 
         var channelName = this.channelName = 'vuuse_features_channel_' + dbIndex;
-
         var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
 
-        var application = this.application = new Application( null, queue, null, { debug: debug } );
-
+        var ui = this.ui = feature.type === 'interface' ? new UI( queue ) : null;
+        var application = this.application = new Application( null, queue, ui, { debug: debug } );
         var services = this.services = this.application.services;
+        var services = this.interface = this.application.interface;
 
         if ( debug ) {
           ExecutionTimer( application.queries, 'Queries' );
           ExecutionTimer( application.services, 'Services' );
           ExecutionTimer( application.interface, 'Interface' );
+          ExecutionTimer( this.ui, 'UI' );
           ExecutionTimer( application.movementTracker, 'MovementTracker' );
           ExecutionTimer( application.transformManager, 'TransformManager' );
         }

@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall');
 
-var storedWall;
+var wall;
 
 function features() {
   beforeEach(function( done ) {
@@ -10,28 +10,28 @@ function features() {
 
     fixture( this, 'Wall for card' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        
+        wall = storage.wall;
+
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <pocket.new> event passing a valid board id to access an input control allowing you to enter details required to create a new Card\n', function(done) {
+  it('Pass a valid wall id to enter details required to create a new Card\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocketcreator.displayed', function( displayed ) {
-      should.exist( displayed );
-      displayed.should.equal( storedWall.getId() );
+    interface.newCard( wall.getId() )
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayCardCreator' ] );
+        ui.calledWith.should.deep.equal( [ wall ] );
 
-      done();
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'pocket.new', storedWall.getId() );
+        done();
+      })
+      .catch( done );
   });
 }
 

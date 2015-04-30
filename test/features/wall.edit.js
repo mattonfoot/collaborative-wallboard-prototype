@@ -2,40 +2,39 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall');
 
-var storedName = 'display wall'
-  , storedWall;
+var wall;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
 
-    fixture( this, storedName )
+    fixture( this, 'editable wall' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        
+        wall = storage.wall;
+
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <wall.edit> event with a valid wall id to access an input control allowing you to enter new details for a Wall\n', function(done) {
+  it('Pass a valid wall id to enter new details for a Wall\n', function(done) {
     var queue = this.queue;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'walleditor.displayed', function( displayed ) {
-      should.exist( displayed );
-      displayed.should.equal( storedWall.getId() );
+    interface.editWall( wall.getId() )
+      .then(function() {
+        ui.called.should.deep.equal( [ 'displayWallEditor' ] );
+        ui.calledWith.should.deep.equal( [ wall ] );
 
-      done();
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'wall.edit', storedWall.getId() );
+        done();
+      })
+      .catch( done );
   });
 }
 
-features.title = 'Accessing the wall editor input control';
+features.title = 'Editing a Wall';
 
 module.exports = features;

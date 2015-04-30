@@ -8,7 +8,7 @@ function features() {
   beforeEach(function( done ) {
     var services = this.services;
 
-    fixture( this, 'Wall for region' )
+    fixture( this, 'unedited view' )
       .then(function( storage ) {
         view = storage.view;
 
@@ -17,16 +17,16 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region.new> event passing a valid board id to access an input control allowing you to enter details required to create a new Region\n', function(done) {
+  it('Pass a valid view id to enter new details for a View\n', function(done) {
     var queue = this.queue;
     var interface = this.interface;
     var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    interface.newRegion( view.getId() )
+    interface.editView( view.getId() )
       .then(function() {
-        ui.called.should.deep.equal( [ 'displayRegionCreator' ] );
+        ui.called.should.deep.equal( [ 'displayViewEditor' ] );
         ui.calledWith.should.deep.equal( [ view ] );
 
         done();
@@ -35,6 +35,6 @@ function features() {
   });
 }
 
-features.title = 'Accessing the region creator input control';
+features.title = 'Editing a View';
 
 module.exports = features;
