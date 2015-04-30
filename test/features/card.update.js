@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var wallid, card;
+var card;
 
 function features() {
   beforeEach(function( done ) {
@@ -17,19 +17,16 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <card.update> event passing an updated data object with a valid card id to trigger the process of updating the stored data for an existing Card\n', function(done) {
+  it('Update a card by providing an existing card id and a new title\n', function( done ) {
     var queue = this.queue;
     var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket.updated', function( updated ) {
+    queue.subscribe( 'card.updated', function( updated ) {
       should.exist( updated );
-      updated.should.have.property( 'id' );
-      updated.should.have.property( 'title' );
-
-      updated.id.should.equal( card.getId() );
-      updated.title.should.equal( update.title );
+      updated.should.have.property( 'card', update.card );
+      updated.should.have.property( 'title', update.title );
 
       card.getTitle().should.equal( update.title );
 
@@ -39,15 +36,15 @@ function features() {
     .once();
 
     var update = {
-      id: card.getId(),
+      card: card.getId(),
       title: 'edited card'
     };
 
-    services.updatePocket( update );
+    services.updateCard( update );
   });
 
 }
 
-features.title = 'Updating a Card';
+features.title = 'Updating Cards';
 
 module.exports = features;

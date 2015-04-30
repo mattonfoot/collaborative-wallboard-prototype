@@ -2,8 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards');
 
-var storedName = 'new card'
-  , storedWall, storedBoard, storedPocket, len;
+var wall, boards;
 
 function features() {
   beforeEach(function( done ) {
@@ -11,34 +10,35 @@ function features() {
 
     fixture( this, 'Wall for card' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
+        wall = storage.wall;
+        boards = storage.boards;
 
-        len = storage.boards.length;
-        
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <pocket.create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
+  it('Emit a <card.create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
     var queue = this.queue;
-    var locationscount = 0;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    var locationSubscription = queue.subscribe( 'cardlocation.created', function( resource ) {
-      should.exist( resource );
+    var cardid, boardids = [];
 
-      resource.should.respondTo( 'getId' );
-      resource.should.respondTo( 'getPocket' );
-      resource.should.respondTo( 'getBoard' );
-      resource.getPocket().should.equal( storedPocket.getId() );
+    var subscription = queue.subscribe( 'card.added', function( created ) {
+      should.exist( created );
 
-      locationscount++;
+      created.should.have.property( 'card' );
+      if ( !cardid ) cardid = created.card;
+      created.card.should.equal( cardid );
 
-      if ( locationscount === len ) {
-        locationSubscription.unsubscribe();
+      created.should.have.property( 'board' );
+      boardids.should.not.contain( created.board );
+      boardids.push( created.board );
+
+      if ( boardids.length === boards.length ) {
+        subscription.unsubscribe();
 
         done();
       }
@@ -46,16 +46,12 @@ function features() {
     .catch( done )
     .distinct();
 
-    queue.subscribe( 'pocket.created', function( created ) {
-      should.exist( created );
-      created.should.be.a.specificCardResource( storedName, storedWall.getId() );
+    var create = {
+      wall: wall.getId(),
+      title: 'new card on multiple boards'
+    };
 
-      storedPocket = created;
-    })
-    .catch( done )
-    .once();
-
-    queue.publish( 'pocket.create', { wall: storedWall.getId(), title: storedName } );
+    services.createCard( create );
   });
 }
 

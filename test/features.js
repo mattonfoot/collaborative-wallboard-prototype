@@ -21,22 +21,16 @@ var features = [
 
   // BasicWall
   require( './features/wall.update' ),   // BasicWall
-  require( './features/board.create' ),  // BasicWall
+  require( './features/view.create' ),   // BasicWall
   require( './features/card.create' ),   // BasicWall
 
-  // BasicWall.WithOneBoard
-  require( './features/board.update' ),  // BasicWall.WithOneBoard
-  require( './features/card.create.onWallWithBoard' ),   // BasicWall.WithOneBoard
-  require( './features/region.create' ), // BasicWall.WithOneBoard
-
-  // BasicWall.WithMultipleBoards
-  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
+  // BasicWall.WithOneView
+  require( './features/view.update' ),   // BasicWall.WithOneView
+  require( './features/region.create' ), // BasicWall.WithOneView
 
   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.update' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.update' ), // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* moving items on boards */
   require( './features/card.move.intoEmptyArea' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
@@ -44,10 +38,10 @@ var features = [
   require( './features/card.move.overARegion' ),      // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.UnderACard' ),     // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
-  /* Transforming cards
-  require( './features/card.move.onABoardWithATransform' ),
-  require( './features/region.move.onABoardWithATransform' )
-  */
+  /* Transforming cards */
+//  require( './features/card.move.onABoardWithATransform' ),
+//  require( './features/region.move.onABoardWithATransform' )
+
   /*
     TRANSFORM --> CREATE, UNLINK
   */
@@ -67,11 +61,14 @@ var features = [
 //  require( './features/region.new' ),    // BasicWall.WithOneBoard
 
 //  require( './features/board.display' ), // BasicWall.WithMultipleBoards
+//  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
 
 //  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+//  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+//  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 ];
 
 features.forEach(function( features ) {
@@ -115,27 +112,17 @@ function generateCallList( calls ) {
       beforeEach(function( done ) {
         dbIndex++;
 
-        var db = 'vuuse_features_' + dbIndex;
-        var channelName = this.channelName = 'vuuse_features_channel' + dbIndex;
+        var channelName = this.channelName = 'vuuse_features_channel_' + dbIndex;
 
-        if ( !process.browser ) {
-          db = new PouchDB( db, { db: require('memdown') } );
-        } else {
-          db = new PouchDB( db );
-        }
-
-        var pouch = this.pouch = db;
-        var belt = this.belt = new Belt( db );
         var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
 
-        var application = this.application = new Application( belt, queue, null, { debug: debug } );
+        var application = this.application = new Application( null, queue, null, { debug: debug } );
 
         var services = this.services = this.application.services;
 
         if ( debug ) {
-          // ExecutionTimer( belt, 'Belt' );
-          ExecutionTimer( application.commands, 'Commands' );
           ExecutionTimer( application.queries, 'Queries' );
+          ExecutionTimer( application.services, 'Services' );
           ExecutionTimer( application.interface, 'Interface' );
           ExecutionTimer( application.movementTracker, 'MovementTracker' );
           ExecutionTimer( application.transformManager, 'TransformManager' );
@@ -145,16 +132,9 @@ function generateCallList( calls ) {
       });
 
       afterEach(function( done ) {
-        var belt = this.belt;
-        var queue = this.queue;
-        var application = this.application;
+        this.queue.clearAll();
 
-        queue.clearAll();
-
-        this.pouch.destroy()
-          .then(function () {
-            done();
-          }).catch( done );
+        done();
       });
 
       feature();

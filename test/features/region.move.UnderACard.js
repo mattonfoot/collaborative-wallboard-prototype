@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var location, region;
+var region, card;
 
 function features() {
   beforeEach(function( done ) {
@@ -12,30 +12,27 @@ function features() {
     var wall;
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        wall = storage.wall;
         region = storage.region;
-
-        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
-      })
-      .then(function( resource ) {
-        location = resource;
+        card = storage.card;
 
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <region.move> event passing a data object with a valid region id and coordinates which enclose a Card on the same Board to trigger the process of moving a Region under a Card on a Board\n', function( done ) {
+  it('Moving a REgion so that a Card comes within its bounds\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket.regionenter', function( info ) {
-      should.exist( info );
+    queue.subscribe( 'card.regionentered', function( entered ) {
+      should.exist( entered );
 
-      info.should.have.property( 'card', location.getPocket() );
-      info.should.have.property( 'region', move.id );
+      entered.should.have.property( 'card', card.getId() );
+      entered.should.have.property( 'region', move.region );
+
+      card.getRegions().should.include( move.region );
+      region.getCards().should.include( card.getId() );
 
       done();
     })
@@ -43,16 +40,15 @@ function features() {
     .once();
 
     var move = {
-      id: region.getId(),
+      region: region.getId(),
       x: 5,
       y: 5
     };
 
-    services.moveRegion( move );
-
+    region.move( move );
   });
 }
 
-features.title = 'Moving a displayed Region under a Card on the displayed Board';
+features.title = 'Moving regions under cards';
 
 module.exports = features;

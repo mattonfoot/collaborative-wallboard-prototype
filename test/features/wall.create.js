@@ -1,32 +1,34 @@
 var chai = require('chai')
   , should = chai.should();
 
-var storedName = 'new wall'
-  , resourceChecked = false
-  , queueChecked = false;
-
 function features() {
 
-  it('Emit a <wall.create> event passing a data object with a name attribute to trigger the process of creating a new wall\n', function( done ) {
+  it('Create a Wall by providing a name\n', function( done ) {
     var queue = this.queue;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'wall.created', function( wall ) {
-      should.exist( wall );
-      wall.name.should.equal( storedName );
+    queue.subscribe( 'wall.created', function( created ) {
+      should.exist( created );
+
+      created.should.have.property( 'wall' );
+      created.should.have.property( 'name', create.name );
 
       done();
     })
     .catch( done )
     .once();
 
-    queue.publish( 'wall.create', { name: storedName } );
+    var create = {
+      name: 'new wall'
+    };
 
+    services.createWall( create );
   });
 
 }
 
-features.title = 'Creating a wall';
+features.title = 'Creating Walls';
 
 module.exports = features;

@@ -1,42 +1,140 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall.WithOneBoard');
+var fixture = require('../fixtures/BasicWall.WithOneView');
 
-var storedName = 'new region'
-  , storedWall, storedBoard;
+var wall, view;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
 
-    fixture( this, 'board for region' )
+    fixture( this, 'Wall for region' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedBoard = storage.board;
-        
+        wall = storage.wall;
+        view = storage.view;
+
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <region.create> event passing a data object with a valid board id and a label attribute to trigger the process of creating a new Region\n', function( done ) {
+  it('Create a new Region with just a label\n', function( done ) {
     var queue = this.queue;
+    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
     queue.subscribe( 'region.created', function( created ) {
-      should.exist( created );
-      created.should.be.a.specificRegionResource( storedName, storedBoard.getId() );
+      created.should.have.property( 'region' );
+      created.should.have.property( 'view', create.view );
+      created.should.have.property( 'label', create.label );
+      created.should.not.have.property( 'value' );
+      created.should.not.have.property( 'color' );
+
+      wall.getRegions( create.view ).should.contain( created.region );
 
       done();
     })
     .catch( done )
     .once();
 
-    queue.publish( 'region.create', { board: storedBoard.getId(), label: storedName } );
+    var create = {
+      view: view.getId(),
+      label: 'new region'
+    };
+
+    services.createRegion( create );
+  });
+
+  it('Create a new Region with a label and a value\n', function( done ) {
+    var queue = this.queue;
+    var services = this.services;
+
+    queue.subscribe( '#.fail', done ).once();
+
+    queue.subscribe( 'region.created', function( created ) {
+      created.should.have.property( 'region' );
+      created.should.have.property( 'view', create.view );
+      created.should.have.property( 'label', create.label );
+      created.should.have.property( 'value', create.value );
+      created.should.not.have.property( 'color' );
+
+      wall.getRegions( create.view ).should.contain( created.region );
+
+      done();
+    })
+    .catch( done )
+    .once();
+
+    var create = {
+      view: view.getId(),
+      label: 'new region with value',
+      value: 1
+    };
+
+    services.createRegion( create );
+  });
+
+  it('Create a new Region with a label and a color\n', function( done ) {
+    var queue = this.queue;
+    var services = this.services;
+
+    queue.subscribe( '#.fail', done ).once();
+
+    queue.subscribe( 'region.created', function( created ) {
+      created.should.have.property( 'region' );
+      created.should.have.property( 'view', create.view );
+      created.should.have.property( 'label', create.label );
+      created.should.not.have.property( 'value' );
+      created.should.have.property( 'color', create.color );
+
+      wall.getRegions( create.view ).should.contain( created.region );
+
+      done();
+    })
+    .catch( done )
+    .once();
+
+    var create = {
+      view: view.getId(),
+      label: 'new region with color',
+      color: 'red'
+    };
+
+    services.createRegion( create );
+  });
+
+  it('Create a new Region with a label, a value and a color\n', function( done ) {
+    var queue = this.queue;
+    var services = this.services;
+
+    queue.subscribe( '#.fail', done ).once();
+
+    queue.subscribe( 'region.created', function( created ) {
+      created.should.have.property( 'region' );
+      created.should.have.property( 'view', create.view );
+      created.should.have.property( 'label', create.label );
+      created.should.have.property( 'value', create.value );
+      created.should.have.property( 'color', create.color );
+
+      wall.getRegions( create.view ).should.contain( created.region );
+
+      done();
+    })
+    .catch( done )
+    .once();
+
+    var create = {
+      view: view.getId(),
+      label: 'new region with color and value',
+      value: 'My value',
+      color: 'red'
+    };
+
+    services.createRegion( create );
   });
 }
 
-features.title = 'Creating a Region on a Board';
+features.title = 'Creating Regions';
 
 module.exports = features;

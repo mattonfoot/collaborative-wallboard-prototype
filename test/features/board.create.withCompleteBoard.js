@@ -2,8 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedName = 'board with cards added automatically'
-  , storedWall, storedBoard, storedCards, storedRegions;
+var wall, cards;
 
 function features() {
   beforeEach(function( done ) {
@@ -11,13 +10,9 @@ function features() {
 
   fixture( this, 'Wall for new board' )
     .then(function( storage ) {
-      storedWall = storage.wall;
-      storedBoard = storage.board;
-      storedCards = storage.cards;
+      wall = storage.wall;
+      cards = storage.cards;
 
-      numCards = storage.cards.length;
-      numRegions = storage.regions.length;
-      
       done();
     })
     .catch( done );
@@ -25,39 +20,52 @@ function features() {
 
   it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n', function( done ) {
     var queue = this.queue;
-    var cards = storedCards.map(function( card ){ return card.getId(); });
-    var cardsfound = false;
-    var queuechecked = false;
+    var services = this.services;
+
+    var cardids = cards.map(function( card ){ return card.getId(); });
 
     queue.subscribe( '#.fail', done ).once();
 
-    var subscription = queue.subscribe( 'cardlocation.created', function( resource ) {
-      var index = cards.indexOf( resource.getPocket() );
+    var boardid;
+    var subscription = queue.subscribe( 'card.added', function( added ) {
+      should.exist( added );
+
+      added.should.have.property( 'board', boardid );
+
+      added.should.have.property( 'card' );
+      var index = cards.indexOf( added.card );
 
       if ( index >= 0 ) {
-        cards.splice( index , 1 );
+        cards.splice( index, 1 );
       }
 
       if ( !cards.length ) {
         subscription.unsubscribe();
 
         cardsfound = true;
-        if ( cardsfound && queuechecked ) done();
+        if ( cardsfound ) done();
       }
     })
     .catch( done );
 
     queue.subscribe('board.created', function( created ) {
       should.exist( created );
-      created.should.be.a.specificBoardResource( storedName, storedWall.getId() );
 
-      queuechecked = true;
-      if ( cardsfound && queuechecked ) done();
+      created.should.have.property( 'board' );
+      created.should.have.property( 'wall', create.wall );
+      created.should.have.property( 'name', create.name );
+
+      boardid = created.board;
     })
     .catch( done )
     .once();
 
-    queue.publish( 'board.create', { wall: storedWall.getId(), name: storedName } );
+    var create = {
+      wall: wall.getId(),
+      name: 'board with cards added automatically'
+    };
+
+    services.createBoard( create );
   });
 
 }

@@ -1,6 +1,6 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall.WithOneBoard');
+var fixture = require('../fixtures/BasicWall.WithOneView');
 
 var storedWall, storedBoard;
 
@@ -12,7 +12,7 @@ function features() {
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
-        
+
         done();
       })
       .catch( done );

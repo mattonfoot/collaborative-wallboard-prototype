@@ -1,34 +1,34 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall');
+var fixture = require('../fixtures/BasicWall.WithOneView');
 
-var wall;
+var view;
 
 function features() {
   beforeEach(function( done ) {
     var services = this.services;
 
-    fixture( this, 'unedited wall' )
+    fixture( this, 'unedited view' )
       .then(function( storage ) {
-        wall = storage.wall;
+        view = storage.view;
 
         done();
       })
       .catch( done );
   });
 
-  it('Update a Wall by providing a wall id and a new name\n', function(done) {
+  it('Update a View by passing an existing view id and a new name\n', function(done) {
     var queue = this.queue;
     var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'wall.updated', function( updated ) {
+    queue.subscribe( 'view.updated', function( updated ) {
       should.exist( updated );
-      updated.should.have.property( 'wall', wall.getId() );
+      updated.should.have.property( 'view', view.getId() );
       updated.should.have.property( 'name', update.name );
 
-      wall.getName().should.equal( update.name );
+      view.getName().should.equal( update.name );
 
       done();
     })
@@ -36,14 +36,15 @@ function features() {
     .once();
 
     var update = {
-      wall: wall.getId(),
-      name: 'edited wall'
+      view: view.getId(),
+      name: 'edited view'
     };
 
-    services.updateWall( update );
+    services.updateView( update );
   });
+
 }
 
-features.title = 'Updating Walls';
+features.title = 'Updating Views';
 
 module.exports = features;

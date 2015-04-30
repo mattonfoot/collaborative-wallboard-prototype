@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var location;
+var view, card;
 
 function features() {
   beforeEach(function( done ) {
@@ -12,18 +12,15 @@ function features() {
     var wall;
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        wall = storage.wall;
-
-        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
-      }).then(function( resource ) {
-        location = resource;
+        view = storage.view;
+        card = storage.card;
 
         done();
       })
       .catch( done );
   });
 
-  it('Emit a <card.move> event passing a data object with a valid location id and coordinates to trigger the process of moving a Card around a Board\n', function( done ) {
+  it('Moving a card requires a valid card id and a valid view id along with new coordinates\n', function( done ) {
     var queue = this.queue;
     var services = this.services;
 
@@ -33,11 +30,11 @@ function features() {
       should.exist( moved );
 
       moved.should.have.property( 'card', move.card );
-      moved.should.have.property( 'board', move.board );
+      moved.should.have.property( 'view', move.view );
       moved.should.have.property( 'x', move.x );
       moved.should.have.property( 'y', move.y );
 
-      var position = location.getPosition();
+      var position = card.getPosition( move.view );
       position.x.should.equal( move.x );
       position.y.should.equal( move.y );
 
@@ -47,17 +44,16 @@ function features() {
     .once();
 
     var move = {
-      id: location.getId(),
-      card: location.getPocket(),
-      board: location.getBoard(),
+      card: card.getId(),
+      view: view.getId(),
       x: 600,
       y: 600
     };
 
-    services.moveCard( move );
+    card.move( move );
   });
 }
 
-features.title = 'Moving a displayed card into an empty area on the displayed board';
+features.title = 'Moving Cards around a view';
 
 module.exports = features;

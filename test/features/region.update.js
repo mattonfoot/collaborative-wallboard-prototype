@@ -25,11 +25,8 @@ function features() {
 
     var subscription = queue.subscribe( 'region.updated', function( updated ) {
       should.exist( updated );
-      updated.should.have.property( 'id' );
-      updated.should.have.property( 'label' );
-
-      updated.id.should.equal( region.getId() );
-      updated.label.should.equal( update.label );
+      updated.should.have.property( 'region', update.region );
+      updated.should.have.property( 'label', update.label );
 
       region.getLabel().should.equal( update.label );
 
@@ -39,7 +36,7 @@ function features() {
     .once();
 
     var update = {
-      id: region.getId(),
+      region: region.getId(),
       label: 'edited region label'
     };
 
@@ -54,11 +51,8 @@ function features() {
 
     var subscription = queue.subscribe( 'region.updated', function( updated ) {
       should.exist( updated );
-      updated.should.have.property( 'id' );
-      updated.should.have.property( 'value' );
-
-      updated.id.should.equal( region.getId() );
-      updated.value.should.equal( update.value );
+      updated.should.have.property( 'region', update.region );
+      updated.should.have.property( 'value',update.value );
 
       region.getValue().should.equal( update.value );
 
@@ -68,7 +62,7 @@ function features() {
     .once();
 
     var update = {
-      id: region.getId(),
+      region: region.getId(),
       value: 'edited region value'
     };
 
@@ -83,11 +77,8 @@ function features() {
 
     var subscription = queue.subscribe( 'region.updated', function( updated ) {
       should.exist( updated );
-      updated.should.have.property( 'id' );
-      updated.should.have.property( 'color' );
-
-      updated.id.should.equal( region.getId() );
-      updated.color.should.equal( update.color );
+      updated.should.have.property( 'region', update.region );
+      updated.should.have.property( 'color', update.color );
 
       region.getColor().should.equal( update.color );
 
@@ -97,7 +88,7 @@ function features() {
     .once();
 
     var update = {
-      id: region.getId(),
+      region: region.getId(),
       color: 'magenta'
     };
 
@@ -106,6 +97,6 @@ function features() {
 
 }
 
-features.title = 'Updating a Region';
+features.title = 'Updating Regions';
 
 module.exports = features;

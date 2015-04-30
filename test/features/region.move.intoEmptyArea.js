@@ -17,16 +17,15 @@ function features() {
       .catch( done );
   });
 
-  it('Emit a <region.move> event passing a data object with a valid region id and coordinates to trigger the process of moving a Region around a Board\n', function( done ) {
+  it('Moving a Region requires a valid region id along with new coordinates\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
     queue.subscribe( 'region.moved', function( moved ) {
       should.exist( moved );
 
-      moved.should.have.property( 'id', move.id );
+      moved.should.have.property( 'region', move.region );
       moved.should.have.property( 'x', move.x );
       moved.should.have.property( 'y', move.y );
 
@@ -40,15 +39,15 @@ function features() {
     .once();
 
     var move = {
-      id: region.getId(),
+      region: region.getId(),
       x: 600,
       y: 600
     };
 
-    services.moveRegion( move );
+    region.move( move );
   });
 }
 
-features.title = 'Moving a displayed Region into an empty area on the displayed Board';
+features.title = 'Moving Regions around a view';
 
 module.exports = features;
