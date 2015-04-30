@@ -2,7 +2,7 @@ var RSVP = require('rsvp');
 var Promise = RSVP.Promise;
 
 function fixture( ctx, storedName ) {
-  var services = ctx.services;
+  var interface = ctx.interface;
 
   var storage = ctx.storage = {
     walls: [],
@@ -13,24 +13,24 @@ function fixture( ctx, storedName ) {
   };
 
   return new Promise(function( resolve, reject ) {
-    services
+    interface
       .createWall({ name: 'wall for view' })
       .then(function( wall ) {
         storage.wall = wall;
         storage.walls.push( wall );
 
-        return services.createView({ wall: storage.wall.getId(), name: 'view for cards and regions' });
+        return interface.createView({ wall: storage.wall.getId(), name: 'view for cards and regions' });
       })
       .then(function( view ) {
         storage.view = view;
         storage.views.push( view );
 
-        return services.createView({ wall: storage.wall.getId(), name: 'empty view' });
+        return interface.createView({ wall: storage.wall.getId(), name: 'empty view' });
       })
       .then(function( view ) {
         storage.views.push( view );
 
-        return services.createRegion({
+        return interface.createRegion({
           view: storage.view.getId(),
           label: 'Red Region',
           color: 'red',
@@ -45,7 +45,7 @@ function fixture( ctx, storedName ) {
         storage.region = region;
         storage.regions.push( region );
 
-        return services.createRegion({
+        return interface.createRegion({
           view: storage.view.getId(),
           label: 'Blue Region',
           color: 'blue',
@@ -59,7 +59,7 @@ function fixture( ctx, storedName ) {
       .then(function( region ) {
         storage.regions.push( region );
 
-        return services.createCard({
+        return interface.createCard({
           wall: storage.wall.getId(),
           title: 'First Card'
         });
@@ -68,7 +68,7 @@ function fixture( ctx, storedName ) {
         storage.card = card;
         storage.cards.push( card );
 
-        return services.createCard({
+        return interface.createCard({
           wall: storage.wall.getId(),
           title: 'Second Card'
         });

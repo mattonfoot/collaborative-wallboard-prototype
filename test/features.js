@@ -44,6 +44,7 @@ var serviceFeatures = [
   /* Transforming cards */
   require( './features/card.move.onABoardWithATransform' ),
   require( './features/region.move.onABoardWithATransform' )
+
 ];
 
 var interfaceFeatures = [
@@ -62,7 +63,7 @@ var interfaceFeatures = [
   require( './features/region.new' ),    // BasicWall.WithOneBoard
 
   require( './features/view.display' ), // BasicWall.WithMultipleBoards
-//  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
+  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
 
 //  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
@@ -126,10 +127,10 @@ function generateCallList( calls ) {
         var services = this.interface = this.application.interface;
 
         if ( debug ) {
-          ExecutionTimer( application.queries, 'Queries' );
-          ExecutionTimer( application.services, 'Services' );
-          ExecutionTimer( application.interface, 'Interface' );
           ExecutionTimer( this.ui, 'UI' );
+          ExecutionTimer( application.repository, 'Repository' );
+          ExecutionTimer( application.interface, 'Interface' );
+          ExecutionTimer( application.services, 'Services' );
           ExecutionTimer( application.movementTracker, 'MovementTracker' );
           ExecutionTimer( application.transformManager, 'TransformManager' );
         }

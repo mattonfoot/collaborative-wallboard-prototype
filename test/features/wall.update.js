@@ -6,8 +6,6 @@ var wall;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'unedited wall' )
       .then(function( storage ) {
         wall = storage.wall;
@@ -19,7 +17,7 @@ function features() {
 
   it('Update a Wall by providing a wall id and a new name\n', function(done) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -40,7 +38,7 @@ function features() {
       name: 'edited wall'
     };
 
-    services.updateWall( update );
+    interface.updateWall( update );
   });
 }
 

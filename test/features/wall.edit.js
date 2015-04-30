@@ -6,8 +6,6 @@ var wall;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'editable wall' )
       .then(function( storage ) {
         wall = storage.wall;

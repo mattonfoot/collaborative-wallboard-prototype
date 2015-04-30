@@ -1,6 +1,6 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall.WithMultipleBoards');
+var fixture = require('../fixtures/BasicWall.WithMultipleViews');
 
 var wall, view;
 
@@ -33,8 +33,8 @@ function features() {
 
     interface.displayView( view.getId() )
       .then(function() {
-        ui.called.should.deep.equal( [ 'displayView' ] );
-        ui.calledWith.should.deep.equal( [ view ] );
+        ui.called.should.deep.equal( [ 'displayView', 'enableControls' ] );
+        ui.calledWith.should.deep.equal( [ view, view ] );
 
         done();
       })

@@ -6,8 +6,6 @@ var view;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'unedited view' )
       .then(function( storage ) {
         view = storage.view;
@@ -19,7 +17,7 @@ function features() {
 
   it('Update a View by passing an existing view id and a new name\n', function(done) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -40,7 +38,7 @@ function features() {
       name: 'edited view'
     };
 
-    services.updateView( update );
+    interface.updateView( update );
   });
 
 }

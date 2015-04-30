@@ -6,9 +6,6 @@ var wall, view, card, region, origin;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-    var queries = this.application.queries;
-
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
         wall = storage.wall;

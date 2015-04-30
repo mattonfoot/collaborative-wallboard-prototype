@@ -6,8 +6,6 @@ var card;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'board for card editing' )
       .then(function( storage ) {
         card = storage.card;
@@ -19,7 +17,7 @@ function features() {
 
   it('Update a card by providing an existing card id and a new title\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -40,7 +38,7 @@ function features() {
       title: 'edited card'
     };
 
-    services.updateCard( update );
+    interface.updateCard( update );
   });
 
 }

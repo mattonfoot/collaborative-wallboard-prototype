@@ -22,7 +22,7 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    interface.selectWalls()
+    interface.displayWallSelector()
       .then(function() {
         ui.called.should.deep.equal( [ 'displayWallSelector' ] );
         ui.calledWith.should.deep.equal( [ [ wall ] ] );

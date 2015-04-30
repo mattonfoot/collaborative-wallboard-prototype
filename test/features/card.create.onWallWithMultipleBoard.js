@@ -1,17 +1,23 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall.WithMultipleBoards');
+var fixture = require('../fixtures/BasicWall.WithMultipleViews');
 
-var wall, boards;
+var wall, view;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
+    var interface = this.interface;
+    var ui = this.ui;
 
-    fixture( this, 'Wall for card' )
+    fixture( this, 'display view' )
       .then(function( storage ) {
         wall = storage.wall;
-        boards = storage.boards;
+        view = storage.view;
+
+        return interface.displayWall( wall.getId() );
+      })
+      .then(function() {
+        ui.reset();
 
         done();
       })
@@ -20,41 +26,41 @@ function features() {
 
   it('Emit a <card.create> event passing a data object with a valid wall id and a title attribute to trigger the process of creating a new Card\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
+    var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    var cardid, boardids = [];
+    var cardid;
 
-    var subscription = queue.subscribe( 'card.added', function( created ) {
+    queue.subscribe( 'card.created', function( created ) {
       should.exist( created );
 
       created.should.have.property( 'card' );
-      if ( !cardid ) cardid = created.card;
+      cardid = created.card;
       created.card.should.equal( cardid );
+      created.should.have.property( 'wall', create.wall );
+      created.should.have.property( 'title', create.title );
 
-      created.should.have.property( 'board' );
-      boardids.should.not.contain( created.board );
-      boardids.push( created.board );
+      wall.getCards().should.contain( created.card );
 
-      if ( boardids.length === boards.length ) {
-        subscription.unsubscribe();
+      ui.called.should.deep.equal( [ 'displayCard' ] );
+      ui.calledWith.should.deep.equal( [ card ] );
 
-        done();
-      }
+      done();
     })
     .catch( done )
-    .distinct();
+    .once();
 
     var create = {
       wall: wall.getId(),
-      title: 'new card on multiple boards'
+      title: 'new card on multiple views'
     };
 
-    services.createCard( create );
+    interface.createCard( create );
   });
 }
 
-features.title = 'Creating a Card on a wall with multiple Boards';
+features.title = 'Creating a Card on a wall with multiple Views';
 
 module.exports = features;

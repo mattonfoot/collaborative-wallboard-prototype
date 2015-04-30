@@ -6,7 +6,6 @@ var card, region;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
     var queries = this.application.queries;
 
     var wall;

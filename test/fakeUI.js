@@ -57,6 +57,14 @@ FakeUI.prototype.displayView = function( data ) {
   return true;
 };
 
+FakeUI.prototype.enableControls = function( data ) {
+  this.called.push( 'enableControls' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
 FakeUI.prototype.displayWallEditor = function( data ) {
   this.called.push( 'displayWallEditor' );
 

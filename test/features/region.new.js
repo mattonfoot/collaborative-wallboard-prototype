@@ -6,8 +6,6 @@ var view;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'Wall for region' )
       .then(function( storage ) {
         view = storage.view;

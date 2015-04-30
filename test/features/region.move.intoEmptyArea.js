@@ -6,8 +6,6 @@ var region;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'Wall for moving a region on' )
       .then(function( storage ) {
         region = storage.region;

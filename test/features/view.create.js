@@ -17,7 +17,7 @@ function features() {
 
   it('Create a new View on a Wall with a wall id and a name\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -40,7 +40,7 @@ function features() {
       name: 'new view'
     };
 
-    services.createView( create );
+    interface.createView( create );
   });
 }
 

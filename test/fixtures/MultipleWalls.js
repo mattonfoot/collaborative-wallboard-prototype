@@ -2,7 +2,7 @@ var RSVP = require('rsvp');
 var Promise = RSVP.Promise;
 
 function fixture( ctx, storedName ) {
-  var services = ctx.services;
+  var interface = ctx.interface;
 
   var storage = ctx.storage = {
     walls: [],
@@ -13,18 +13,18 @@ function fixture( ctx, storedName ) {
   };
 
   return new Promise(function( resolve, reject ) {
-    services
+    interface
       .createWall({ name: 'first wall' })
       .then(function( wall ) {
         storage.wall = wall;
         storage.walls.push( wall );
 
-        return services.createWall({ name: 'other wall' });
+        return interface.createWall({ name: 'other wall' });
       })
       .then(function( wall ) {
         storage.walls.push( wall );
 
-        return services.createWall({ name: 'another wall' });
+        return interface.createWall({ name: 'another wall' });
       })
       .then(function( wall ) {
         storage.walls.push( wall );

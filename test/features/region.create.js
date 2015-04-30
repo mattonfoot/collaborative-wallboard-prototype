@@ -6,8 +6,6 @@ var wall, view;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'Wall for region' )
       .then(function( storage ) {
         wall = storage.wall;
@@ -20,7 +18,7 @@ function features() {
 
   it('Create a new Region with just a label\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -43,12 +41,12 @@ function features() {
       label: 'new region'
     };
 
-    services.createRegion( create );
+    interface.createRegion( create );
   });
 
   it('Create a new Region with a label and a value\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -72,12 +70,12 @@ function features() {
       value: 1
     };
 
-    services.createRegion( create );
+    interface.createRegion( create );
   });
 
   it('Create a new Region with a label and a color\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -101,12 +99,12 @@ function features() {
       color: 'red'
     };
 
-    services.createRegion( create );
+    interface.createRegion( create );
   });
 
   it('Create a new Region with a label, a value and a color\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -131,7 +129,7 @@ function features() {
       color: 'red'
     };
 
-    services.createRegion( create );
+    interface.createRegion( create );
   });
 }
 

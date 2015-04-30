@@ -6,7 +6,7 @@ var storedWall, storedBoard, numCards = 0, numRegions = 0;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
+    var interface = this.interface;
 
     fixture( this, 'Wall for displaying a board' )
       .then(function( storage ) {
@@ -15,7 +15,7 @@ function features() {
 
         numCards = storage.cards.length;
         numRegions = storage.regions.length;
-        
+
         done();
       })
       .catch( done );

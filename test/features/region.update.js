@@ -6,8 +6,6 @@ var wallid, card;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'board for region editing' )
       .then(function( storage ) {
         region = storage.region;
@@ -19,7 +17,7 @@ function features() {
 
   it('Updating the label property of an existing Region\n', function(done) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -40,12 +38,12 @@ function features() {
       label: 'edited region label'
     };
 
-    services.updateRegion( update );
+    interface.updateRegion( update );
   });
 
   it('Updating the value property of an existing Region\n', function(done) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -66,12 +64,12 @@ function features() {
       value: 'edited region value'
     };
 
-    services.updateRegion( update );
+    interface.updateRegion( update );
   });
 
   it('Updating the color property of an existing Region\n', function(done) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -92,7 +90,7 @@ function features() {
       color: 'magenta'
     };
 
-    services.updateRegion( update );
+    interface.updateRegion( update );
   });
 
 }

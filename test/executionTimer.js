@@ -50,7 +50,7 @@ function wrapMethod( label, object, propertyName ) {
 
         if ( output.then ) {
             return output.then(function( resource ) {
-                complete( label + '.' + propertyName + '.then(' + !!resource + ')', start );
+                complete( label + '.' + propertyName + '.then(' + ( !!resource ? ' '+typeof( resource )+' ' : '' ) + ')', start );
 
                 return resource;
             });

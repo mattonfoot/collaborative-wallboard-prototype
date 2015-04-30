@@ -5,7 +5,7 @@ function features() {
 
   it('Create a Wall by providing a name\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -24,7 +24,7 @@ function features() {
       name: 'new wall'
     };
 
-    services.createWall( create );
+    interface.createWall( create );
   });
 
 }

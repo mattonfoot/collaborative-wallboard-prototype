@@ -6,8 +6,6 @@ var view;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'unedited view' )
       .then(function( storage ) {
         view = storage.view;

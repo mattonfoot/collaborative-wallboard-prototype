@@ -6,8 +6,6 @@ var wall;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-
     fixture( this, 'Wall for card' )
       .then(function( storage ) {
         wall = storage.wall;
@@ -19,7 +17,7 @@ function features() {
 
   it('Create a new Card on a wall by passing a wall id and a title\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -42,7 +40,7 @@ function features() {
       title: 'new card'
     };
 
-    services.createCard( create );
+    interface.createCard( create );
   });
 }
 

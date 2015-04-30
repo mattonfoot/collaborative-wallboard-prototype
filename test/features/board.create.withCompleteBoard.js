@@ -20,7 +20,7 @@ function features() {
 
   it('Any cards that are already available to the Boards associated Wall will be automatically created and placed on the new Board\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
+    var interface = this.interface;
 
     var cardids = cards.map(function( card ){ return card.getId(); });
 
@@ -65,7 +65,7 @@ function features() {
       name: 'board with cards added automatically'
     };
 
-    services.createBoard( create );
+    interface.createBoard( create );
   });
 
 }

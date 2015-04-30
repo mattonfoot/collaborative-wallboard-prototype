@@ -6,10 +6,6 @@ var view, card;
 
 function features() {
   beforeEach(function( done ) {
-    var services = this.services;
-    var queries = this.application.queries;
-
-    var wall;
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
         view = storage.view;
@@ -22,7 +18,6 @@ function features() {
 
   it('Moving a card requires a valid card id and a valid view id along with new coordinates\n', function( done ) {
     var queue = this.queue;
-    var services = this.services;
 
     queue.subscribe( '#.fail', done ).once();
 
