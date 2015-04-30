@@ -2,8 +2,6 @@ var chai = require('chai')
   , should = chai.should()
   , RSVP = require('rsvp')
   , Promise = RSVP.Promise
-  , PouchDB = require('pouchdb')
-  , Belt = require('belt')
   , ExecutionTimer = require('./executionTimer')
   , Application = require('../lib/application')
   , Queue = require('../lib/queue');
@@ -39,8 +37,8 @@ var features = [
   require( './features/region.move.UnderACard' ),     // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
   /* Transforming cards */
-//  require( './features/card.move.onABoardWithATransform' ),
-//  require( './features/region.move.onABoardWithATransform' )
+  require( './features/card.move.onABoardWithATransform' ),
+  require( './features/region.move.onABoardWithATransform' )
 
   /*
     TRANSFORM --> CREATE, UNLINK
@@ -159,68 +157,4 @@ function underline( title, format, indent, endWith ) {
         new Array( indent + 1 ).join( ' ' ) +
         new Array( title.length + 1 ).join( format ) +
         endWith;
-}
-
-
-
-// additional assertions
-
-chai.Assertion.addMethod('specificWallResource', shouldBeSpecificWallResource);
-
-function shouldBeSpecificWallResource( expectedName ) {
-    var resource = this._obj;
-
-    resource.should.respondTo( 'getId' );
-    resource.should.respondTo( 'getName' );
-    resource.getName().should.equal( expectedName );
-}
-
-chai.Assertion.addMethod('specificBoardResource', shouldBeSpecificBoardResource);
-
-function shouldBeSpecificBoardResource( expectedName, expectedWallId ) {
-    var resource = this._obj;
-
-    resource.should.respondTo( 'getId' );
-    resource.should.respondTo( 'getName' );
-    resource.getName().should.equal( expectedName );
-    resource.should.respondTo( 'getWall' );
-    resource.getWall().should.equal( expectedWallId );
-    resource.should.respondTo( 'getTransforms' );
-    resource.should.respondTo( 'getCardLocations' );
-    resource.should.respondTo( 'getRegions' );
-}
-
-chai.Assertion.addMethod('specificCardResource', shouldBeSpecificCardResource);
-
-function shouldBeSpecificCardResource( expectedTitle, expectedWallId ) {
-    var resource = this._obj;
-
-    resource.should.respondTo( 'getId' );
-    resource.should.respondTo( 'getTitle' );
-    resource.getTitle().should.equal( expectedTitle );
-    resource.should.respondTo( 'getWall' );
-    resource.getWall().should.equal( expectedWallId );
-    resource.should.respondTo( 'getContent' );
-    resource.should.respondTo( 'getTags' );
-    resource.should.respondTo( 'getMentions' );
-    resource.should.respondTo( 'getCardnumber' );
-    resource.should.respondTo( 'getCardLocations' );
-    resource.should.respondTo( 'getRegions' );
-}
-
-chai.Assertion.addMethod('specificRegionResource', shouldBeSpecificRegionResource);
-
-function shouldBeSpecificRegionResource( expectedLabel, expectedBoardId ) {
-    var resource = this._obj;
-
-    resource.should.respondTo( 'getId' );
-    resource.should.respondTo( 'getLabel' );
-    resource.getLabel().should.equal( expectedLabel );
-    resource.should.respondTo( 'getBoard' );
-    resource.getBoard().should.equal( expectedBoardId );
-    resource.should.respondTo( 'getColor' );
-    resource.should.respondTo( 'getValue' );
-    resource.should.respondTo( 'getPosition' );
-    resource.should.respondTo( 'getSize' );
-    resource.should.respondTo( 'getPockets' );
 }

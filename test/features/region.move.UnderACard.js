@@ -20,7 +20,7 @@ function features() {
       .catch( done );
   });
 
-  it('Moving a REgion so that a Card comes within its bounds\n', function( done ) {
+  it('Moving a Region so that a Card comes within its bounds\n', function( done ) {
     var queue = this.queue;
 
     queue.subscribe( '#.fail', done ).once();

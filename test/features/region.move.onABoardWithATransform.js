@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
 
-var storedWall, storedLocation, storedRegion, storedCard;
+var wall, view, card, region, origin;
 
 function features() {
   beforeEach(function( done ) {
@@ -11,14 +11,10 @@ function features() {
 
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        storedWall = storage.wall;
-        storedRegion = storage.region;
-        storedCard = storage.card;
-
-        return queries.getCardLocation( storage.card.getId(), storage.board.getId() );
-      })
-      .then(function( location ) {
-        storedLocation = location;
+        wall = storage.wall;
+        view = storage.view;
+        card = storage.card;
+        region = storage.region;
 
         done();
       })
@@ -30,31 +26,30 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'pocket.transformed', function( transform ) {
-      should.exist( transform );
+    queue.subscribe( 'card.transformed', function( transformed ) {
+      should.exist( transformed );
 
-      transform.should.have.property( 'op' );
-      transform.op.should.equal( 'set' );
-      transform.should.have.property( 'card' );
-      transform.card.should.equal( storedCard.getId() );
-      transform.should.have.property( 'property' );
-      transform.property.should.equal( 'color' );
-      transform.should.have.property( 'value' );
-      transform.value.should.equal( storedRegion.getColor() );
+      transformed.should.have.property( 'op', 'set' );
+      transformed.should.have.property( 'card', move.card );
+      transformed.should.have.property( 'property', 'color' );
+      transformed.should.have.property( 'value', region.getColor() );
 
       done();
     })
     .catch( done )
     .once();
 
-    storedRegion.x = 0;
-    storedRegion.y = 0;
+    var move = {
+      region: region.getId(),
+      x: 5,
+      y: 5
+    };
 
-    queue.publish( 'region.move', storedRegion );
+    region.move( move );
 
   });
 }
 
-features.title = 'Activating a Transform defined for a board by moving a region beneath a card';
+features.title = 'Moving Regions under crds when a transform is set on a view';
 
 module.exports = features;
