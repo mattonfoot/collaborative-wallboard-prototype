@@ -24,8 +24,8 @@ function features() {
 
     interface.displayWall( wall.getId() )
       .then(function() {
-        ui.called.should.deep.equal( [ 'displayWall', 'displayViewCreator' ] );
-        ui.calledWith.should.deep.equal( [ wall, wall ] );
+        ui.called.should.deep.equal( [ 'displayWall', 'displayViewSelector', 'displayViewCreator' ] );
+        ui.calledWith.should.deep.equal( [ wall, wall, wall ] );
 
         done();
       })

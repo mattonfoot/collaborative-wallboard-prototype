@@ -1,9 +1,13 @@
 function FakeUI() {
   this.constructor = FakeUI;
 
+  this.reset();
+}
+
+FakeUI.prototype.reset = function() {
   this.called = [];
   this.calledWith = [];
-}
+};
 
 FakeUI.prototype.displayWallCreator = function( data ) {
   this.called.push( 'displayWallCreator' );
@@ -31,6 +35,14 @@ FakeUI.prototype.displayWall = function( data ) {
 
 FakeUI.prototype.displayViewCreator = function( data ) {
   this.called.push( 'displayViewCreator' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
+FakeUI.prototype.displayViewSelector = function( data ) {
+  this.called.push( 'displayViewSelector' );
 
   if ( data ) this.calledWith.push( data );
 

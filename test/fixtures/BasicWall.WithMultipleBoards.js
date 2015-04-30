@@ -6,10 +6,9 @@ function fixture( ctx, storedName ) {
 
   var storage = ctx.storage = {
     walls: [],
-    boards: [],
+    views: [],
     regions: [],
-    cards: [],
-    locations: []
+    cards: []
   };
 
   return new Promise(function( resolve, reject ) {
@@ -18,17 +17,17 @@ function fixture( ctx, storedName ) {
       .then(function( wall ) {
         storage.wall = wall;
         storage.walls.push( wall );
-        
-        return services.createBoard({ wall: storage.wall.getId(), name: storedName });
-      })
-      .then(function( board ) {
-        storage.board = board;
-        storage.boards.push( board );
 
-        return services.createBoard({ wall: storage.wall.getId(), name: 'other board' });
+        return services.createView({ wall: storage.wall.getId(), name: storedName });
       })
-      .then(function( board ) {
-        storage.boards.push( board );
+      .then(function( view ) {
+        storage.view = view;
+        storage.views.push( view );
+
+        return services.createView({ wall: storage.wall.getId(), name: 'other view' });
+      })
+      .then(function( view ) {
+        storage.views.push( view );
 
         resolve( storage );
       })
