@@ -73,6 +73,14 @@ FakeUI.prototype.displayWallEditor = function( data ) {
   return true;
 };
 
+FakeUI.prototype.displayCard = function( data ) {
+  this.called.push( 'displayCard' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
 FakeUI.prototype.displayCardCreator = function( data ) {
   this.called.push( 'displayCardCreator' );
 
@@ -83,6 +91,14 @@ FakeUI.prototype.displayCardCreator = function( data ) {
 
 FakeUI.prototype.displayViewEditor = function( data ) {
   this.called.push( 'displayViewEditor' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
+FakeUI.prototype.displayRegion = function( data ) {
+  this.called.push( 'displayRegion' );
 
   if ( data ) this.calledWith.push( data );
 

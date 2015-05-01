@@ -7,10 +7,14 @@ var storedName = 'display wall'
 
 function features() {
   beforeEach(function( done ) {
+    var ui = this.ui;
+    
     fixture( this, storedName )
       .then(function( storage ) {
         storedWall = storage.wall;
         storedBoard = storage.board;
+
+        ui.reset();
 
         done();
       })

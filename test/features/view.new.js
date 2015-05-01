@@ -6,9 +6,13 @@ var wall;
 
 function features() {
   beforeEach(function( done ) {
+    var ui = this.ui;
+    
     fixture( this, 'Wall for board' )
       .then(function( storage ) {
         wall = storage.wall;
+
+        ui.reset();
 
         done();
       })

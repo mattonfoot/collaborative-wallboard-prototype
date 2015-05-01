@@ -6,12 +6,16 @@ var wall, walls, len;
 
 function features() {
   beforeEach(function( done ) {
+    var ui = this.ui;
+    
     fixture( this, 'display wall' )
       .then(function( storage ) {
         wall = storage.wall;
         walls = storage.walls;
 
         len = walls.length;
+
+        ui.reset();
 
         done();
       })

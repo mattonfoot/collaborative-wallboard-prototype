@@ -9,7 +9,7 @@ function features() {
     fixture( this, 'unedited view' )
       .then(function( storage ) {
         view = storage.view;
-
+        
         done();
       })
       .catch( done );

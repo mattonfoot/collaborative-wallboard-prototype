@@ -6,9 +6,13 @@ var view;
 
 function features() {
   beforeEach(function( done ) {
+    var ui = this.ui;
+    
     fixture( this, 'unedited view' )
       .then(function( storage ) {
         view = storage.view;
+
+        ui.reset();
 
         done();
       })

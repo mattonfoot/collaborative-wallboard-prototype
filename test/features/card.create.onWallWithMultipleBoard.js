@@ -14,9 +14,6 @@ function features() {
         wall = storage.wall;
         view = storage.view;
 
-        return interface.displayWall( wall.getId() );
-      })
-      .then(function() {
         ui.reset();
 
         done();
@@ -31,33 +28,19 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    var cardid;
-
-    queue.subscribe( 'card.created', function( created ) {
-      should.exist( created );
-
-      created.should.have.property( 'card' );
-      cardid = created.card;
-      created.card.should.equal( cardid );
-      created.should.have.property( 'wall', create.wall );
-      created.should.have.property( 'title', create.title );
-
-      wall.getCards().should.contain( created.card );
-
-      ui.called.should.deep.equal( [ 'displayCard' ] );
-      ui.calledWith.should.deep.equal( [ card ] );
-
-      done();
-    })
-    .catch( done )
-    .once();
-
     var create = {
       wall: wall.getId(),
       title: 'new card on multiple views'
     };
 
-    interface.createCard( create );
+    interface.createCard( create )
+      .then(function( card ) {
+        ui.called.should.deep.equal( [ 'displayCard' ] );
+        ui.calledWith.should.deep.equal( [ card ] );
+
+        done();
+      })
+      .catch( done );
   });
 }
 

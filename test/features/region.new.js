@@ -6,9 +6,13 @@ var view;
 
 function features() {
   beforeEach(function( done ) {
+    var ui = this.ui;
+    
     fixture( this, 'Wall for region' )
       .then(function( storage ) {
         view = storage.view;
+
+        ui.reset();
 
         done();
       })
