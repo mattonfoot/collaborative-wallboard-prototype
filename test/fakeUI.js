@@ -1,8 +1,15 @@
+var events = require('events'),
+    util = require('util');
+
 function FakeUI() {
   this.constructor = FakeUI;
 
+  events.EventEmitter.call( this );
+
   this.reset();
 }
+
+util.inherits( FakeUI, events.EventEmitter );
 
 FakeUI.prototype.reset = function() {
   this.called = [];
@@ -49,6 +56,14 @@ FakeUI.prototype.displayViewSelector = function( data ) {
   return true;
 };
 
+FakeUI.prototype.updateViewSelector = function( data ) {
+  this.called.push( 'updateViewSelector' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
 FakeUI.prototype.displayView = function( data ) {
   this.called.push( 'displayView' );
 
@@ -73,10 +88,9 @@ FakeUI.prototype.displayWallEditor = function( data ) {
   return true;
 };
 
-FakeUI.prototype.displayCard = function( data ) {
+FakeUI.prototype.displayCard = function( view, card ) {
   this.called.push( 'displayCard' );
-
-  if ( data ) this.calledWith.push( data );
+  this.calledWith.push( card );
 
   return true;
 };
