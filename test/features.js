@@ -31,17 +31,13 @@ var serviceFeatures = [
   require( './features/card.update' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.update' ), // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
-  /* moving items on boards */
+  // moving items on boards
   require( './features/card.move.intoEmptyArea' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.intoEmptyArea' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/card.move.overARegion' ),      // BasicWall.WithMultipleBoards.FirstWithTwoRegions
   require( './features/region.move.UnderACard' ),     // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 
-  /*
-    TRANSFORM --> CREATE, UNLINK
-  */
-
-  /* Transforming cards */
+  // Transforming cards
   require( './features/card.move.onABoardWithATransform' ),
   require( './features/region.move.onABoardWithATransform' )
 
@@ -71,6 +67,7 @@ var interfaceFeatures = [
 //  require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+
 ];
 
 serviceFeatures.forEach(function( feature ) {
@@ -124,7 +121,7 @@ function generateCallList( calls ) {
         var ui = this.ui = feature.type === 'interface' ? new UI( queue ) : null;
         var application = this.application = new Application( null, queue, ui, { debug: debug } );
         var services = this.services = this.application.services;
-        var services = this.interface = this.application.interface;
+        var interface = this.interface = this.application.interface;
 
         if ( debug ) {
           ExecutionTimer( this.ui, 'UI' );
