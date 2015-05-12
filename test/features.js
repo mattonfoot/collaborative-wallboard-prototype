@@ -61,8 +61,8 @@ var interfaceFeatures = [
   require( './features/view.display' ), // BasicWall.WithMultipleBoards
   require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleBoards
 
-//  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
-//  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/card.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
+  require( './features/region.edit' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/board.display.withCompleteBoard' ),   // BasicWall.WithMultipleBoards.FirstWithTwoRegions
 //  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleBoards.FirstWithTwoRegions

@@ -127,6 +127,22 @@ FakeUI.prototype.displayRegionCreator = function( data ) {
   return true;
 };
 
+FakeUI.prototype.displayCardEditor = function( data ) {
+  this.called.push( 'displayCardEditor' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
+FakeUI.prototype.displayRegionEditor = function( data ) {
+  this.called.push( 'displayRegionEditor' );
+
+  if ( data ) this.calledWith.push( data );
+
+  return true;
+};
+
 
 
 
