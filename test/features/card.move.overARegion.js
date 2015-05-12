@@ -1,6 +1,6 @@
 var chai = require('chai');
 var should = chai.should();
-var fixture = require('../fixtures/BasicWall.WithMultipleBoards.FirstWithTwoRegions');
+var fixture = require('../fixtures/BasicWall.WithMultipleViews.FirstWithTwoRegions');
 
 var card, region;
 

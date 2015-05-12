@@ -17,6 +17,9 @@ function features() {
         regions = storage.regions;
         cards = storage.cards;
 
+        return interface.displayWall( wall.getId() );
+      })
+      .then(function() {
         ui.reset();
 
         done();
@@ -24,17 +27,17 @@ function features() {
       .catch( done );
   });
 
-  it('Selecting a Wall for display will also display the first associated View of a Wall\n', function(done) {
+  it('Selecting a View of the current Wall for display\n', function(done) {
     var queue = this.queue;
     var interface = this.interface;
     var ui = this.ui;
 
     queue.subscribe( '#.fail', done ).once();
 
-    interface.displayWall( wall.getId() )
+    interface.displayView( view.getId() )
       .then(function() {
-        ui.called.should.deep.equal( [ 'displayWall', 'displayViewSelector', 'displayView', 'enableControls', 'displayRegion', 'displayRegion', 'displayCard', 'displayCard' ] );
-        ui.calledWith.should.deep.equal( [ wall, wall, view, view, regions[0], regions[1], cards[0], cards[1] ] );
+        ui.called.should.deep.equal( [ 'displayView', 'enableControls', 'displayRegion', 'displayRegion', 'displayCard', 'displayCard' ] );
+        ui.calledWith.should.deep.equal( [ view, view, regions[0], regions[1], cards[0], cards[1] ] );
 
         done();
       })
@@ -42,6 +45,6 @@ function features() {
   });
 }
 
-features.title = 'Displaying a Wall with multiple Views containing Cards and Regions';
+features.title = 'Displaying a View of a Wall containing multiple Cards and Regions';
 
 module.exports = features;
