@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "auth0": "*",
-    "belt": "git+https://github.com/mattonfoot/belt.git",
     "postal": "^1.0.1",
     "postal.diagnostics": "^0.7.4",
     "postal.when": "git+https://github.com/mattonfoot/postal.when.git",
