@@ -14,6 +14,9 @@ function features() {
         wall = storage.wall;
         view = storage.view;
 
+        return interface.displayWall( wall.getId() );
+      })
+      .then(function() {
         ui.reset();
 
         done();
@@ -25,6 +28,7 @@ function features() {
     var queue = this.queue;
     var interface = this.interface;
     var ui = this.ui;
+    var repository = this.application.repository;
 
     queue.subscribe( '#.fail', done ).once();
 
@@ -33,13 +37,22 @@ function features() {
       title: 'new card on multiple views'
     };
 
-    interface.createCard( create )
-      .then(function( card ) {
-        ui.called.should.deep.equal( [ 'displayCard' ] );
-        ui.calledWith.should.deep.equal( [ card ] );
+    var actualDisplayCard = ui.displayCard;
+    ui.displayCard = function( view, card ) {
+      should.exist( view );
+      should.exist( card );
 
-        done();
-      })
+      var out = actualDisplayCard.call( this, view, card );
+
+      ui.called.should.deep.equal( [ 'displayCard' ] );
+      ui.calledWith.should.deep.equal( [ card ] );
+
+      done();
+
+      return out;
+    };
+
+    interface.createCard( create )
       .catch( done );
   });
 }

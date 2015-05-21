@@ -7,12 +7,16 @@ var wall, view;
 function features() {
   beforeEach(function( done ) {
     var ui = this.ui;
+    var interface = this.interface;
 
     fixture( this, 'display view' )
       .then(function( storage ) {
         wall = storage.wall;
         view = storage.view;
 
+        return interface.displayWall( wall.getId() );
+      })
+      .then(function() {
         ui.reset();
 
         done();

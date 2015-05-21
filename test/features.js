@@ -62,8 +62,8 @@ var interfaceFeatures = [
   require( './features/view.edit' ),     // BasicWall.WithOneView
   require( './features/region.new' ),    // BasicWall.WithOneView
 
-//  require( './features/view.display' ), // BasicWall.WithMultipleViews
-//  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleViews
+  require( './features/view.display' ), // BasicWall.WithMultipleViews
+  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleViews
 
   require( './features/card.edit' ),    // BasicWall.WithMultipleViews.FirstWithTwoRegions
 

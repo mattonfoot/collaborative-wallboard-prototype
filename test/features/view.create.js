@@ -18,9 +18,11 @@ function features() {
   it('Create a new View on a Wall with a wall id and a name\n', function( done ) {
     var queue = this.queue;
     var interface = this.interface;
+    var repository = this.application.repository;
 
     queue.subscribe( '#.fail', done ).once();
 
+    var createdWasFired = false;
     queue.subscribe('view.created', function( created ) {
       should.exist( created );
 
