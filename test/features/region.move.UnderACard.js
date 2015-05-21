@@ -36,10 +36,12 @@ function features() {
     .catch( done )
     .once();
 
+    var pos = card.getPosition( region.getView() );
+
     var move = {
       region: region.getId(),
-      x: 5,
-      y: 5
+      x: pos.x - 10,
+      y: pos.y - 10
     };
 
     region.move( move );

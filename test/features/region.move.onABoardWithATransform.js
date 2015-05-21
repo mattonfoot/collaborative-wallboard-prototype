@@ -36,10 +36,12 @@ function features() {
     .catch( done )
     .once();
 
+    var pos = card.getPosition( region.getView() );
+
     var move = {
       region: region.getId(),
-      x: 5,
-      y: 5
+      x: pos.x - 10,
+      y: pos.y - 10
     };
 
     region.move( move );
@@ -47,6 +49,6 @@ function features() {
   });
 }
 
-features.title = 'Moving Regions under crds when a transform is set on a view';
+features.title = 'Moving Regions under a Card when a transform is set on a view';
 
 module.exports = features;

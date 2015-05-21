@@ -5,6 +5,7 @@ var chai = require('chai')
   , ExecutionTimer = require('./executionTimer')
   , Application = require('../lib/application')
   , UI = require('./fakeUI')
+  , DB = require('./fakeDB')
   , Queue = require('../lib/queue');
 
 var debug = false;
@@ -50,6 +51,7 @@ var interfaceFeatures = [
   require( './features/wall.new' ),      // Nothing
 
   require( './features/wall.select' ),   // BasicWall
+
   require( './features/wall.display' ),  // BasicWall
   require( './features/wall.edit' ),     // BasicWall
   require( './features/view.new' ),      // BasicWall
@@ -57,19 +59,19 @@ var interfaceFeatures = [
 
   require( './features/wall.select.withMultipleWalls' ),     // MultipleWalls
 
-  require( './features/view.edit' ),     // BasicWall.WithOneBoard
-  require( './features/region.new' ),    // BasicWall.WithOneBoard
+  require( './features/view.edit' ),     // BasicWall.WithOneView
+  require( './features/region.new' ),    // BasicWall.WithOneView
 
-  require( './features/view.display' ), // BasicWall.WithMultipleViews
-  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleViews
+//  require( './features/view.display' ), // BasicWall.WithMultipleViews
+//  require( './features/card.create.onWallWithMultipleBoard' ), // BasicWall.WithMultipleViews
 
   require( './features/card.edit' ),    // BasicWall.WithMultipleViews.FirstWithTwoRegions
+
   require( './features/region.edit' ),    // BasicWall.WithMultipleViews.FirstWithTwoRegions
   require( './features/wall.display.withCompleteBoard' ),    // BasicWall.WithMultipleViews.FirstWithTwoRegions
   require( './features/view.display.withCompleteBoard' ),   // BasicWall.WithMultipleViews.FirstWithTwoRegions
 //  require( './features/board.create.withCompleteBoard' ),    // BasicWall.WithMultipleViews.FirstWithTwoRegions
 //  require( './features/card.create.toDisplayedBoardOfMultipleBoards' ),  // BasicWall.WithMultipleViews.FirstWithTwoRegions
-
 
 ];
 
@@ -119,7 +121,8 @@ function generateCallList( calls ) {
         dbIndex++;
 
         var channelName = this.channelName = 'vuuse_features_channel_' + dbIndex;
-        var queue = this.queue = new Queue({ channel: channelName, debug: debug || queueDebug });
+        var db = this.db = new DB( queue );
+        var queue = this.queue = new Queue({ db: db, channel: channelName, debug: debug || queueDebug });
 
         var ui = this.ui = feature.type === 'interface' ? new UI( queue ) : null;
         var application = this.application = new Application( null, queue, ui, { debug: debug } );
