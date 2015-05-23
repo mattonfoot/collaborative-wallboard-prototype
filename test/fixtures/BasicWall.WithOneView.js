@@ -1,6 +1,8 @@
 var RSVP = require('rsvp');
 var Promise = RSVP.Promise;
 var uuid = require('uuid');
+var hrtime = require('browser-process-hrtime');
+
 
 function fixture( ctx, storedName ) {
   var interface = ctx.interface;
@@ -19,7 +21,7 @@ function fixture( ctx, storedName ) {
   var viewid = uuid.v4();
 
   var now = new Date().getTime();
-  var ticks = process.hrtime();
+  var ticks = hrtime();
   ticks = ticks[0] * 1e9 + ticks[1];
 
   // most recent first

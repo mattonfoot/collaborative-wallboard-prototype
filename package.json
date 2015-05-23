@@ -28,6 +28,7 @@
     "auth0-lock": "^7.5.1",
     "express": "^4.12.3",
     "machina": "^1.0.0",
+    "performance-now": "^0.2.0",
     "postal": "^1.0.1",
     "postal.diagnostics": "^0.7.4",
     "postal.federation": "^0.3.0-rc2",
