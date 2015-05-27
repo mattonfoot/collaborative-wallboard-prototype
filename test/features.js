@@ -122,10 +122,16 @@ function generateCallList( calls ) {
 
         var channelName = this.channelName = 'vuuse_features_channel_' + dbIndex;
         var db = this.db = new DB( queue );
-        var queue = this.queue = new Queue({ db: db, channel: channelName, debug: debug || queueDebug });
+        var queue = this.queue = new Queue({
+          federate: false,
+          db: db,
+          channelName: channelName,
+          debug: debug || queueDebug,
+          clientId: 'test_client_' + Date.now()
+        });
 
         var ui = this.ui = feature.type === 'interface' ? new UI( queue ) : null;
-        var application = this.application = new Application( null, queue, ui, { debug: debug } );
+        var application = this.application = new Application( queue, ui, { debug: debug } );
         var services = this.services = this.application.services;
         var interface = this.interface = this.application.interface;
 

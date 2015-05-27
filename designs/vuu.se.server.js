@@ -15,7 +15,7 @@ var fortune = require('fortune')
 var port = Number(process.env.PORT || 80),
     host = process.env.HOST || '0.0.0.0',
     config = {
-        db: 'vuu.se'
+        db: 'vuuse'
       , baseUrl: process.env.BASE_URL || 'http://vuuse-mattonfoot.herokuapp.com'
       , production: process.env.NODE_ENV === 'production'
     },
