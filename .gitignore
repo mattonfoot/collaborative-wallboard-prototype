@@ -20,3 +20,7 @@ npm-debug.log
 
 .DS_Store
 *-temp
+
+log.txt
+config.json
+vuuse
