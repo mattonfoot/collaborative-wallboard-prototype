@@ -24,19 +24,6 @@ module.exports = function( config ) {
         legacyWatch: true
       },
 
-      server: {
-        options: {
-          env: {
-            PORT: config.env.PORT,
-            HOST: config.env.HOST,
-            COUCH: 'https://vuuse.smileupps.com',
-            CHANNEL: 'vuuse',
-            SERVERID: 'live'
-          }
-        },
-        script: './lib/server'
-      },
-
       dev: {
         options: {
           nodeArgs: [ '--debug' ],

@@ -1,1 +1,1 @@
-web: ./node_modules/grunt-cli/bin/grunt nodemon:server
+web: node ./lib/server
