@@ -1,4 +1,4 @@
-module.exports = function() {
+module.exports = function( config ) {
 
     return {
       options: {
@@ -27,11 +27,11 @@ module.exports = function() {
       server: {
         options: {
           env: {
-            PORT: '80',
-            HOST: '0.0.0.0',
+            PORT: config.env.PORT,
+            HOST: config.env.HOST,
             COUCH: 'https://vuuse.smileupps.com',
             CHANNEL: 'vuuse',
-            SERVERID: '0001'
+            SERVERID: 'live'
           }
         },
         script: './lib/server'
@@ -41,11 +41,11 @@ module.exports = function() {
         options: {
           nodeArgs: [ '--debug' ],
           env: {
-            PORT: '9001',
-            HOST: '0.0.0.0',
+            PORT: config.env.PORT || '9001',
+            HOST: config.env.HOST || '0.0.0.0',
             COUCH: 'https://vuuse.smileupps.com',
             CHANNEL: 'vuuse',
-            SERVERID: '0001'
+            SERVERID: 'dev'
           }
         },
         script: './lib/server'
