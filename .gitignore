@@ -21,6 +21,5 @@ npm-debug.log
 .DS_Store
 *-temp
 
+lib/server/db/data/
 log.txt
-config.json
-vuuse
