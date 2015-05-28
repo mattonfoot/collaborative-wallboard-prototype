@@ -27,7 +27,7 @@ module.exports = function() {
       server: {
         options: {
           env: {
-            PORT: '8080',
+            PORT: '80',
             HOST: '0.0.0.0',
             COUCH: 'https://vuuse.smileupps.com',
             CHANNEL: 'vuuse',
