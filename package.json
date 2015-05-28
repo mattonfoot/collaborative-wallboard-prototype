@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "A digital Wall Board Prototype for collaborative interactive boards",
   "private": true,
-  "main": "./lib/server.js",
+  "main": "./lib/server",
   "scripts": {
     "start": "node ./lib/server",
     "test": "./node_modules/grunt-cli/bin/grunt test",
@@ -28,6 +28,7 @@
     "auth0-lock": "^7.5.1",
     "express": "^4.12.3",
     "express-pouchdb": "^0.14.2",
+    "grunt-nodemon": "^0.4.0",
     "http-pouchdb": "^1.1.0",
     "machina": "^1.0.0",
     "performance-now": "^0.2.0",
