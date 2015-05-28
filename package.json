@@ -59,7 +59,6 @@
     "grunt-cli": "*",
     "grunt-complexity": "*",
     "grunt-contrib-clean": "*",
-    "grunt-contrib-connect": "*",
     "grunt-contrib-copy": "*",
     "grunt-contrib-jshint": "*",
     "grunt-contrib-watch": "*",
