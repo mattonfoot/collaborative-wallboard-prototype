@@ -14,7 +14,8 @@ RUN     export DEBIAN_FRONTEND=noninteractive && \
         apt-get remove -y wget && \
         rm -rf node-v0.10.33-linux-x64.tar.gz /var/lib/apt/lists/* && \
         node --version && \
-        mkdir /bundle; cd /bundle
+
+RUN     mkdir /bundle; cd /bundle;
 
 EXPOSE  8080
 

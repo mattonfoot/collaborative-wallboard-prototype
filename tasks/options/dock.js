@@ -1,7 +1,7 @@
 var fs = require('fs'),
     path = require('path');
 
-module.exports = function() {
+module.exports = function( config ) {
   var userHome = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
 
   var caPath   = path.resolve(userHome, '.boot2docker/certs/boot2docker-vm/', 'ca.pem'),
@@ -31,7 +31,7 @@ module.exports = function() {
         images: {
 
           'node': {
-            dockerfile: 'contianers/DockerNode',
+            dockerfile: 'containers/DockerNode',
 
             options: {
 
@@ -40,7 +40,7 @@ module.exports = function() {
               start:  {
                 "PortBindings": { "8080/tcp": [ { "HostPort": "8080" } ] },
                 "Binds":[
-                  __dirname + "/bundle/node:/bundle"
+                  config.__dirname + "/bundle/node:/bundle"
                 ]
               },
 
@@ -61,8 +61,8 @@ module.exports = function() {
                 "PortBindings": { "80/tcp": [ { "HostPort": "8081" } ] },
                 "Links": [ "node:latest" ],
                 "Binds":[
-                  __dirname + "/bundle/nginx:/bundle",
-                  __dirname + "/bundle/nginx:/etc/nginx/sites-available",
+                  config.__dirname + "/bundle/nginx:/bundle",
+                  config.__dirname + "/bundle/nginx:/etc/nginx/sites-available",
                 ]
               },
 

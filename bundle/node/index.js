@@ -17,8 +17,7 @@ var serverIdentifier = process.env.SERVERID || '0001';
 var dataURI = '/data';
 
 // serve static directories
-app.use( express.static( 'dist') );
-app.use( express.static( 'designs') );
+app.use( express.static( 'client') );
 
 // handle app config requests
 app.get('/config', function( req, res ) {

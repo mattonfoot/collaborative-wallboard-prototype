@@ -12,7 +12,7 @@ module.exports = function() {
             }
         }
 
-      , docker: {
+      , bundles: {
             files: [
               {
                 expand: true,

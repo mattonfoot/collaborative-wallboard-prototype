@@ -26,6 +26,8 @@ module.exports = function( grunt ) {
 
       , env: process.env
 
+      , __dirname: __dirname
+
     };
 
     grunt.util._.extend(config, loadConfig( './tasks/options/', config ));
@@ -60,6 +62,9 @@ module.exports = function( grunt ) {
 
     // auto build
     // grunt.registerTask('default'   , [ 'watch' ]);
+
+    // docker containers
+    grunt.registerTask('serve'        , [ 'dock:dev:build', 'dock:dev:start' ]);
 
     // travis-ci
     grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);

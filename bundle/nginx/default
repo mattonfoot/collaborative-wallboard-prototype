@@ -2,7 +2,7 @@
 # Nginx default config file
 #
 
-upstream node {server 172.17.1.52:8080;}
+upstream node {server 172.17.0.9:8080;}
 
 server {
   error_log /dev/stderr;
