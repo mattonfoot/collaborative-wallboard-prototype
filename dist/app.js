@@ -2070,6 +2070,8 @@ function onAuthenticate( profile ) {
         $dom.data( 'ui', ui );
 
         $dom.data( 'application', new Application( queue, ui, {} ) );
+
+        ui.enable();
       }
     });
 }
@@ -2755,6 +2757,10 @@ UI.prototype.displayWallSelector = function( walls ) {
 };
 
 // controls
+
+UI.prototype.enable = function() {
+  this._$element.removeClass( 'hide' );
+}
 
 UI.prototype.enableControls = function( view ) {
   this._$element.find('[data-new="card"]').removeAttr( 'disabled' ).data( 'parent', view.getWall() );
