@@ -1739,6 +1739,10 @@ function MovementTracker( queue, repository ) {
   queue.subscribe( 'region.moved', function( data ) {
     movementTracker.trackRegionMovement( data );
   });
+
+  queue.subscribe( 'region.resized', function( data ) {
+    movementTracker.trackRegionMovement( data );
+  });
 }
 
 MovementTracker.prototype.trackCardMovement = function( data ) {
