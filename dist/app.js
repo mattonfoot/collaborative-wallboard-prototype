@@ -2052,7 +2052,8 @@ auth.authenticate( 'X0n9ZaXJrJgeP9V4KAI7LXsiMsn6jN4G', 'vuu-se.auth0.com' )
   .then( onConfigure )
   .catch( onConfigurationError )
   .then( onReplicate )
-  .catch( onReplicationError );
+  .catch( onReplicationError )
+  .catch( onComplete );
 
 
 
@@ -2090,8 +2091,6 @@ function onConfigure( config ) {
     clientId: profile.user_id + Date.now()
   });
   $dom.data( 'queue', queue );
-
-  return queue.replicateFromRemote( remotedb );
 }
 
 function onConfigurationError( err ) {
@@ -2099,6 +2098,15 @@ function onConfigurationError( err ) {
 }
 
 function onReplicate() {
+  return queue.replicateFromRemote( remotedb );
+}
+
+function onReplicationError( err ) {
+  console.log( 'REPLICATION ERROR', err );
+}
+
+function onComplete() {
+  return queue.replicateFromRemote( remotedb );
   var queue = $dom.data( 'queue' );
   var ui = new UI( queue, $dom, {}, $ );
   $dom.data( 'ui', ui );
@@ -2106,10 +2114,6 @@ function onReplicate() {
   $dom.data( 'application', new Application( queue, ui, {} ) );
 
   ui.enable();
-}
-
-function onReplicationError( err ) {
-  console.log( 'REPLICATION ERROR', err );
 }
 
 },{"./application":1,"./auth":10,"./queue":12,"./ui":15,"pouchdb":158,"rsvp":203}],12:[function(require,module,exports){
@@ -2174,7 +2178,11 @@ function EventQueue( options ) {
 EventQueue.prototype.replicateFromRemote = function( remoteDB ) {
   var db = this.db;
 
-  return db.sync( remoteDB );
+  return db.sync( remoteDB, {
+    retry: true,
+    batch_size: 1000,
+    batches_limit: 1,
+  });
 };
 
 EventQueue.prototype.publish = function( topic, data ) {
