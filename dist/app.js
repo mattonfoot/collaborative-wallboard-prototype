@@ -2079,7 +2079,8 @@ function onAuthenticationError( err ) {
 function onConfigure( config ) {
   var profile = $dom.data( 'profile' );
   var channelName = config.channelName;
-  var remotedb = window.location.origin + config.dataURI + '/' + channelName;
+  config.remotedb = window.location.origin + config.dataURI + '/' + channelName;
+  $dom.data( 'config', config );
 
   var pouchdb = new PouchDB( channelName +'_'+ profile.user_id );
 
@@ -2099,6 +2100,7 @@ function onConfigurationError( err ) {
 
 function onReplicate() {
   var queue = $dom.data( 'queue' );
+  var config = $dom.data( 'config' );
   return queue.replicateFromRemote( remotedb );
 }
 
