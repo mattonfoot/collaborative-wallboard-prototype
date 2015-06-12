@@ -2098,6 +2098,7 @@ function onConfigurationError( err ) {
 }
 
 function onReplicate() {
+  var queue = $dom.data( 'queue' );
   return queue.replicateFromRemote( remotedb );
 }
 
