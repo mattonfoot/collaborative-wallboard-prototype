@@ -2159,10 +2159,10 @@ function EventQueue( options ) {
     var DiagnosticsWireTap = require('postal.diagnostics')( postal );
 
     this.wireTap = new DiagnosticsWireTap({
-      name: "console"/*,
+      name: "console",
       filters: [
         { channel: this.channel }
-      ]*/
+      ]
     });
   }
 
@@ -2177,15 +2177,11 @@ function EventQueue( options ) {
 
     this.socket = io.connect( window.location.origin );
 
-    // federated general events
     postal.fedx.addFilter([
     	{ channel: this.channel, topic: '#', direction: 'both' }
     ]);
 
-    // federated client specific events
-    postal.fedx.addFilter([
-    	{ channel: this.channel + '/client/' + this.clientid, topic: '#', direction: 'both' }
-    ]);
+    postal.fedx.signalReady();
 
     var queue = this;
     this.socket.on('connect', function() {
@@ -2402,8 +2398,6 @@ module.exports = EventQueue;
   				}
   			},
   			send : function( packingSlip ) {
-          console.log( _pubEventName, packingSlip );
-
   				this.target.emit( _pubEventName, packingSlip );
   			},
   			sendQueued : function () {
