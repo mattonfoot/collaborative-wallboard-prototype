@@ -1999,11 +1999,11 @@ Auth.prototype.authenticate = function( clientid, authdomain ) {
 
       // look up existing user
       // if user does not exist create a new user, notify of new user creation, return new profile
-      // attach profile
-      // notify of successful login
 
+      // attach profile
       auth.attachProfile( profile );
 
+      // notify of successful login
       resolve( profile );
     }
   });
@@ -2020,7 +2020,7 @@ Auth.prototype.attachProfile = function( profile ) {
 }
 
 Auth.prototype.logoutUser = function() {
-  localStorage.removeItem( 'token' );
+  localStorage.removeItem( 'auth.token' );
 
   this.profile = null;
 
@@ -2047,20 +2047,20 @@ var $dom = $('[data-provides="ui"]');
 
 var auth = new Auth( $dom, {} );
 auth.authenticate( 'X0n9ZaXJrJgeP9V4KAI7LXsiMsn6jN4G', 'vuu-se.auth0.com' )
-  .then( onAuthenticate )
+  .then( authenticate )
   .catch( onAuthenticationError )
-  .then( onConfigure )
+  .then( configure )
   .catch( onConfigurationError )
-  .then( onReplicate )
+  .then( replicate )
   .catch( onReplicationError )
-  .catch( onComplete );
+  .then( complete );
 
 
 
 
 
 
-function onAuthenticate( profile ) {
+function authenticate( profile ) {
   $dom.data( 'profile', profile );
 
   return new Promise(function( resolve, reject ) {
@@ -2076,7 +2076,7 @@ function onAuthenticationError( err ) {
   console.log( 'AUTH ERROR', err );
 }
 
-function onConfigure( config ) {
+function configure( config ) {
   var profile = $dom.data( 'profile' );
   var channelName = config.channelName;
   config.remotedb = window.location.origin + config.dataURI + '/' + channelName;
@@ -2098,18 +2098,23 @@ function onConfigurationError( err ) {
   console.log( 'CONFIG ERROR', err );
 }
 
-function onReplicate() {
-  var queue = $dom.data( 'queue' );
-  var config = $dom.data( 'config' );
-  return queue.replicateFromRemote( remotedb );
+function replicate() {
+  return $dom.data( 'queue' ).syncEventStreams();
 }
 
 function onReplicationError( err ) {
   console.log( 'REPLICATION ERROR', err );
 }
 
-function onComplete() {
-  return queue.replicateFromRemote( remotedb );
+function initialize() {
+  return $dom.data( 'queue' ).signalReady();
+}
+
+function onInitializedError( err ) {
+  console.log( 'INITIALIZATION ERROR', err );
+}
+
+function complete() {
   var queue = $dom.data( 'queue' );
   var ui = new UI( queue, $dom, {}, $ );
   $dom.data( 'ui', ui );
@@ -2122,6 +2127,8 @@ function onComplete() {
 },{"./application":1,"./auth":10,"./queue":12,"./ui":15,"pouchdb":158,"rsvp":203}],12:[function(require,module,exports){
 var hrtime = require('performance-now');
 var postal = require('postal');
+var RSVP = require('rsvp');
+var Promise = RSVP.Promise;
 
 function NoQueueData() {}
 
@@ -2130,7 +2137,7 @@ function EventQueue( options ) {
 
   this.loadTime = Date.now();
 
-  options = options || {};
+  this.options = options || {};
   if (!options.channelName) {
     throw new Error( 'A channel name must be provided' );
   }
@@ -2145,6 +2152,20 @@ function EventQueue( options ) {
     this.clientId = options.clientId;
   }
 
+  var PouchEventStore = require('../queue/pouch.eventstore')( postal );
+  this.eventStore = new PouchEventStore( this.channel, this.db, this.clientId );
+
+  if ( options.debug ) {
+    var DiagnosticsWireTap = require('postal.diagnostics')( postal );
+
+    this.wireTap = new DiagnosticsWireTap({
+      name: "console"/*,
+      filters: [
+        { channel: this.channel }
+      ]*/
+    });
+  }
+
   if ( options.federate && this.clientId ) {
     var io = require( 'socket.io-client' );
     var postalCore = require( 'postal' );
@@ -2156,36 +2177,70 @@ function EventQueue( options ) {
 
     this.socket = io.connect( window.location.origin );
 
+    // federated general events
     postal.fedx.addFilter([
     	{ channel: this.channel, topic: '#', direction: 'both' }
     ]);
 
-	  postal.fedx.signalReady();
-  }
+    // federated client specific events
+    postal.fedx.addFilter([
+    	{ channel: this.channel + '/client/' + this.clientid, topic: '#', direction: 'both' }
+    ]);
 
-  var PouchEventStore = require('../queue/pouch.eventstore')( postal );
-  this.eventStore = new PouchEventStore( this.channel, this.db, this.clientId );
-
-  if ( options.debug ) {
-    var DiagnosticsWireTap = require('postal.diagnostics')( postal );
-
-    this.wireTap = new DiagnosticsWireTap({
-      name: "console",
-      filters: [
-        { channel: this.channel }
-      ]
+    var queue = this;
+    this.socket.on('connect', function() {
+      queue.sessionid = queue.socket.io.engine.id;
     });
   }
 }
 
-EventQueue.prototype.replicateFromRemote = function( remoteDB ) {
-  var db = this.db;
+EventQueue.prototype.syncEventStreams = function( userid ) {
+  var queue = this;
 
-  return db.sync( remoteDB, {
-    retry: true,
-    batch_size: 1000,
-    batches_limit: 1,
+  return new Promise(function(resolve, reject) {
+    if ( queue.options.federate && queue.clientId ) {
+      return onReady();
+    }
+
+    resolve();
+
+    function onReady() {
+      if ( !queue.sessionid ) return setTimeout( onReady, 10 );
+
+      var lastTimestamp = {};
+      if (typeof localStorage !== 'undefined') {
+        lastTimestamp.timeStamp = localStorage.getItem( 'queue.lastTimestamp');
+        lastTimestamp.ticks = localStorage.getItem( 'queue.lastTicks');
+      }
+
+      queue.socket.emit('client.ready', {
+        channel: queue.channel + '/client/' + queue.clientId,
+        sessionid: queue.sessionid,
+        clientId: queue.clientId,
+        timeStamp: lastTimestamp.timeStamp,
+        ticks: lastTimestamp.ticks
+      });
+
+      queue.socket.on('client.event', function( event ) {
+        queue.db.put( event.doc, function( err, info ) {
+            if ( err ) throw err;
+
+            if ( typeof localStorage !== 'undefined' ) {
+              localStorage.setItem( 'queue.lastTimestamp', event.doc.timeStamp );
+              localStorage.setItem( 'queue.lastTicks', event.doc.ticks );
+            }
+        });
+      });
+
+      queue.socket.on('server.ready', function() {
+        resolve();
+      });
+    }
   });
+};
+
+EventQueue.prototype.signalReady = function() {
+  postal.fedx.signalReady();
 };
 
 EventQueue.prototype.publish = function( topic, data ) {
@@ -2205,11 +2260,18 @@ EventQueue.prototype.publish = function( topic, data ) {
     msg.user = this.clientId;
   }
 
-  return postal.publish({
+  var publisher =  postal.publish({
     channel: this.channel,
     topic: topic,
     data: msg || new NoQueueData()
   });
+
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem( 'queue.lastTimestamp', msg.timeStamp );
+    localStorage.setItem( 'queue.lastTicks', msg.ticks );
+  }
+
+  return publisher;
 };
 
 EventQueue.prototype.subscribe = function( topic, reaction ) {
@@ -2232,7 +2294,7 @@ EventQueue.prototype.clearAll = function() {
 
 module.exports = EventQueue;
 
-},{"../queue/postal.socketio":13,"../queue/pouch.eventstore":14,"performance-now":119,"postal":126,"postal.diagnostics":120,"postal.federation":122,"socket.io-client":204}],13:[function(require,module,exports){
+},{"../queue/postal.socketio":13,"../queue/pouch.eventstore":14,"performance-now":119,"postal":126,"postal.diagnostics":120,"postal.federation":122,"rsvp":203,"socket.io-client":204}],13:[function(require,module,exports){
 (function (process){
 /*
  postal.socketio
@@ -2340,6 +2402,8 @@ module.exports = EventQueue;
   				}
   			},
   			send : function( packingSlip ) {
+          console.log( _pubEventName, packingSlip );
+
   				this.target.emit( _pubEventName, packingSlip );
   			},
   			sendQueued : function () {
