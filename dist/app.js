@@ -1183,7 +1183,7 @@ function View( data, queue ) {
 
   this.constructor = View;
   this.queue = queue;
-  
+
   this.queue.subscribe( 'view.updated', View.prototype.updated.bind( this ) );
 }
 
@@ -1217,7 +1217,7 @@ View.eventsource = function( queue, events ) {
     if ( event.topic !== 'view.created' ) {
       switch( event.topic ) {
         case 'view.updated':
-          wall.updated( event.data );
+          view.updated( event.data );
           break;
       }
 
