@@ -3332,15 +3332,23 @@ function CanvasView( queue, ui, view, options ) {
     shape.cards = new Kinetic.Layer();
     shape.add( shape.cards );
 
-    // triggers
-    shape.on( 'contentDblclick contentDbltap', onOpenRequest );
-
-    var $container = $( '#' + options.container );
+    var $container = $( '#' + view.getId() );
     var scale = 1;
     var zoomFactor = 1.1;
     var origin = { x: 0, y: 0 };
 
-    $container.on('mousewheel', onZoomRequest);
+    // triggers
+    shape.on( 'contentDblclick contentDbltap', onOpenRequest );
+    $container.find('canvas').on( 'dragover', onDragOver );
+    $container.find('canvas').on( 'drop', onFileDropRequest );
+    $container.find('canvas').on( 'gestureend', function( ev ) {
+      if ( ev.scale < 1.0) {
+        console.log( 'zoom in detected' );
+      } else if ( ev.scale > 1.0) {
+        console.log( 'zoom out detected' );
+      }
+    });
+    $container.on( 'mousewheel', onZoomRequest );
 
     // private methods
 
@@ -3352,6 +3360,48 @@ function CanvasView( queue, ui, view, options ) {
         }
 
         ui.emit( 'view.edit', view.getId() );
+    }
+
+    function onDragOver( ev ) {
+      console.log( 'drag over request' );
+
+      ev.preventDefault();
+    }
+
+    // Handle dropped image file - only Firefox and Google Chrome
+    function onFileDropRequest( ev ) {
+    	ev.preventDefault();
+
+      var files = ev.originalEvent.dataTransfer.files;
+
+    	if (files.length > 0) {
+    		var file = files[0];
+
+    		if ( typeof FileReader !== "undefined" ) {
+    			var reader = new FileReader();
+
+    			reader.onload = function ( ev ) {
+            ui.emit( 'file.drop', { type: file.type, data: ev.target.result });
+    			};
+
+          if ( ~file.type.indexOf( 'text' ) ) {
+            return reader.readAsText( file );
+          }
+
+    			reader.readAsArrayBuffer( file );
+    		}
+    	} else {
+        var items = ev.originalEvent.dataTransfer.items;
+
+        if (items.length > 0) {
+      		var item = items[0];
+          var type = item.type;
+
+          item.getAsString(function ( result ) {
+            ui.emit( 'file.drop', { type: 'text/plain', data: result });
+    			});
+      	}
+      }
     }
 
     function onZoomRequest( e ) {
