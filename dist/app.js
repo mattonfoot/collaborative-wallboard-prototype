@@ -2729,7 +2729,7 @@ UI.prototype.displayViewEditor = function( view ) {
     this._vieweditor = this._vieweditor || this._$element.find('[data-update="view"]');
 
     this._vieweditor[0].reset();
-    this._vieweditor.find('[name="id"]').val( view.getId() );
+    this._vieweditor.find('[name="view"]').val( view.getId() );
     this._vieweditor.find('[name="name"]').val( view.getName() );
     this._vieweditor.find('[name="transform"]').val( view.getWall() );
     this._vieweditor.find('[name="wall"]').val( view.getWall() );
@@ -2784,7 +2784,7 @@ UI.prototype.displayCardEditor = function( card ) {
     this._cardeditor = this._cardeditor || this._$element.find('[data-update="card"]');
 
     this._cardeditor[0].reset();
-    this._cardeditor.find('[name="id"]').val( card.getId() );
+    this._cardeditor.find('[name="card"]').val( card.getId() );
     this._cardeditor.find('[name="title"]').val( card.getTitle() ).focus();
     this._cardeditor.find('[name="content"]').val( card.getContent() );
     this._cardeditor.find('[name="tags"]').val( card.getTags() );
@@ -2816,7 +2816,7 @@ UI.prototype.displayRegionEditor = function( region ) {
     this._regioneditor = this._regioneditor || this._$element.find('[data-update="region"]');
 
     this._regioneditor[0].reset();
-    this._regioneditor.find('[name="id"]').val( region.getId() );
+    this._regioneditor.find('[name="region"]').val( region.getId() );
     this._regioneditor.find('[name="label"]').val( region.getLabel() ).focus();
     this._regioneditor.find('[name="value"]').val( region.getValue() );
     this._regioneditor.find('[name="color"]').val( region.getColor() );
@@ -2849,7 +2849,7 @@ UI.prototype.displayWallEditor = function( wall ) {
     this._walleditor = this._walleditor || this._$element.find('[data-update="wall"]');
 
     this._walleditor[0].reset();
-    this._walleditor.find('[name="id"]').val( wall.getId() );
+    this._walleditor.find('[name="wall"]').val( wall.getId() );
     this._walleditor.find('[name="name"]').val( wall.getName() );
 
     this._walleditor.modal( 'show' );
