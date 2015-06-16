@@ -2107,7 +2107,7 @@ function onSetupQueueError( err ) {
 function replicate( config ) {
   var queue = $dom.data( 'queue' );
 
-  return queue.syncWithRemote( config.remotedb );
+  return queue.syncEventStreams( config.remotedb );
 }
 
 function onReplicationError( err ) {
@@ -2140,7 +2140,7 @@ function EventQueue( options ) {
 
   this.loadTime = Date.now();
 
-  options = options || {};
+  var options = this.options = options || {};
   if (!options.channelName) {
     throw new Error( 'A channel name must be provided' );
   }
@@ -2192,6 +2192,68 @@ EventQueue.prototype.syncWithRemote = function( remoteDB ) {
   var db = this.db;
 
   return db.sync( remoteDB);
+};
+
+EventQueue.prototype.syncEventStreams = function( userid ) {
+  var queue = this;
+
+  return new Promise(function(resolve, reject) {
+    if ( !queue.options.federate || !queue.clientId ) resolve();
+
+    var lastSync;
+    if (typeof localStorage !== 'undefined') {
+      lastSync = localStorage.getItem( 'vuuse.lastSync');
+    }
+
+    var opts = {
+      clientId: queue.clientId,
+      lastSync: lastSync
+    };
+    queue.socket.emit('client.ready', opts);
+
+    queue.socket.on('client.event', onClientEvent );
+    queue.socket.on('server.ready', onServerReady );
+
+    function onClientEvent( event ) {
+      queue.db.get( event.doc._id, function( err, doc ) {
+          if ( doc && ( doc._rev === event.doc._rev ||
+                      ( doc._rev.split('-')[0] || 0 ) * 1 > (event.doc._rev.split('-')[0] || 0) * 1 ) ) return;
+
+          return queue.db.put( event.doc )
+            .then(function( info ) {
+              if (typeof localStorage !== 'undefined') {
+                localStorage.getItem( 'vuuse.lastSync', event.doc.timeStamp + '/' + event.doc.ticks );
+              }
+            });
+        });
+    }
+
+    function onServerReady( event ) {
+      queue.db.allDocs({ include_docs: true }, onComplete );
+
+      resolve();
+    }
+
+    function onComplete( err, events ) {
+      if ( err ) throw err;
+
+      // emit events to server
+      var lastSync = (opts.lastSync || '').split('/');
+      lastTimeStamp = new Date( lastSync[0] || 0 );
+      lastTicks = ( lastSync[1] || 0 ) * 1;
+
+      if ( events.rows.length ) {
+        events.rows.forEach(function( event ) {
+          var timeStamp = event.doc.timeStamp;
+          var ticks = event.doc.data.ticks;
+
+          if ( timeStamp > lastTimeStamp && ticks > lastTicks ) {
+            queue.socket.emit( 'server.event', event );
+          }
+        });
+      }
+    }
+  });
 };
 
 EventQueue.prototype.publish = function( topic, data ) {
