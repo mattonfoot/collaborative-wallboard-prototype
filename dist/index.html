@@ -158,13 +158,46 @@
                             <label for="name" class="control-label">Name</label>
                             <input class="form-control" id="name" name="name" placeholder="Name" value="">
                         </div>
-
+                    </div>
+                    <div class="modal-body">
                         <h5>Current Transforms</h5>
                         <div class="list-group" data-options="list"></div>
+                    </div>
+                    <div class="modal-body">
+                        <h5>Add Transform</h5>
 
-                        <div class="form-group">
-                          <label for="transform" class="control-label">Add Transform</label>
-                          <input class="form-control" id="transform" name="transform" placeholder="Transform" value="">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                              <label for="transform_attr" class="col-sm-1 control-label">Get</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="transform_get" name="transform_get">
+                                  <option value="color">color</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div class="form-group">
+                              <label for="transform_from" class="col-sm-1 control-label">From</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="transform_from" name="transform_from">
+                                  <option value="color">color</option>
+                                </select>
+                              </div>
+                              <label for="transform_from_target" class="col-sm-1 control-label">of</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="transform_from_target" name="transform_from_target">
+                                  <option value="color">region</option>
+                                </select>
+                              </div>
+                              <label for="transform_from_filter" class="col-sm-1 control-label">on</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="transform_from_filter" name="transform_from_filter"></select>
+                              </div>
+                            </div>
+
+                            <div class="form-group">
+                              <label for="transform_when" class="control-label">When within region</label>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

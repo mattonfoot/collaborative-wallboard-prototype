@@ -405,9 +405,18 @@ Interface.prototype.editView = function( viewid ) {
 
   var queue = this.queue;
 
+  var view;
   return repository.getView( viewid )
-    .then(function( view ) {
-      if ( ui ) ui.displayViewEditor( view );
+    .then(function( resource ) {
+      view = resource;
+
+      return repository.getWall( view.getWall() );
+    })
+    .then(function( wall ) {
+      return repository.getViews( wall.getViews() );
+    })
+    .then(function( views ) {
+      if ( ui ) ui.displayViewEditor( view, views );
 
       return view;
     })
@@ -2732,13 +2741,17 @@ UI.prototype.displayViewCreator = function( wall ) {
     this._viewcreator.modal( 'show' );
 };
 
-UI.prototype.displayViewEditor = function( view ) {
+UI.prototype.displayViewEditor = function( view, views ) {
     this._vieweditor = this._vieweditor || this._$element.find('[data-update="view"]');
+
+    var options = views.map(function( view ) {
+        return '<option value="'+ view.getId() +'">'+ view.getName() +'</option>';
+    });
 
     this._vieweditor[0].reset();
     this._vieweditor.find('[name="view"]').val( view.getId() );
     this._vieweditor.find('[name="name"]').val( view.getName() );
-//  this._vieweditor.find('[name="transform"]').val( view.getTransform() );
+    this._vieweditor.find('[name="transform_from_filter"]').html( options );
     this._vieweditor.find('[name="wall"]').val( view.getWall() );
 
     this._vieweditor.modal( 'show' );
