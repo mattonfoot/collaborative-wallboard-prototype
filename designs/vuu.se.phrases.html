@@ -14,14 +14,17 @@
         <h2>Enter a phrase</h4>
 
 <pre><code>
-// when within region on view #{{id}} get color from color of region
+// when a card is within a region on view #{{id}} get the color from the color of that region
 "<a href="#" data-provides="prepop">get color from color of region on view #{{id}} when within region</a>"
+=> get( 'color' ).from( 'color', /* of */ region( 'on', view( '#{{id}}' ) ) ).when( 'within', 'region' );
 
 // when on view #{{id}} get tag from name of view
 "<a href="#" data-provides="prepop">get tag from name of view when on view #{{id}}</a>"
+=> get( 'tag' ).from( 'name', /* of */ 'board' ).when( 'on', board( '#{{id}}' ) );
 
 // when moved on view #{{id}} get opacity from vertical rank
-"<a href="#" data-provides="prepop">get opacity from vertical of view #{{id}}</a>"
+"<a href="#" data-provides="prepop">get opacity from vertical position on view #{{id}}</a>"
+=> get( 'opacity' ).from( 'vertical', /* position on */ view( '#{{id}}' ) );
 
 // protect against script injection
 "<a href="#" data-provides="prepop">alert('got ya!!')</a>"
