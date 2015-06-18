@@ -2635,11 +2635,9 @@ function UI( queue, $element, options, $ ) {
     var queue = this._queue = queue;
 
     this._$element = $element;
+    this._$navbar = $element.find('> .navbar');
 
-    this._size = {
-        height: $(window).innerHeight(),
-        width: $(window).innerWidth()
-    };
+    this._size = calculateHeight( $(window), this._$element, this._$navbar );
 
     this.constructor = UI;
 
@@ -2702,6 +2700,15 @@ function UI( queue, $element, options, $ ) {
     queue.subscribe('#.fail', function( error ) {
       console.log( error );
     });
+
+    setInterval(function() {
+      var cur_size = ui._size;
+      ui._size = calculateHeight( $(window), ui._$element, ui._$navbar );
+
+      if ( cur_size.width !== ui._size.width || cur_size.height !== ui._size.height ) {
+        if (ui._canvasview) ui._canvasview.resize( ui._size );
+      }
+    }, 10);
 }
 
 util.inherits( UI, events.EventEmitter );
@@ -2731,7 +2738,7 @@ UI.prototype.displayViewEditor = function( view ) {
     this._vieweditor[0].reset();
     this._vieweditor.find('[name="view"]').val( view.getId() );
     this._vieweditor.find('[name="name"]').val( view.getName() );
-    this._vieweditor.find('[name="transform"]').val( view.getWall() );
+//  this._vieweditor.find('[name="transform"]').val( view.getTransform() );
     this._vieweditor.find('[name="wall"]').val( view.getWall() );
 
     this._vieweditor.modal( 'show' );
@@ -2879,6 +2886,19 @@ UI.prototype.enableControls = function( view ) {
 };
 
 module.exports = UI;
+
+
+
+
+
+
+
+function calculateHeight( $window, $container, $footer ) {
+    return {
+        height: $window.innerHeight() - $footer.innerHeight() - $container.position().top
+      , width: $container.innerWidth()
+    };
+}
 
 },{"./shapes/card":16,"./shapes/region":17,"./shapes/view":18,"events":113,"util":117}],16:[function(require,module,exports){
 // defaults
@@ -3362,9 +3382,8 @@ function CanvasView( queue, ui, view, options ) {
         ui.emit( 'view.edit', view.getId() );
     }
 
+    // prevent drag over to enable file drops
     function onDragOver( ev ) {
-      console.log( 'drag over request' );
-
       ev.preventDefault();
     }
 
@@ -3443,6 +3462,14 @@ function CanvasView( queue, ui, view, options ) {
         shape.cards.add( canvascard );
 
         shape.cards.batchDraw();
+    };
+
+    shape.resize = function( size ) {
+      shape.setWidth( size.width );
+      shape.setHeight( size.height );
+
+      shape.regions.batchDraw();
+      shape.cards.batchDraw();
     };
 
     // instance
