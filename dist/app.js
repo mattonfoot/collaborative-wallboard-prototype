@@ -410,9 +410,15 @@ Interface.prototype.editView = function( viewid ) {
 
   var queue = this.queue;
 
+  var view;
   return repository.getView( viewid )
-    .then(function( view ) {
-      if ( ui ) ui.displayViewEditor( view );
+    .then(function( resource ) {
+      view = resource;
+
+      return repository.getTransforms( view.getTransforms() )
+    })
+    .then(function( transforms ) {
+      if ( ui ) ui.displayViewEditor( view, transforms );
 
       return view;
     })
@@ -1499,11 +1505,13 @@ function View( data, queue ) {
   this.id = data.view;
   this.wall = data.wall;
   this.name = data.name;
+  this.transforms = [];
 
   this.constructor = View;
   this.queue = queue;
 
   this.queue.subscribe( 'view.updated', View.prototype.updated.bind( this ) );
+  this.queue.subscribe( 'transform.created', View.prototype.addTransform.bind( this ) );
 }
 
 View.constructor = function( data, queue ) {
@@ -1537,6 +1545,10 @@ View.eventsource = function( queue, events ) {
       switch( event.topic ) {
         case 'view.updated':
           view.updated( event.data );
+          break;
+
+        case 'transform.added':
+          view.transformAdded( event.data );
           break;
       }
 
@@ -1579,7 +1591,42 @@ View.prototype.updated = function( data ) {
 };
 
 View.prototype.getWall = function() {
-    return this.wall;
+  return this.wall;
+};
+
+View.prototype.getTransforms = function() {
+  return this.transforms;
+};
+
+View.prototype.addTransform = function( data ) {
+  if ( data.view && data.view !== this.getId() ) return;
+
+  var add = {
+    view: this.getId(),
+    transform: data.transform
+  }
+
+  var result = this.transformAdded( add );
+
+  if ( result ) {
+    if ( result === true ) {
+      this.queue.publish( 'transform.added', add );
+
+      return;
+    }
+
+    return result;
+  }
+};
+
+View.prototype.transformAdded = function( data ) {
+  if ( data.view !== this.getId() ) return;
+
+  if ( !~this.transforms.indexOf( data.transform ) ) {
+    this.transforms.push( data.transform );
+
+    return true;
+  }
 };
 
 module.exports = View;
@@ -3146,13 +3193,18 @@ UI.prototype.displayViewCreator = function( wall ) {
     this._viewcreator.modal( 'show' );
 };
 
-UI.prototype.displayViewEditor = function( view, views ) {
+UI.prototype.displayViewEditor = function( view, transforms ) {
     this._vieweditor = this._vieweditor || this._$element.find('[data-update="view"]');
+
+    var options = transforms.map(function( view ) {
+        return '<li class="list-group-item">'+ view.getPhrase() +'<a href="#'+ view.getId() +'" class="pull-right close" data-delete="transform">x</a></li>';
+    });
 
     this._vieweditor[0].reset();
     this._vieweditor.find('[name="view"]').val( view.getId() );
     this._vieweditor.find('[name="name"]').val( view.getName() );
     this._vieweditor.find('[name="wall"]').val( view.getWall() );
+    this._vieweditor.find('[data-list="transform"]').html( options );
 
     this._vieweditor.modal( 'show' );
 };
