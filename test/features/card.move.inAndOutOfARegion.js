@@ -77,6 +77,7 @@ function features() {
       transformed.should.have.property( 'op' );
 
       if ( transformed.op === 'set' ) {
+        transformed.should.have.property( 'view', region.getView() );
         transformed.should.have.property( 'op', 'set' );
         transformed.should.have.property( 'card', move.card );
         transformed.should.have.property( 'property', 'color' );
@@ -85,6 +86,7 @@ function features() {
         cardSet = true;
       }
       if ( transformed.op === 'unset' ) {
+        transformed.should.have.property( 'view', region.getView() );
         transformed.should.have.property( 'op', 'unset' );
         transformed.should.have.property( 'card', move.card );
         transformed.should.have.property( 'property', 'color' );

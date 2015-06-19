@@ -20,6 +20,7 @@ function fixture( ctx, storedName ) {
   var wallid = uuid.v4();
   var viewid_1 = uuid.v4();
   var viewid_2 = uuid.v4();
+  var transformid = uuid.v4();
   var regionid_1 = uuid.v4();
   var regionid_2 = uuid.v4();
   var cardid_1 = uuid.v4();
@@ -40,8 +41,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.moved',
-      ticks: ticks + 15,
-      timeStamp: new Date( now + 15 )
+      ticks: ticks + 17,
+      timeStamp: new Date( now + 17 )
     },
     {
       _id: ctx.channelName +'_card_'+ cardid_2 +'_'+ new Date().getTime() +'_added',
@@ -51,8 +52,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.added',
-      ticks: ticks + 14,
-      timeStamp: new Date( now + 14 )
+      ticks: ticks + 16,
+      timeStamp: new Date( now + 16 )
     },
     {
       _id: ctx.channelName +'_card_'+ cardid_2 +'_'+ new Date().getTime() +'_created',
@@ -63,8 +64,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.created',
-      ticks: ticks + 13,
-      timeStamp: new Date( now + 13 )
+      ticks: ticks + 15,
+      timeStamp: new Date( now + 15 )
     },
     {
       _id: ctx.channelName +'_card_'+ cardid_1 +'_'+ new Date().getTime() +'_moved',
@@ -76,8 +77,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.moved',
-      ticks: ticks + 12,
-      timeStamp: new Date( now + 12 )
+      ticks: ticks + 14,
+      timeStamp: new Date( now + 14 )
     },
     {
       _id: ctx.channelName +'_card_'+ cardid_1 +'_'+ new Date().getTime() +'_added',
@@ -87,8 +88,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.added',
-      ticks: ticks + 11,
-      timeStamp: new Date( now + 11 )
+      ticks: ticks + 13,
+      timeStamp: new Date( now + 13 )
     },
     {
       _id: ctx.channelName +'_card_'+ cardid_1 +'_'+ new Date().getTime() +'_created',
@@ -99,8 +100,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'card.created',
-      ticks: ticks + 10,
-      timeStamp: new Date( now + 10 )
+      ticks: ticks + 12,
+      timeStamp: new Date( now + 12 )
     },
     {
       _id: ctx.channelName +'_region_'+ regionid_2 +'_'+ new Date().getTime() +'_added',
@@ -111,8 +112,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'region.added',
-      ticks: ticks + 9,
-      timeStamp: new Date( now + 9 )
+      ticks: ticks + 11,
+      timeStamp: new Date( now + 11 )
     },
     {
       _id: ctx.channelName +'_region_'+ regionid_2 +'_'+ new Date().getTime() +'_created',
@@ -129,8 +130,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'region.created',
-      ticks: ticks + 8,
-      timeStamp: new Date( now + 8 )
+      ticks: ticks + 10,
+      timeStamp: new Date( now + 10 )
     },
     {
       _id: ctx.channelName +'_region_'+ regionid_1 +'_'+ new Date().getTime() +'_added',
@@ -141,8 +142,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'region.added',
-      ticks: ticks + 7,
-      timeStamp: new Date( now + 7 )
+      ticks: ticks + 9,
+      timeStamp: new Date( now + 9 )
     },
     {
       _id: ctx.channelName +'_region_'+ regionid_1 +'_'+ new Date().getTime() +'_created',
@@ -159,8 +160,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'region.created',
-      ticks: ticks + 6,
-      timeStamp: new Date( now + 6 )
+      ticks: ticks + 8,
+      timeStamp: new Date( now + 8 )
     },
     {
       _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_added',
@@ -170,8 +171,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'view.added',
-      ticks: ticks + 5,
-      timeStamp: new Date( now + 5 )
+      ticks: ticks + 7,
+      timeStamp: new Date( now + 7 )
     },
     {
       _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_created',
@@ -182,8 +183,8 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'view.created',
-      ticks: ticks + 4,
-      timeStamp: new Date( now + 4 )
+      ticks: ticks + 6,
+      timeStamp: new Date( now + 6 )
     },
     {
       _id: ctx.channelName +'_view_'+ viewid_1 +'_'+ new Date().getTime() +'_added',
@@ -193,6 +194,47 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'view.added',
+      ticks: ticks + 5,
+      timeStamp: new Date( now + 5 )
+    },
+    {
+      _id: ctx.channelName +'_transform_'+ transformid +'_'+ new Date().getTime() +'_added',
+      data: {
+        transform: transformid,
+        view: viewid_1
+      },
+      channel: ctx.channelName,
+      topic: 'transform.added',
+      ticks: ticks + 4,
+      timeStamp: new Date( now + 4 )
+    },
+    {
+      _id: ctx.channelName +'_transform_'+ transformid +'_'+ new Date().getTime() +'_created',
+      data: {
+        transform: transformid,
+        view: viewid_1,
+        phrase: 'get color from color of region on view #'+ viewid_1 +' when within region',
+        rules: {
+          attr: 'color',
+          from: {
+            attr: 'color',
+            selector: {
+              node: 'region',
+              relationship: 'on',
+              selector: {
+                node: 'view',
+                selector: viewid_1
+              }
+            }
+          },
+          when: {
+            filter: 'region',
+            relationship: 'within'
+          }
+        }
+      },
+      channel: ctx.channelName,
+      topic: 'transform.created',
       ticks: ticks + 3,
       timeStamp: new Date( now + 3 )
     },

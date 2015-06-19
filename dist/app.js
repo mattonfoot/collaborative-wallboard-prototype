@@ -805,6 +805,7 @@ function Card( data, queue ) {
 
   this.locations = {};
   this.regions = [];
+  this.metadata = {};
 
   this.constructor = Card;
   this.queue = queue;
@@ -906,6 +907,7 @@ Card.prototype.transform = function( data ) {
 
   var patch = {
     card: this.getId(),
+    view: data.view,
     op: data.op,
     property: data.property,
     value: data.value
@@ -920,17 +922,18 @@ Card.prototype.transform = function( data ) {
 
 Card.prototype.transformed = function( patch ) {
   if ( patch.card !== this.getId() ) return;
+  var metadata = this.metadata[ patch.view ] = this.metadata[ patch.view ] || {};
 
   switch ( patch.op ) {
     case 'set':
-      if ( this[ patch.property ] !== patch.value ) {
-        this[ patch.property ] = patch.value;
+      if ( metadata[ patch.property ] !== patch.value ) {
+        metadata[ patch.property ] = patch.value;
       }
     break;
 
     case 'unset':
-      if ( this[ patch.property ] === patch.value ) {
-        delete this[ patch.property ];
+      if ( metadata[ patch.property ] === patch.value ) {
+        delete metadata[ patch.property ];
       }
     break;
   }
@@ -940,20 +943,12 @@ Card.prototype.getCardnumber = function() {
     return this.cardnumber;
 };
 
+Card.prototype.getMetadata = function( viewid ) {
+  return this.metadata[ viewid ] || {};
+}
+
 Card.prototype.getContent = function() {
     return this.content;
-};
-
-Card.prototype.getTags = function() {
-    return this.tags;
-};
-
-Card.prototype.getMentions = function() {
-    return this.mentions;
-};
-
-Card.prototype.getColor = function() {
-    return this.color;
 };
 
 Card.prototype.getWall = function() {
@@ -1126,6 +1121,10 @@ Region.eventsource = function( queue, events ) {
 Region.prototype.getId = function() {
     return this.id;
 };
+
+Region.prototype.getProperty = function( prop ) {
+  return this[ prop ];
+}
 
 Region.prototype.getLabel = function() {
     return this.label;
@@ -2330,15 +2329,25 @@ TransformManager.prototype.applyTransforms = function( data ) {
   var queue = this.queue;
   var repository = this.repository;
 
-  var region;
+  var region, card;
   return repository.getRegion( data.region )
     .then(function( resource ) {
       region = resource;
 
-      return repository.getCard( data.card )
+      return repository.getCard( data.card );
     })
-    .then(function( card ) {
-      card.transform({ op: 'set', property: 'color', value: region.getColor() });
+    .then(function( resource ) {
+      card = resource;
+
+      return repository.getView( region.getView() );
+    })
+    .then(function( view ) {
+      return repository.getTransforms( view.getTransforms() );
+    })
+    .then(function( transforms ) {
+      transforms.forEach(function( transform ) {
+          processTransform( queue, 'set', transform, card, region );
+      });
     });
 };
 
@@ -2346,43 +2355,38 @@ TransformManager.prototype.undoTransforms = function( data ) {
   var queue = this.queue;
   var repository = this.repository;
 
-  var region;
+  var region, card;
   return repository.getRegion( data.region )
     .then(function( resource ) {
       region = resource;
 
-      return repository.getCard( data.card )
+      return repository.getCard( data.card );
     })
-    .then(function( card ) {
-      card.transform({ op: 'unset', property: 'color', value: region.getColor() });
+    .then(function( resource ) {
+      card = resource;
+
+      return repository.getView( region.getView() );
+    })
+    .then(function( view ) {
+      return repository.getTransforms( view.getTransforms() );
+    })
+    .then(function( transforms ) {
+      transforms.forEach(function( transform ) {
+          processTransform( queue, 'unset', transform, card, region );
+      });
     });
 };
-/*
-TransformManager.prototype.checkTransforms = function( data ) {
-  var queue = this.queue;
-  var repository = this.repository;
 
-  return repository.getAllTransforms()
-      .then(function( resources ) {
-          resources.forEach(function( transform ) {
-              processTransform.call( _this, transform, card, region );
-          });
-      });
-};
+function processTransform( queue, op, transform, card, region ) {
+  var rules = transform.getRules()
+    , attr = rules.attr
+    , when = rules.when
+    , from = rules.from
+    , canApply = checkCanApplyTransform( region, when, from.selector );
 
-function processTransform( transform, card, region ) {
-    var rules = transform.rules
-      , attr = rules.attr
-      , when = rules.when
-      , from = rules.from
-      , canApply = checkCanApplyTransform( region, when, from.selector )
-      , _this = this;
-
-    if ( canApply ) {
-        card[attr] = region[from.attr];
-
-        _this.queue.emit( 'card.transformed', card );
-    }
+  if ( canApply ) {
+    card.transform({ view: region.getView(), op: op, property: attr, value: region.getProperty( from.attr ) });
+  }
 }
 
 function checkCanApplyTransform( region, when, filter ) {
@@ -2402,10 +2406,10 @@ var filterMethods = {
   , 'object': function( region, filter ) {
         var f = filter.selector;
 
-        return region[f.node] === f.selector.replace('#', '');
+        return region.getProperty( f.node ) === f.selector.replace('#', '');
     }
 };
-*/
+
 module.exports = TransformManager;
 
 },{}],12:[function(require,module,exports){
@@ -3515,8 +3519,10 @@ function CanvasCard( queue, ui, view, card ) {
       cardnumber.setText( '#00' );
 
       var bg = colors.fill;
-      if ( card.getColor() && card.getColor() !== 'undefined' && card.getColor() !== 'null' ) {
-        bg = card.getColor();
+      var color = card.getMetadata( view.getId() )[ color ];
+
+      if ( color && color !== 'undefined' && color !== 'null' ) {
+        bg = color;
       }
       cardback.setFill( bg );
 
