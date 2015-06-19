@@ -422,6 +422,7 @@ Interface.prototype.editView = function( viewid ) {
 };
 
 Interface.prototype.updateView = function( data ) {
+  var interface = this;
   var repository = this.repository;
   var queue = this.queue;
 
@@ -430,6 +431,9 @@ Interface.prototype.updateView = function( data ) {
       resource.update( data );
 
       return resource;
+    })
+    .then(function( view ) {
+      return interface.displayViewSelector( view.getWall() );
     })
     .catch(function( error ) {
       queue.publish( 'view.update.fail', error );
@@ -3124,6 +3128,9 @@ UI.prototype.displayView = function( view ) {
     var viewer = '<div id="'+ view.getId() +'" class="tab-content" data-viewer="view"></div>';
 
     this._$element.find('[data-viewer="view"]').replaceWith( viewer );
+
+    this._$element.find('[data-selector="view"] .active').removeClass('active');
+    this._$element.find('[data-display="view"][href="#'+ view.getId() +'"]').parent().addClass('active');
 
     this._canvasview = new CanvasView( this._queue, this, view, this._size );
     this._canvascards = [];
