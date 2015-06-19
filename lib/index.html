@@ -45,6 +45,7 @@
               <p class="navbar-text navbar-right">Signed in as <a href="#" class="navbar-link" data-profile="user"></a> - <a class="navbar-link" title="Logout of vuu.se" data-auth="logout">Logout</a></p>
               <button type="button" class="btn btn-default navbar-btn" data-new="region" disabled><i class="glyphicon glyphicon-plus"></i> New region</button>
               <button type="button" class="btn btn-default navbar-btn" data-new="card" disabled><i class="glyphicon glyphicon-plus"></i> New card</button>
+              <button type="button" class="btn btn-default navbar-btn" data-new="transform" disabled><i class="glyphicon glyphicon-plus"></i> New transform</button>
               <button type="button" class="btn btn-default navbar-btn" data-select="wall">View walls</button>
             </div>
           </div>
@@ -104,13 +105,6 @@
                             <label for="name" class="control-label">Name</label>
                             <input class="form-control" id="name" name="name" placeholder="Name" value="">
                         </div>
-
-                        <ul class="unstyled transform-list"></ul>
-
-                        <div class="form-group">
-                          <label for="transform" class="control-label">Transform</label>
-                          <input class="form-control" id="transform" name="transform" placeholder="Transform" value="">
-                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-success">Save</button>
@@ -158,47 +152,9 @@
                             <label for="name" class="control-label">Name</label>
                             <input class="form-control" id="name" name="name" placeholder="Name" value="">
                         </div>
-                    </div>
-                    <div class="modal-body">
+
                         <h5>Current Transforms</h5>
                         <div class="list-group" data-options="list"></div>
-                    </div>
-                    <div class="modal-body">
-                        <h5>Add Transform</h5>
-
-                        <div class="form-horizontal">
-                            <div class="form-group">
-                              <label for="transform_attr" class="col-sm-1 control-label">Get</label>
-                              <div class="col-sm-3">
-                                <select class="form-control" id="transform_get" name="transform_get">
-                                  <option value="color">color</option>
-                                </select>
-                              </div>
-                            </div>
-
-                            <div class="form-group">
-                              <label for="transform_from" class="col-sm-1 control-label">From</label>
-                              <div class="col-sm-3">
-                                <select class="form-control" id="transform_from" name="transform_from">
-                                  <option value="color">color</option>
-                                </select>
-                              </div>
-                              <label for="transform_from_target" class="col-sm-1 control-label">of</label>
-                              <div class="col-sm-3">
-                                <select class="form-control" id="transform_from_target" name="transform_from_target">
-                                  <option value="color">region</option>
-                                </select>
-                              </div>
-                              <label for="transform_from_filter" class="col-sm-1 control-label">on</label>
-                              <div class="col-sm-3">
-                                <select class="form-control" id="transform_from_filter" name="transform_from_filter"></select>
-                              </div>
-                            </div>
-
-                            <div class="form-group">
-                              <label for="transform_when" class="control-label">When within region</label>
-                            </div>
-                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-success">Save</button>
@@ -316,6 +272,72 @@
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-success">Save</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </form><!-- /.modal -->
+
+        <form class="modal fade" id="newTransform" data-create="transform" tabindex="-1" role="dialog" aria-labelledby="newTransformLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                        <h4 class="modal-title" id="newTransformLabel">CREATE TRANSFORM: </h4>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="view" value="">
+
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                              <label for="rules_attr" class="col-sm-1 control-label">Get</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_attr" name="rules_attr">
+                                  <option value="color">color</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div class="form-group">
+                              <label for="rules_from_attr" class="col-sm-1 control-label">From</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_from_attr" name="rules_from_attr">
+                                  <option value="color">color</option>
+                                </select>
+                              </div>
+
+                              <label for="rules_from_node" class="col-sm-1 control-label">of</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_from_node" name="rules_from_node">
+                                  <option value="region">region</option>
+                                </select>
+                              </div>
+
+                              <label for="rules_from_selector" class="col-sm-1 control-label">on</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_from_selector" name="rules_from_selector"></select>
+                              </div>
+                            </div>
+
+                            <div class="form-group">
+                              <label for="rules_when_relationship" class="col-sm-1 control-label">When</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_when_relationship" name="rules_when_relationship">
+                                  <option value="within">inside</option>
+                                </select>
+                              </div>
+
+                              <label for="rules_when_node" class="col-sm-1 control-label">of</label>
+                              <div class="col-sm-3">
+                                <select class="form-control" id="rules_when_node" name="rules_when_node">
+                                  <option value="region">region</option>
+                                </select>
+                              </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Create</button>
                         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                     </div>
                 </div><!-- /.modal-content -->
