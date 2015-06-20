@@ -944,6 +944,8 @@ Card.prototype.getCardnumber = function() {
 };
 
 Card.prototype.getMetadata = function( viewid ) {
+  if (!(viewid in this.metadata)) return {};
+
   return this.metadata[ viewid ] || {};
 }
 
@@ -2339,10 +2341,20 @@ TransformManager.prototype.applyTransforms = function( data ) {
     .then(function( resource ) {
       card = resource;
 
-      return repository.getView( region.getView() );
+      return repository.getWall( card.getWall() );
     })
-    .then(function( view ) {
-      return repository.getTransforms( view.getTransforms() );
+    .then(function( wall ) {
+
+    return repository.getViews( wall.getViews() );
+  })
+  .then(function( views ) {
+
+      var transformids = [];
+      views.forEach(function( view ) {
+        transformids = transformids.concat( view.getTransforms() );
+      });
+
+      return repository.getTransforms( transformids );
     })
     .then(function( transforms ) {
       transforms.forEach(function( transform ) {
@@ -2365,10 +2377,20 @@ TransformManager.prototype.undoTransforms = function( data ) {
     .then(function( resource ) {
       card = resource;
 
-      return repository.getView( region.getView() );
+      return repository.getWall( card.getWall() );
     })
-    .then(function( view ) {
-      return repository.getTransforms( view.getTransforms() );
+    .then(function( wall ) {
+
+    return repository.getViews( wall.getViews() );
+  })
+  .then(function( views ) {
+
+      var transformids = [];
+      views.forEach(function( view ) {
+        transformids = transformids.concat( view.getTransforms() );
+      });
+
+      return repository.getTransforms( transformids );
     })
     .then(function( transforms ) {
       transforms.forEach(function( transform ) {
@@ -3443,7 +3465,8 @@ function CanvasCard( queue, ui, view, card ) {
       draggable: true
     });
 
-    var cardback = __createCardback( size.width, size.height, (card.color || colors.fill), shadow.color );
+    var fill = card.getMetadata( view.getId() )[ 'color' ];
+    var cardback = __createCardback( size.width, size.height, (fill || colors.fill), shadow.color );
     var cardnumber = __createIdText( '00' );
     var cardtitle = __createTitleText( card.getTitle() );
 
@@ -3519,7 +3542,7 @@ function CanvasCard( queue, ui, view, card ) {
       cardnumber.setText( '#00' );
 
       var bg = colors.fill;
-      var color = card.getMetadata( view.getId() )[ color ];
+      var color = card.getMetadata( view.getId() )[ 'color' ];
 
       if ( color && color !== 'undefined' && color !== 'null' ) {
         bg = color;
