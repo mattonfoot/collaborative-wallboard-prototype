@@ -2,7 +2,7 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleViews.FirstWithTwoRegions');
 
-var wall, view, card, region;
+var wall, view, views, card, region;
 
 function features() {
   beforeEach(function( done ) {
@@ -10,6 +10,7 @@ function features() {
       .then(function( storage ) {
         wall = storage.wall;
         view = storage.view;
+        views = storage.views;
         card = storage.card;
         region = storage.region;
 
@@ -77,7 +78,7 @@ function features() {
       transformed.should.have.property( 'op' );
 
       if ( transformed.op === 'set' ) {
-        transformed.should.have.property( 'view', region.getView() );
+        transformed.should.have.property( 'view', views[1].getId() );
         transformed.should.have.property( 'op', 'set' );
         transformed.should.have.property( 'card', move.card );
         transformed.should.have.property( 'property', 'color' );
@@ -86,7 +87,7 @@ function features() {
         cardSet = true;
       }
       if ( transformed.op === 'unset' ) {
-        transformed.should.have.property( 'view', region.getView() );
+        transformed.should.have.property( 'view', views[1].getId() );
         transformed.should.have.property( 'op', 'unset' );
         transformed.should.have.property( 'card', move.card );
         transformed.should.have.property( 'property', 'color' );

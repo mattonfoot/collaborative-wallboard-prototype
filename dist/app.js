@@ -2407,7 +2407,7 @@ function processTransform( queue, op, transform, card, region ) {
     , canApply = checkCanApplyTransform( region, when, from.selector );
 
   if ( canApply ) {
-    card.transform({ view: region.getView(), op: op, property: attr, value: region.getProperty( from.attr ) });
+    card.transform({ view: transform.view, op: op, property: attr, value: region.getProperty( from.attr ) });
   }
 }
 
@@ -3491,7 +3491,7 @@ function CanvasCard( queue, ui, view, card ) {
     });
 
     queue.subscribe( 'card.transformed', function( data ) {
-      if ( card.getId() === data.card ) {
+      if ( card.getId() === data.card && view.getId() == data.view ) {
         __UpdateDisplay( card );
       }
     });

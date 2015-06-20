@@ -164,55 +164,21 @@ function fixture( ctx, storedName ) {
       timeStamp: new Date( now + 8 )
     },
     {
-      _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_added',
-      data: {
-        wall: wallid,
-        view: viewid_2
-      },
-      channel: ctx.channelName,
-      topic: 'view.added',
-      ticks: ticks + 7,
-      timeStamp: new Date( now + 7 )
-    },
-    {
-      _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_created',
-      data: {
-        view: viewid_2,
-        wall: wallid,
-        name: 'empty view'
-      },
-      channel: ctx.channelName,
-      topic: 'view.created',
-      ticks: ticks + 6,
-      timeStamp: new Date( now + 6 )
-    },
-    {
-      _id: ctx.channelName +'_view_'+ viewid_1 +'_'+ new Date().getTime() +'_added',
-      data: {
-        wall: wallid,
-        view: viewid_1
-      },
-      channel: ctx.channelName,
-      topic: 'view.added',
-      ticks: ticks + 5,
-      timeStamp: new Date( now + 5 )
-    },
-    {
       _id: ctx.channelName +'_transform_'+ transformid +'_'+ new Date().getTime() +'_added',
       data: {
         transform: transformid,
-        view: viewid_1
+        view: viewid_2
       },
       channel: ctx.channelName,
       topic: 'transform.added',
-      ticks: ticks + 4,
-      timeStamp: new Date( now + 4 )
+      ticks: ticks + 7,
+      timeStamp: new Date( now + 7 )
     },
     {
       _id: ctx.channelName +'_transform_'+ transformid +'_'+ new Date().getTime() +'_created',
       data: {
         transform: transformid,
-        view: viewid_1,
+        view: viewid_2,
         phrase: 'get color from color of region on view #'+ viewid_1 +' when within region',
         rules: {
           attr: 'color',
@@ -235,6 +201,40 @@ function fixture( ctx, storedName ) {
       },
       channel: ctx.channelName,
       topic: 'transform.created',
+      ticks: ticks + 6,
+      timeStamp: new Date( now + 6 )
+    },
+    {
+      _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_added',
+      data: {
+        wall: wallid,
+        view: viewid_2
+      },
+      channel: ctx.channelName,
+      topic: 'view.added',
+      ticks: ticks + 5,
+      timeStamp: new Date( now + 5 )
+    },
+    {
+      _id: ctx.channelName +'_view_'+ viewid_2 +'_'+ new Date().getTime() +'_created',
+      data: {
+        view: viewid_2,
+        wall: wallid,
+        name: 'empty view'
+      },
+      channel: ctx.channelName,
+      topic: 'view.created',
+      ticks: ticks + 4,
+      timeStamp: new Date( now + 4 )
+    },
+    {
+      _id: ctx.channelName +'_view_'+ viewid_1 +'_'+ new Date().getTime() +'_added',
+      data: {
+        wall: wallid,
+        view: viewid_1
+      },
+      channel: ctx.channelName,
+      topic: 'view.added',
       ticks: ticks + 3,
       timeStamp: new Date( now + 3 )
     },
