@@ -802,6 +802,7 @@ function Card( data, queue ) {
   this.id = data.card;
   this.wall = data.wall;
   this.title = data.title;
+  this.content = data.content;
 
   this.locations = {};
   this.regions = [];
@@ -821,7 +822,8 @@ Card.constructor = function( data, queue ) {
   var create = {
     card: uuid.v4(),
     wall: data.wall,
-    title: data.title
+    title: data.title,
+    content: data.content
   }
 
   var card = new Card( create, queue );
@@ -881,12 +883,17 @@ Card.prototype.getTitle = function() {
     return this.title;
 };
 
+Card.prototype.getContent = function() {
+    return this.content;
+};
+
 Card.prototype.update = function( data ) {
   if ( data.card && data.card !== this.getId() ) return;
 
   var update = {
     card: this.getId(),
-    title: data.title
+    title: data.title,
+    content: data.content
   }
 
   var errors = this.updated( update );
@@ -899,6 +906,7 @@ Card.prototype.update = function( data ) {
 Card.prototype.updated = function( data ) {
   if ( data.card === this.getId() ) {
     this.title = data.title;
+    this.content = data.content;
   }
 };
 
@@ -947,10 +955,6 @@ Card.prototype.getMetadata = function( viewid ) {
   if (!(viewid in this.metadata)) return {};
 
   return this.metadata[ viewid ] || {};
-}
-
-Card.prototype.getContent = function() {
-    return this.content;
 };
 
 Card.prototype.getWall = function() {
@@ -3327,8 +3331,6 @@ UI.prototype.displayCardEditor = function( card ) {
     this._cardeditor.find('[name="card"]').val( card.getId() );
     this._cardeditor.find('[name="title"]').val( card.getTitle() ).focus();
     this._cardeditor.find('[name="content"]').val( card.getContent() );
-    this._cardeditor.find('[name="tags"]').val( card.getTags() );
-    this._cardeditor.find('[name="mentions"]').val( card.getMentions() );
     this._cardeditor.find('[name="wall"]').val( card.getWall() );
 
     this._cardeditor.modal( 'show' );
