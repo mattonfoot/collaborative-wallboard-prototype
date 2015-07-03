@@ -3891,7 +3891,22 @@ function CanvasView( queue, ui, view, options ) {
 
     // triggers
     var $container = $( '#' + view.getId() );
-    $container.on( 'mousewheel', onZoomRequest );
+    $container
+      .on("mousewheel", function( e ) {
+        var evt = e.originalEvent,
+            mx = evt.clientX,
+            my = evt.clientY,
+            delta = evt.wheelDelta;
+
+        stopMouseWheelPropogation( evt );
+
+        if ( e.ctrlKey ) {
+          onZoomRequest( mx, my, delta );
+          return;
+        }
+
+        onPanRequest( evt, 'mousewheel' );
+      });
 
     var $canvas = $container.find('canvas');
     $canvas
@@ -3903,16 +3918,6 @@ function CanvasView( queue, ui, view, options ) {
         } else if ( ev.scale > 1.0) {
           console.log( 'zoom out detected' );
         }
-      })
-      .on("mousewheel", function(e) {
-        console.log( "mousewheel event" );
-
-          if ( e.ctrlKey ) {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-
-              // perform desired zoom action here
-          }
       });
 
 
@@ -3972,33 +3977,33 @@ function CanvasView( queue, ui, view, options ) {
     }
 
     var scale = 1;
-    var zoomFactor = 1.1;
+    var zoomFactor = 1.1 ;
+    var scrollFactor = .5; //1.1;
     var origin = { x: 0, y: 0 };
-    function onZoomRequest( e ) {
-        var evt = e.originalEvent,
-            mx = evt.clientX /* - canvas.offsetLeft */,
-            my = evt.clientY /* - canvas.offsetTop */,
-            delta = evt.wheelDelta;
+    function onZoomRequest( mx, my, delta ) {
+      var cur_scale = scale * (zoomFactor - (delta < 0 ? 0.2 : 0));
 
-        //prevent only the actual wheel movement
-        stopMouseWheelPropogation( evt );
+      if (cur_scale <= min_scale) return;
 
-        var cur_scale = scale * (zoomFactor - (delta < 0 ? 0.2 : 0));
+      origin.x = mx / scale + origin.x - mx / cur_scale;
+      origin.y = my / scale + origin.y - my / cur_scale;
 
-        if (cur_scale <= min_scale) return;
+      scale = cur_scale;
 
-        origin.x = mx / scale + origin.x - mx / cur_scale;
-        origin.y = my / scale + origin.y - my / cur_scale;
+      ui.emit( 'view.scale', { id: view.getId(), scale: scale });
 
-        scale = cur_scale;
+      shape.offset({ x: origin.x, y: origin.y });
+      shape.scale( { x: cur_scale, y: cur_scale });
+      shape.batchDraw();
 
-        ui.emit( 'view.scale', { id: view.getId(), scale: scale });
+      ui.emit( 'view.scaled', { id: view.getId(), scale: scale });
+    }
 
-        shape.offset({ x: origin.x, y: origin.y });
-        shape.scale( { x: cur_scale, y: cur_scale });
-        shape.batchDraw();
-
-        ui.emit( 'view.scaled', { id: view.getId(), scale: scale });
+    function onPanRequest( evt ) {
+      shape.pan({
+        x: shape.getX() + ( evt.wheelDeltaX * scrollFactor ),
+        y: shape.getY() + ( evt.wheelDeltaY * scrollFactor )
+      });
     }
 
     // public methods
@@ -4018,6 +4023,14 @@ function CanvasView( queue, ui, view, options ) {
     shape.resize = function( size ) {
       shape.setWidth( size.width );
       shape.setHeight( size.height );
+
+      shape.regions.batchDraw();
+      shape.cards.batchDraw();
+    };
+
+    shape.pan = function( loc ) {
+      shape.setX( loc.x );
+      shape.setY( loc.y );
 
       shape.regions.batchDraw();
       shape.cards.batchDraw();
