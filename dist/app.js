@@ -3498,33 +3498,31 @@ function CanvasCard( queue, ui, view, card ) {
       }
     });
 
-    shape.on('mousedown touchstart', function() {
-      __displayActiveState();
+    shape
+      .on('mousedown touchstart', function() {
+        __displayActiveState();
 
-      ui.emit( 'card.activate', card.getId() );
-    });
+        ui.emit( 'card.activate', card.getId() );
+      })
+      .on('mouseup touchend', function() {
+        __displayInactiveState();
 
-    shape.on('mouseup touchend', function() {
-      __displayInactiveState();
+        ui.emit( 'card.deactivate', card.getId() );
+      })
+      .on('dragend', function() {
+        card.move({
+          card: card.getId(),
+          view: view.getId(),
+          x: shape.getX(),
+          y: shape.getY()
+        });
+      })
+      .on('dblclick dbltap', function( e ) {
+        e.cancelBubble = true;
+        shape.getStage().preventEvents = true;
 
-      ui.emit( 'card.deactivate', card.getId() );
-    });
-
-    shape.on('dragend', function() {
-      card.move({
-        card: card.getId(),
-        view: view.getId(),
-        x: shape.getX(),
-        y: shape.getY()
+        ui.emit( 'card.edit', card.getId() );
       });
-    });
-
-    shape.on('dblclick dbltap', function( e ) {
-      e.cancelBubble = true;
-      shape.getStage().preventEvents = true;
-
-      ui.emit( 'card.edit', card.getId() );
-    });
 
     // private methods
 
@@ -3891,23 +3889,34 @@ function CanvasView( queue, ui, view, options ) {
     shape.cards = new Kinetic.Layer();
     shape.add( shape.cards );
 
-    var $container = $( '#' + view.getId() );
-    var scale = 1;
-    var zoomFactor = 1.1;
-    var origin = { x: 0, y: 0 };
-
     // triggers
-    shape.on( 'contentDblclick contentDbltap', onOpenRequest );
-    $container.find('canvas').on( 'dragover', onDragOver );
-    $container.find('canvas').on( 'drop', onFileDropRequest );
-    $container.find('canvas').on( 'gestureend', function( ev ) {
-      if ( ev.scale < 1.0) {
-        console.log( 'zoom in detected' );
-      } else if ( ev.scale > 1.0) {
-        console.log( 'zoom out detected' );
-      }
-    });
+    var $container = $( '#' + view.getId() );
     $container.on( 'mousewheel', onZoomRequest );
+
+    var $canvas = $container.find('canvas');
+    $canvas
+      .on( 'dragover', onDragOver )
+      .on( 'drop', onFileDropRequest )
+      .on( 'gestureend', function( ev ) {
+        if ( ev.scale < 1.0) {
+          console.log( 'zoom in detected' );
+        } else if ( ev.scale > 1.0) {
+          console.log( 'zoom out detected' );
+        }
+      })
+      .on("mousewheel", function(e) {
+        console.log( "mousewheel event" );
+
+          if ( e.ctrlKey ) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+
+              // perform desired zoom action here
+          }
+      });
+
+
+    shape.on( 'contentDblclick contentDbltap', onOpenRequest );
 
     // private methods
 
@@ -3962,6 +3971,9 @@ function CanvasView( queue, ui, view, options ) {
       }
     }
 
+    var scale = 1;
+    var zoomFactor = 1.1;
+    var origin = { x: 0, y: 0 };
     function onZoomRequest( e ) {
         var evt = e.originalEvent,
             mx = evt.clientX /* - canvas.offsetLeft */,
@@ -4017,7 +4029,7 @@ function CanvasView( queue, ui, view, options ) {
 }
 
 function stopMouseWheelPropogation( evt ) {
-    if (evt.wheelDelta === 0) return;
+    if ( evt.wheelDelta === 0 ) return;
 
     evt.preventDefault();
 }

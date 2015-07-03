@@ -64,7 +64,9 @@ module.exports = function( grunt ) {
     // grunt.registerTask('default'   , [ 'watch' ]);
 
     // docker containers
-    grunt.registerTask('serve'        , [ 'dock:dev:build', 'dock:dev:start' ]);
+    grunt.registerTask('dock'         , [ 'dock:dev:build', 'dock:dev:start' ]);
+    grunt.registerTask('serve'        , [ 'nodemon:dev' ]);
+    grunt.registerTask('serve:local'  , [ 'nodemon:local' ]);
 
     // travis-ci
     grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);

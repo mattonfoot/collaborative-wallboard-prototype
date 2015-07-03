@@ -24,6 +24,20 @@ module.exports = function( config ) {
         legacyWatch: true
       },
 
+      local: {
+        options: {
+          nodeArgs: [ '--debug' ],
+          env: {
+            PORT: config.env.PORT || '9001',
+            HOST: config.env.HOST || '0.0.0.0',
+            COUCH: 'http://127.0.0.1:5984',
+            CHANNEL: 'vuuse',
+            SERVERID: 'local'
+          }
+        },
+        script: './lib/server'
+      },
+
       dev: {
         options: {
           nodeArgs: [ '--debug' ],
