@@ -3497,17 +3497,11 @@ function CanvasCard( queue, ui, view, card ) {
       }
     });
 
-    var loc = { x: -1, y: -1 };
     shape
       .on('mousedown touchstart', function( e ) {
-        var evt = e.evt;
         __displayActiveState();
 
-        loc = { x: evt.x, y: evt.y };
         shape.setDraggable( true );
-        loc.watch = setTimeout(function(){
-          delete loc.watch;
-        }, 500);
 
         ui.emit( 'card.activate', card.getId() );
       })
@@ -3519,15 +3513,6 @@ function CanvasCard( queue, ui, view, card ) {
         ui.emit( 'card.deactivate', card.getId() );
       })
       .on('dragmove', function( e ) {
-        var evt = e.evt;
-
-        if (    loc.watch &&
-              ( loc.x - 1 < evt.x || loc.x + 1 > evt.x ||
-                loc.y - 1 < evt.y || loc.y + 1 > evt.y ) ) {
-          shape.setDraggable( false );
-          clearTimeout( loc.watch );
-          delete loc.watch;
-        }
       })
       .on('dragend', function() {
         card.move({
@@ -4007,6 +3992,8 @@ function CanvasView( queue, ui, view, options ) {
 
       origin.x = mx / scale + origin.x - mx / cur_scale;
       origin.y = my / scale + origin.y - my / cur_scale;
+
+      console.log( 'view.scaled', scale, cur_scale );
 
       scale = cur_scale;
 
