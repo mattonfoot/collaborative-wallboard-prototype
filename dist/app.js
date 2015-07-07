@@ -3463,8 +3463,7 @@ function CanvasCard( queue, ui, view, card ) {
     var shape = new Kinetic.Group({
       id: card.id,
       x: pos.x || 5,
-      y: pos.y || 5,
-      draggable: true
+      y: pos.y || 5
     });
 
     var fill = card.getMetadata( view.getId() )[ 'color' ];
@@ -3498,16 +3497,37 @@ function CanvasCard( queue, ui, view, card ) {
       }
     });
 
+    var loc = { x: -1, y: -1 };
     shape
-      .on('mousedown touchstart', function() {
+      .on('mousedown touchstart', function( e ) {
+        var evt = e.evt;
         __displayActiveState();
+
+        loc = { x: evt.x, y: evt.y };
+        shape.setDraggable( true );
+        loc.watch = setTimeout(function(){
+          delete loc.watch;
+        }, 500);
 
         ui.emit( 'card.activate', card.getId() );
       })
       .on('mouseup touchend', function() {
         __displayInactiveState();
 
+        shape.setDraggable( false );
+
         ui.emit( 'card.deactivate', card.getId() );
+      })
+      .on('dragmove', function( e ) {
+        var evt = e.evt;
+
+        if (    loc.watch &&
+              ( loc.x - 1 < evt.x || loc.x + 1 > evt.x ||
+                loc.y - 1 < evt.y || loc.y + 1 > evt.y ) ) {
+          shape.setDraggable( false );
+          clearTimeout( loc.watch );
+          delete loc.watch;
+        }
       })
       .on('dragend', function() {
         card.move({
@@ -3892,7 +3912,7 @@ function CanvasView( queue, ui, view, options ) {
     // triggers
     var $container = $( '#' + view.getId() );
     $container
-      .on("mousewheel", function( e ) {
+      .on('mousewheel', function( e ) {
         var evt = e.originalEvent,
             mx = evt.clientX,
             my = evt.clientY,
@@ -3906,20 +3926,20 @@ function CanvasView( queue, ui, view, options ) {
         }
 
         onPanRequest( evt, 'mousewheel' );
+      })
+      .on( 'gesturechange', function( e ) {
+        var evt = e.originalEvent,
+            mx = evt.clientX,
+            my = evt.clientY,
+            delta = evt.scale;
+
+        onZoomRequest( mx, my, delta );
       });
 
     var $canvas = $container.find('canvas');
     $canvas
       .on( 'dragover', onDragOver )
-      .on( 'drop', onFileDropRequest )
-      .on( 'gestureend', function( ev ) {
-        if ( ev.scale < 1.0) {
-          console.log( 'zoom in detected' );
-        } else if ( ev.scale > 1.0) {
-          console.log( 'zoom out detected' );
-        }
-      });
-
+      .on( 'drop', onFileDropRequest );
 
     shape.on( 'contentDblclick contentDbltap', onOpenRequest );
 
