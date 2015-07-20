@@ -3605,7 +3605,7 @@ function __createCardback( w, h, fill, shadow ) {
     fill: fill,
     strokeWidth: 1,
     shadowOpacity: 0.5,
-    shadowColor: shadow,
+    shadowColor: shadow
   });
 }
 
@@ -3992,8 +3992,6 @@ function CanvasView( queue, ui, view, options ) {
 
       origin.x = mx / scale + origin.x - mx / cur_scale;
       origin.y = my / scale + origin.y - my / cur_scale;
-
-      console.log( 'view.scaled', scale, cur_scale );
 
       scale = cur_scale;
 

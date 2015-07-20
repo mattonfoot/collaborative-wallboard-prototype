@@ -1,0 +1,589 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <title>VUU.SE UI Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- Bootstrap -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.css" rel="stylesheet" media="screen">
+
+    <style>
+      .container {
+          width: 100%;
+          padding: 0;
+      }
+      .nav-tabs {
+          position: fixed;
+          width: 100%;
+      }
+      .tab-content {
+          position: fixed;
+          width: 100%;
+          top: 50px;
+          bottom:50px;
+          border-bottom: 1px solid #ddd;
+          background: #f9f9f9;
+      }
+      .mode-add-region {
+        cursor: crosshair;
+      }
+
+      .drag-card {
+        position: absolute;
+        width: 90px;
+        height: 60px;
+        background: #f3f3f3;
+        border: 1px solid #e7e7e7;
+        border-radius: 3px;
+        z-index: 1040;
+      }
+    </style>
+  </head>
+    <div data-provides="ui">
+      <div class="container" data-viewer="wall">
+        <div id="view" class="tab-content" data-viewer="view"></div>
+      </div>
+
+      <nav id="toolbar" class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Vuu.se</a>
+          </div>
+          <div class="collapse navbar-collapse" id="navbar-collapse">
+            <button type="button" class="btn btn-default navbar-btn" data-new="card"><i class="glyphicon glyphicon-plus"></i> card</button>
+            <button type="button" class="btn btn-default navbar-btn" data-new="region"><i class="glyphicon glyphicon-plus"></i> region</button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/kineticjs/5.2.0/kinetic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/js/bootstrap.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.4/hammer.js"></script>
+    <script>
+      var cardLayer, regionLayer;
+      function windowOnLoad() {
+
+        // main stage setup
+
+        var stage = new Kinetic.Stage({
+            container: "view",
+            width: 1024,
+            height: 768,
+
+          // center the stage by default
+          x: 1024 / 2,
+          y: 768 / 2
+        });
+
+        regionLayer = new Kinetic.Layer();
+        stage.add( regionLayer );
+
+        cardLayer = new Kinetic.Layer();
+        stage.add( cardLayer );
+
+        stage.batchDraw();
+
+
+
+        // event hooks
+
+        var container = stage.getContainer();
+        var $stage = $( container );
+        var $toolbar = $( '#toolbar' );
+
+        var mc = new Hammer.Manager( container );
+        mc.add( new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 10, pointers: 2 }) );
+        mc.add( new Hammer.Pinch({ threshold: .2, pointers: 2 }) );
+
+        Hammer.Manager.prototype.emit = (function(originalEmit) {
+          return function(type, data) {
+            originalEmit.call(this, type, data);
+
+            var evt = $.Event( type, data );
+            $( this.element ).trigger( evt );
+          };
+        })(Hammer.Manager.prototype.emit);
+
+        $stage.on( 'mousewheel panmove pinchmove', stopMouseWheelPropogation.bind( stage ) );
+
+        $stage.on( 'mousewheel', handleCtrlMouseWheelEvent.bind( stage ) );
+        $stage.on( 'panmove', handlePanMoveEvent.bind( stage ) );
+        $stage.on( 'pan',   panStageView.bind( stage ));
+
+        $stage.on( 'mousewheel', handleMouseWheelEvent.bind( stage ) );
+        $stage.on( 'pinchmove', handlePinchMoveEvent.bind( stage ) );
+        $stage.on( 'zoom',   zoomStageView.bind( stage ));
+
+        $stage.on( 'reset', resetStageView.bind( stage ));
+
+        // adding a new card
+        $toolbar.on( 'mousedown touchstart', '[data-new="card"]', newCardStart );
+        $stage.on( 'mousemove touchmove', newCardDrag );
+        $( document.body ).on( 'mouseup touchend', newCardEnd.bind( stage ) );
+        $stage.on( 'newCardRequest', newCard.bind( stage ) );
+
+        // adding a new region
+        $toolbar.on( 'click', '[data-new="region"]', newRegionRequest.bind( stage ) );
+        $(document.body).on( 'keydown', cancelRegionRequest.bind( stage ) );
+
+        $stage.on( 'mousedown touchstart', newRegionStart );
+        $stage.on( 'mousemove touchmove', newRegionDrag );
+        $stage.on( 'mouseup touchend', newRegionEnd.bind( stage ) );
+        $stage.on( 'newRegionRequest', newRegion.bind( stage ) );
+
+
+        // handle window resizing
+
+        var size = { height: 0, width: 0 };
+        setInterval(function() {
+          var curSize = size;
+          size = calculateHeight( $(window), $stage, $toolbar );
+
+          if ( stage && ( curSize.width !== size.width || curSize.height !== size.height ) ) {
+            stage.setWidth( size.width );
+            stage.setHeight( size.height );
+
+            stage.batchDraw();
+          }
+        }, 10);
+
+      };
+
+
+      // config
+
+      var zoomFactor = .02;
+      var panFactor = 1;
+      var scrollFactor = .095;
+      var minScale = 0.1;
+      var maxScale = 20;
+
+
+
+      // pan handling
+
+      function handleMouseWheelEvent( evt ) {
+        if ( evt.ctrlKey ) {
+          return;
+        }
+
+        var deltaX = evt.originalEvent.wheelDeltaX;
+        var deltaY = evt.originalEvent.wheelDeltaY;
+
+        triggerPan( this, evt, deltaX, deltaY );
+      }
+
+      var previousPointer = { x:0, y: 0 };
+      function handlePanMoveEvent( evt ) {
+        var stage = this;
+        var scale = stage.getScale().x;
+        var e = {
+          clientX: evt.center && evt.center.x || evt.clientX,
+          clientY: evt.center && evt.center.y || evt.clientY
+        };
+        var plot = plotPointer( e, stage, scale );
+
+        var deltaX = previousPointer.x - plot.x;
+        var deltaY = previousPointer.y - plot.y;
+
+        triggerPan( stage, evt, deltaX, deltaY );
+
+        previousPointer = { x: plot.x, y: plot.y };
+      }
+
+      function triggerPan( stage, evt, dx, dy ) {
+        var $stage = $(stage.getContainer());
+
+        var ev = $.Event('pan', {
+          deltaX: dx,
+          deltaY: dy,
+          clientX: evt.clientX,
+          clientY: evt.clientY
+        });
+
+        $stage.trigger( ev );
+      }
+
+
+
+
+
+      // zoom handling
+
+      function handleCtrlMouseWheelEvent( evt ) {
+        if ( !evt.ctrlKey ) {
+          return;
+        }
+
+        var delta = evt.originalEvent.deltaY;
+
+        triggerZoom( this, evt, delta );
+      }
+
+      function handlePinchMoveEvent( evt ) {
+        var delta = evt.scale;
+
+        triggerZoom( this, evt, delta );
+      }
+
+      function triggerZoom( stage, evt, d ) {
+        var $stage = $(stage.getContainer());
+
+        var ev = $.Event('zoom', {
+          delta: d,
+          clientX: evt.center && evt.center.x || evt.clientX,
+          clientY: evt.center && evt.center.y || evt.clientY
+        });
+
+        $stage.trigger( ev );
+      }
+
+      var inNewCardDrag = false;
+      var dragCard = false;
+      function newCardStart( evt ) {
+        evt.preventDefault();
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        dragCard = $('<div class="drag-card"></div>').css({
+          top: clientY - ( 90 / 2 ),
+          left: clientX - ( 60 - 2 )
+        }).appendTo( document.body );
+
+        inNewCardDrag = true;
+      }
+
+      function newCardDrag( evt ) {
+        if (!inNewCardDrag) {
+          return;
+        }
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        dragCard.css({
+          top: clientY - ( 90 / 2 ),
+          left: clientX - ( 60 - 2 )
+        });
+
+        console.log( 'newCardDrag', clientX, clientY );
+      }
+
+      function newCardEnd( evt ) {
+        if (!inNewCardDrag) {
+          return;
+        }
+
+        inNewCardDrag = false;
+
+        var stage = this;
+        var $stage = $(stage.getContainer());
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        dragCard.remove();
+        dragCard = false;
+
+        var ev = $.Event('newCardRequest', {
+          clientX: clientX,
+          clientY: clientY
+        });
+
+        $stage.trigger( ev );
+      }
+
+      var inNewRegionRequest = false;
+      function newRegionRequest( evt ) {
+        var stage = this;
+        var $stage = $(stage.getContainer());
+
+        inNewRegionRequest = true;
+        $stage.addClass( 'mode-add-region' );
+      }
+
+      function cancelRegionRequest( evt ) {
+        if ( !inNewRegionRequest || evt.keyCode !== 27 ) {
+          return;
+        }
+
+        var stage = this;
+        var $stage = $(stage.getContainer());
+
+        inNewRegionRequest = false;
+        $stage.removeClass( 'mode-add-region' );
+        $('[data-new="region"]').blur();
+      }
+
+      var inNewRegionDrag = false;
+      var newRegionBegin = { x:0, y: 0 };
+      function newRegionStart( evt ) {
+        if ( !inNewRegionRequest ) {
+          return;
+        }
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        inNewRegionDrag = true;
+        newRegionBegin = { x: clientX, y: clientY };
+
+        evt.preventDefault();
+      }
+
+      function newRegionDrag( evt ) {
+        if (!inNewRegionDrag) {
+          return;
+        }
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        console.log( 'newRegionDrag', clientX, clientY );
+      }
+
+      function newRegionEnd( evt ) {
+        if (!inNewRegionDrag) {
+          return;
+        }
+
+        var stage = this;
+        var $stage = $(stage.getContainer());
+
+        inNewRegionDrag = false;
+        inNewRegionRequest = false;
+        $stage.removeClass( 'mode-add-region' );
+        $('[data-new="region"]').blur();
+
+        var stage = this;
+        var $stage = $(stage.getContainer());
+
+        var e = evt.originalEvent;
+        var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
+        var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        var ev = $.Event('newRegionRequest', {
+          clientX: newRegionBegin.x,
+          clientY: newRegionBegin.y,
+          clientA: clientX,
+          clientB: clientY
+        });
+
+        $stage.trigger( ev );
+      }
+
+
+
+      // UI event handlers
+
+      function stopMouseWheelPropogation( evt ) {
+        var e = evt.originalEvent || evt.srcEvent;
+        if ( !e || e.wheelDelta === 0 ) {
+          return;
+        }
+
+        evt.preventDefault();
+      }
+
+
+
+
+
+      // Interface event handlers
+
+      var inPanning = false;
+      var inZooming = false;
+
+      function resetStageView( evt ) {
+        var stage = this;
+
+        stage.setPosition({
+          x: 1024 / 2,
+          y: 768 / 2
+        });
+        stage.scale({
+          x: 1,
+          y: 1
+        });
+
+        stage.batchDraw();
+      }
+
+      function panStageView( evt ) {
+        var stage = this;
+
+        if ( inZooming ) {
+          return;
+        }
+
+        inPanning = setTimeout(function() {
+          inPanning = false;
+        }, 100);
+
+        var factor = ( evt.srcEvent && evt.srcEvent.changedTouches ) ? panFactor : scrollFactor;
+
+        stage.setPosition({
+          x: stage.getX() + ( evt.deltaX * factor ),
+          y: stage.getY() + ( evt.deltaY * factor )
+        });
+
+        stage.batchDraw();
+      }
+
+      function zoomStageView( evt ) {
+        var stage = this;
+
+        if ( inPanning ) {
+          return;
+        }
+
+        inZooming = setTimeout(function() {
+          inZooming = false;
+        }, 100);
+
+        var curScale = stage.getScale().x;
+        var targetScale = evt.scale || curScale - ( evt.delta * zoomFactor );
+
+        if ( targetScale <= minScale || targetScale >= maxScale ) {
+          return;
+        }
+
+        var factor = curScale / targetScale;
+
+        var curPointer = plotPointer( evt, stage, curScale );
+        var targetPointer = {
+          x: curPointer.x * factor,
+          y: curPointer.y * factor
+        };
+
+        stage.setScale({ x: targetScale, y: targetScale });
+
+        stage.setPosition({
+          x: stage.getX() + ( ( targetPointer.x - curPointer.x ) * targetScale ),
+          y: stage.getY() + ( ( targetPointer.y - curPointer.y ) * targetScale )
+        });
+
+        stage.batchDraw();
+      }
+
+      var cardWidth = 120;
+      var cardHeight = 80;
+      function newCard( evt ) {
+        var stage = this;
+
+        var pointer = plotPointer( evt, stage, stage.getScale().x );
+
+        var card = new Kinetic.Rect({
+            x: pointer.x - cardWidth,
+            y: pointer.y - cardHeight,
+            width: cardWidth * 2,
+            height: cardHeight * 2,
+            cornerRadius: 3,
+            fill: '#f3f3f3',
+            strokeWidth: 1,
+            strokeColor: '#e7e7e7',
+            shadowOpacity: 01,
+            shadowColor: 'black',
+            opacity: .1,
+            rotation: -5,
+            draggable: true
+        });
+        cardLayer.add( card );
+
+        stage.batchDraw();
+
+        var tween = new Kinetic.Tween({
+          node: card,
+          duration: .1,
+          x: pointer.x - ( cardWidth / 2 ),
+          y: pointer.y - ( cardHeight / 2 ),
+          width: cardWidth,
+          height: cardHeight,
+          rotation: 0,
+          opacity: 1,
+          strokeWidth: 2,
+          shadowOpacity: 0.5
+        });
+
+        tween.play();
+
+      }
+      function newRegion( evt ) {
+        var stage = this;
+
+        console.log( 'new region', evt.clientX, evt.clientY, evt.clientA, evt.clientB );
+
+        var scale = stage.getScale().x;
+        var startPointer = plotPointer( { clientX: evt.clientX, clientY: evt.clientY }, stage, scale );
+        var endPointer = plotPointer( { clientX: evt.clientA, clientY: evt.clientB }, stage, scale );
+
+        console.log( 'new region', startPointer.x, startPointer.y, endPointer.x, endPointer.y );
+
+        var left = startPointer.x <= endPointer.x ? startPointer.x : endPointer.x;
+        var right = startPointer.x > endPointer.x ? startPointer.x : endPointer.x;
+        var top = startPointer.y >= endPointer.y ? startPointer.y : endPointer.y;
+        var bottom = startPointer.y < endPointer.y ? startPointer.y : endPointer.y;
+
+        var region = new Kinetic.Rect({
+            x: left,
+            y: top,
+            width: right - left,
+            height: bottom - top,
+            fill: "red",
+            opacity: 0.1
+        });
+        regionLayer.add( region );
+
+        console.log( 'new region', region.getX(), region.getY(), region.getWidth(), region.getHeight() );
+
+        stage.batchDraw();
+      }
+
+
+
+      // helpers
+
+      function plotPointer( evt, stage, scale ) {
+        var rect = $(stage.getContainer()).find('> .kineticjs-content')[0].getBoundingClientRect();
+        var stagePos = stage.getPosition();
+        var width = stage.getWidth();
+        var height = stage.getHeight();
+
+        // mouse pos relative to top left corner of element
+        var mouseX = evt.clientX - rect.left;
+        var mouseY = evt.clientY - rect.top;
+
+        return {
+          x: ( ( stagePos.x * -1 ) + ( ( mouseX / ( rect.right - rect.left ) ) * width ) ) / scale,
+          y: ( ( stagePos.y * -1 ) + ( ( mouseY / ( rect.bottom - rect.top ) ) * height ) ) / scale
+        };
+      }
+
+      function calculateHeight( $window, $container, $footer ) {
+        return {
+          height: $window.innerHeight() - $footer.innerHeight() - $container.position().top,
+          width: $container.innerWidth()
+        };
+      }
+
+
+
+
+      window.onload = windowOnLoad;
+    </script>
+  </body>
+</html>
