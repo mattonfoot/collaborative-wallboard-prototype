@@ -134,8 +134,8 @@
         $toolbar.on( 'click', '[data-new="region"]', newRegionRequest.bind( stage ) );
         $(document.body).on( 'keydown', cancelRegionRequest.bind( stage ) );
 
-        $stage.on( 'mousedown touchstart', newRegionStart );
-        $stage.on( 'mousemove touchmove', newRegionDrag );
+        $stage.on( 'mousedown touchstart', newRegionStart.bind( stage ) );
+        $stage.on( 'mousemove touchmove', newRegionDrag.bind( stage ) );
         $stage.on( 'mouseup touchend', newRegionEnd.bind( stage ) );
         $stage.on( 'newRegionRequest', newRegion.bind( stage ) );
 
@@ -165,6 +165,7 @@
       var scrollFactor = .095;
       var minScale = 0.1;
       var maxScale = 20;
+
 
 
 
@@ -334,12 +335,16 @@
           return;
         }
 
+        var stage = this;
+
         var e = evt.originalEvent;
         var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
         var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
 
         inNewRegionDrag = true;
         newRegionBegin = { x: clientX, y: clientY };
+
+        newOutline( stage, { clientX: clientX, clientY: clientY });
 
         evt.preventDefault();
       }
@@ -349,11 +354,18 @@
           return;
         }
 
+        var stage = this;
+
         var e = evt.originalEvent;
         var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
         var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
 
-        console.log( 'newRegionDrag', clientX, clientY );
+        updateOutline( stage, {
+          clientX: newRegionBegin.x,
+          clientY: newRegionBegin.y,
+          clientA: clientX,
+          clientB: clientY
+        });
       }
 
       function newRegionEnd( evt ) {
@@ -375,6 +387,8 @@
         var e = evt.originalEvent;
         var clientX = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || e.clientX || 0;
         var clientY = e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || e.clientY || 0;
+
+        removeOutline( stage );
 
         var ev = $.Event('newRegionRequest', {
           clientX: newRegionBegin.x,
@@ -495,7 +509,7 @@
             cornerRadius: 3,
             fill: '#f3f3f3',
             strokeWidth: 1,
-            strokeColor: '#e7e7e7',
+            stroke: '#e7e7e7',
             shadowOpacity: 01,
             shadowColor: 'black',
             opacity: .1,
@@ -525,13 +539,9 @@
       function newRegion( evt ) {
         var stage = this;
 
-        console.log( 'new region', evt.clientX, evt.clientY, evt.clientA, evt.clientB );
-
         var scale = stage.getScale().x;
         var startPointer = plotPointer( { clientX: evt.clientX, clientY: evt.clientY }, stage, scale );
         var endPointer = plotPointer( { clientX: evt.clientA, clientY: evt.clientB }, stage, scale );
-
-        console.log( 'new region', startPointer.x, startPointer.y, endPointer.x, endPointer.y );
 
         var left = startPointer.x <= endPointer.x ? startPointer.x : endPointer.x;
         var right = startPointer.x > endPointer.x ? startPointer.x : endPointer.x;
@@ -548,7 +558,46 @@
         });
         regionLayer.add( region );
 
-        console.log( 'new region', region.getX(), region.getY(), region.getWidth(), region.getHeight() );
+        stage.batchDraw();
+      }
+      var outline = false;
+      function newOutline( stage, evt ) {
+        var scale = stage.getScale().x;
+        var startPointer = plotPointer( { clientX: evt.clientX, clientY: evt.clientY }, stage, scale );
+
+        outline = new Kinetic.Rect({
+            x: startPointer.x,
+            y: startPointer.y,
+            width: 1,
+            height: 1,
+            strokeWidth: 1,
+            stroke: '#bcd',
+            opacity: 0.7
+        });
+        regionLayer.add( outline );
+
+        stage.batchDraw();
+      }
+      function updateOutline( stage, evt ) {
+        var scale = stage.getScale().x;
+        var startPointer = plotPointer( { clientX: evt.clientX, clientY: evt.clientY }, stage, scale );
+        var endPointer = plotPointer( { clientX: evt.clientA, clientY: evt.clientB }, stage, scale );
+
+        var left = startPointer.x <= endPointer.x ? startPointer.x : endPointer.x;
+        var right = startPointer.x > endPointer.x ? startPointer.x : endPointer.x;
+        var top = startPointer.y >= endPointer.y ? startPointer.y : endPointer.y;
+        var bottom = startPointer.y < endPointer.y ? startPointer.y : endPointer.y;
+
+        outline.setX( left );
+        outline.setY( top );
+        outline.setWidth( right - left );
+        outline.setHeight( bottom - top );
+
+        stage.batchDraw();
+      }
+      function removeOutline( stage ) {
+        outline.remove();
+        outline = false;
 
         stage.batchDraw();
       }
