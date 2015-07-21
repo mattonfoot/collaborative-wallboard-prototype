@@ -29,6 +29,7 @@
     "express": "^4.12.3",
     "express-pouchdb": "^0.14.2",
     "grunt-nodemon": "^0.4.0",
+    "hammerjs": "^2.0.4",
     "http-pouchdb": "^1.1.0",
     "machina": "^1.0.0",
     "performance-now": "^0.2.0",

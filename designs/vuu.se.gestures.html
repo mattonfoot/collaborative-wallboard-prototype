@@ -247,6 +247,12 @@
         $stage.trigger( ev );
       }
 
+
+
+
+
+      // new card request
+
       var inNewCardDrag = false;
       var dragCard = false;
       function newCardStart( evt ) {
@@ -305,6 +311,9 @@
 
         $stage.trigger( ev );
       }
+
+
+      // new region request
 
       var inNewRegionRequest = false;
       function newRegionRequest( evt ) {
@@ -494,6 +503,12 @@
         stage.batchDraw();
       }
 
+
+
+
+
+
+
       var cardWidth = 120;
       var cardHeight = 80;
       function newCard( evt ) {
@@ -536,6 +551,10 @@
         tween.play();
 
       }
+
+
+
+
       function newRegion( evt ) {
         var stage = this;
 
@@ -560,6 +579,11 @@
 
         stage.batchDraw();
       }
+
+
+
+
+
       var outline = false;
       function newOutline( stage, evt ) {
         var scale = stage.getScale().x;
