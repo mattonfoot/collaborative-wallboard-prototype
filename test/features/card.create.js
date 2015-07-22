@@ -15,7 +15,7 @@ function features() {
       .catch( done );
   });
 
-  it('Create a new Card on a wall by passing a wall id and a title\n', function( done ) {
+  it('Create a new Card on a wall by passing a wall id\n', function( done ) {
     var queue = this.queue;
     var interface = this.interface;
 
@@ -26,7 +26,6 @@ function features() {
 
       created.should.have.property( 'card' );
       created.should.have.property( 'wall', create.wall );
-      created.should.have.property( 'title', create.title );
 
       wall.getCards().should.contain( created.card );
 
@@ -36,8 +35,50 @@ function features() {
     .once();
 
     var create = {
+      wall: wall.getId()
+    };
+
+    interface.createCard( create );
+  });
+
+  it('Create a new Card on a wall by passing a wall id and a title\n', function( done ) {
+    var queue = this.queue;
+    var interface = this.interface;
+
+    queue.subscribe( '#.fail', done ).once();
+
+    var wasCreated = false;
+    queue.subscribe( 'card.created', function( created ) {
+      should.exist( created );
+
+      created.should.have.property( 'card' );
+      created.should.have.property( 'wall', create.wall );
+
+      wall.getCards().should.contain( created.card );
+
+      wasCreated = true;
+    })
+    .catch( done )
+    .once();
+
+    queue.subscribe( 'card.updated', function( updated ) {
+      should.exist( updated );
+
+      wasCreated.should.be.true;
+
+      updated.should.have.property( 'card' );
+      updated.should.have.property( 'title', create.title );
+
+      wall.getCards().should.contain( updated.card );
+
+      done();
+    })
+    .catch( done )
+    .once();
+
+    var create = {
       wall: wall.getId(),
-      title: 'new card'
+      title: 'card with title'
     };
 
     interface.createCard( create );

@@ -123,11 +123,7 @@ function Interface( queue, repository, ui ) {
     });
 
     // these need moving to the appropriate Models and Shapes
-/*
-    queue.subscribe('wall.created', function( data ) {
-      interface.postCreateWall( data );
-    });
-*/
+    
     queue.subscribe('view.added', function( data ) {
       interface.postCreateView( data );
     });
@@ -795,14 +791,12 @@ function Card( data, queue ) {
     throw new Error( 'Wall is required' );
   }
 
-  if ( !data.title || data.title === '' ) {
-    throw new Error( 'Title is required' );
-  }
-
   this.id = data.card;
   this.wall = data.wall;
-  this.title = data.title;
-  this.content = data.content;
+  
+  if (data.title) {
+    this.title = data.title;
+  }
 
   this.locations = {};
   this.regions = [];
@@ -821,14 +815,33 @@ function Card( data, queue ) {
 Card.constructor = function( data, queue ) {
   var create = {
     card: uuid.v4(),
-    wall: data.wall,
-    title: data.title,
-    content: data.content
+    wall: data.wall
   }
 
   var card = new Card( create, queue );
 
   queue.publish( 'card.created', create );
+
+  if ( data.title && data.title !== '' ) {
+    var update = {
+      card: card.getId(),
+      title: data.title,
+      content: data.content
+    }
+
+    card.update( update );
+  }
+
+  if ( data.view && typeof data.x === 'number' && typeof data.y === 'number' ) {
+    var move = {
+      card: card.getId(),
+      view: data.view,
+      x: data.x,
+      y: data.y
+    }
+
+    card.move( move );
+  }
 
   return card;
 };
@@ -2712,6 +2725,9 @@ EventQueue.prototype.syncEventStreams = function( userid ) {
               if (typeof localStorage !== 'undefined') {
                 localStorage.getItem( 'vuuse.lastSync', event.doc.timeStamp + '/' + event.doc.ticks );
               }
+            })
+            .catch(function( err ) {
+              // 
             });
         });
     }
@@ -3134,25 +3150,27 @@ function UI( queue, $element, options, $ ) {
     var clicks = [ 'new', 'edit', 'select', 'display', 'unlink' ];
 
     // e.g. on click or touch for [data-new="wall"] trigger 'wall:new' with id
-    // e.g. on click or touch for [data-edit="view"] trigger 'view:edit' with id
     clicks.forEach(function( task ) {
         $element.on( 'click touch', '[data-'+ task +']', function( ev ) {
-            ev.preventDefault();
+            var type = $( this ).data( task );
 
-            var type = $(this).data( task );
+            if ( task === 'new' && type === 'card' ) {
+              return;
+            }
 
-            var target = $(this).data( type ) || $(this).data('parent') || ( $(this).attr('href') || '' ).replace('#', '');
+            var target = $( this ).data( type ) || $( this ).data( 'parent' ) || ( $( this ).attr( 'href' ) || '' ).replace( '#', '' );
 
             // console.log( 'EMIT', type + '.' + task, target );
 
             ui.emit( type + '.' + task, target );
+
+            ev.preventDefault();
         });
     });
 
     var submits = [ 'create', 'update' ];
 
     // e.g. on submit for [data-create="wall"] trigger 'wall:new' with ev
-
     submits.forEach(function( task ) {
         $element.on( 'submit', '[data-'+ task +']', function( ev ) {
             ev.preventDefault();
@@ -3185,6 +3203,23 @@ function UI( queue, $element, options, $ ) {
         });
     });
 
+
+
+      // adding a new card
+    $(document.body)
+      .on( 'mousedown touchstart',  '[data-new="card"]',      newCardStart.bind( ui ) )      // will cancel the click
+      .on( 'mousemove touchmove',                             newCardDrag.bind( ui ) )
+      .on( 'mouseup touchend',                                newCardEnd.bind( ui ) )
+      .on( 'keydown',                                         newCardCancelKey.bind( ui ) );
+
+    $(document.body)
+      .on( 'dragover', function( ev ) {
+        console.log( 'drag over', ev );
+
+        ev.preventDefault();
+      })
+      .on( 'drop', onFileDropRequest.bind( ui ) );
+
     queue.subscribe('#.fail', function( error ) {
       console.log( error );
     });
@@ -3194,7 +3229,7 @@ function UI( queue, $element, options, $ ) {
       ui._size = calculateHeight( $(window), ui._$element, ui._$navbar );
 
       if ( cur_size.width !== ui._size.width || cur_size.height !== ui._size.height ) {
-        if (ui._canvasview) ui._canvasview.resize( ui._size );
+        ui.emit( 'ui.resize', ui._size );
       }
     }, 10);
 }
@@ -3429,11 +3464,130 @@ module.exports = UI;
 
 
 
+// Handle dropped image file - only Firefox and Google Chrome
+function onFileDropRequest( ev ) {
+  var ui = this;
+
+  ev.preventDefault();
+
+  var files = ev.originalEvent.dataTransfer.files;
+  if ( files.length ) {
+    if ( typeof FileReader !== "undefined" ) {
+      files.forEach(function( file ) {
+          var reader = new FileReader();
+
+          reader.onload = function ( ev ) {
+            if ( ev.target && ev.target.result ) {
+              triggerFileDrop( file.type, ev.target.result );
+            }
+          };
+
+          if ( ~file.type.indexOf( 'text' ) ) {
+            return reader.readAsText( file );
+          }
+
+          reader.readAsArrayBuffer( file );
+      });
+    }
+
+    return;
+  }
+
+  var items = ev.originalEvent.dataTransfer.items;
+  items.forEach(function( item ) {
+    item.getAsString(function ( result ) {
+      triggerFileDrop( 'text/plain', result );
+    });
+  });
+
+  function triggerFileDrop( filetype, data ) {
+    ui.emit( 'card.create', {
+      wall: $('[data-viewer="wall"]').attr( 'id' ),
+      view: $('[data-viewer="view"]').attr( 'id' ),
+      x: ev.clientX,
+      y: ev.clientY,
+      file: {
+        type: filetype,
+        data: data
+      }
+    });
+  }
+}
+
 function calculateHeight( $window, $container, $footer ) {
     return {
         height: $window.innerHeight() - $footer.innerHeight() - $container.position().top
       , width: $container.innerWidth()
     };
+}
+
+
+
+var inNewCardDrag = false;
+var dragCard;
+function newCardStart( evt ) {
+  inNewCardDrag = true;
+
+  dragCard = $('<div class="drag-card"></div>').appendTo( document.body );
+
+  newCardDrag( evt );
+}
+
+function newCardDrag( evt ) {
+  if (!inNewCardDrag) {
+    return;
+  }
+
+  var e = evt.originalEvent;
+
+  dragCard.css({
+    left: ( e.clientX || e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientX || 0 ) - ( 90 / 2 ),
+    top: ( e.clientY || e.changedTouches && e.changedTouches.length && e.changedTouches[0].clientY || 0 ) - ( 60 / 2 )
+  });
+
+  evt.preventDefault();
+}
+
+function newCardEnd( evt ) {
+  if (!inNewCardDrag) {
+    return;
+  }
+
+  var ui = this;
+  var position = dragCard.position()
+
+  ui._canvasview.createCard({
+    clientX: position.left,
+    clientY: position.top
+  });
+
+  dragCard.remove();
+  dragCard = false;
+
+  inNewCardDrag = false;
+
+  evt.preventDefault();
+}
+
+function newCardCancelKey( evt ) {
+  if ( evt.keyCode !== 27 ) {
+    return;
+  }
+
+  newCardCancel( evt );
+}
+
+function newCardCancel( evt ) {
+  if (!inNewCardDrag) {
+    return;
+  }
+
+  inNewCardDrag = false;
+
+  dragCard.remove();
+  dragCard = false;
+
+  evt.preventDefault();
 }
 
 },{"./shapes/card":18,"./shapes/region":19,"./shapes/view":20,"events":115,"util":119}],18:[function(require,module,exports){
@@ -3626,7 +3780,7 @@ function __createTitleText( title ) {
     y: 22,
     width: 85,
     height: 36,
-    text: title,
+    text: title || '',
     fontSize: 11,
     fontFamily: 'Calibri',
     fill: '#666'
@@ -3921,60 +4075,15 @@ function CanvasView( queue, ui, view, options ) {
       };
     })( Hammer.Manager.prototype.emit );
 
+    shape.on( 'contentDblclick contentDbltap', function( ev ) {
+      if ( shape.preventEvents ) {
+        shape.preventEvents = false;
 
-
-    // private methods
-
-    function onOpenRequest( e ) {
-        if (shape.preventEvents) {
-            shape.preventEvents = false;
-
-            return;
-        }
-
-        ui.emit( 'view.edit', view.getId() );
-    }
-
-    // prevent drag over to enable file drops
-    function onDragOver( ev ) {
-      ev.preventDefault();
-    }
-
-    // Handle dropped image file - only Firefox and Google Chrome
-    function onFileDropRequest( ev ) {
-    	ev.preventDefault();
-
-      var files = ev.originalEvent.dataTransfer.files;
-
-    	if (files.length > 0) {
-    		var file = files[0];
-
-    		if ( typeof FileReader !== "undefined" ) {
-    			var reader = new FileReader();
-
-    			reader.onload = function ( ev ) {
-            ui.emit( 'file.drop', { type: file.type, data: ev.target.result });
-    			};
-
-          if ( ~file.type.indexOf( 'text' ) ) {
-            return reader.readAsText( file );
-          }
-
-    			reader.readAsArrayBuffer( file );
-    		}
-    	} else {
-        var items = ev.originalEvent.dataTransfer.items;
-
-        if (items.length > 0) {
-      		var item = items[0];
-          var type = item.type;
-
-          item.getAsString(function ( result ) {
-            ui.emit( 'file.drop', { type: 'text/plain', data: result });
-    			});
-      	}
+        return;
       }
-    }
+
+      ui.emit( 'view.edit', view.getId() );
+    });
 
 
 
@@ -3986,10 +4095,36 @@ function CanvasView( queue, ui, view, options ) {
 
     // public methods
 
+    shape.plotPointer = function( loc ) {
+      return
+    }
+
+    shape.addRegionRequest = function( data ) {
+      var pointer = plotPointer( data, shape );
+
+      ui.emit( 'region.add', {
+        wall: view.getWall(),
+        view: view.getId(),
+        x: pointer.x,
+        y: pointer.y
+      });
+    };
+
     shape.addRegion = function( canvasregion ) {
       shape.regions.add( canvasregion );
 
       shape.regions.batchDraw();
+    };
+
+    shape.createCard = function( data ) {
+      var pointer = plotPointer( data, shape );
+
+      ui.emit( 'card.create', {
+        wall: view.getWall(),
+        view: view.getId(),
+        x: pointer.x,
+        y: pointer.y
+      });
     };
 
     shape.addCard = function( canvascard ) {
@@ -4070,14 +4205,7 @@ function CanvasView( queue, ui, view, options ) {
 
 
     // triggers
-
-    var $canvas = $container.find('canvas');
-    $canvas
-      .on( 'dragover', onDragOver )
-      .on( 'drop', onFileDropRequest );
-
-    shape.on( 'contentDblclick contentDbltap', onOpenRequest );
-
+    ui.on( 'ui.resize', shape.resize.bind( shape ) );
 
     $container.on( 'mousewheel panmove pinchmove', stopMouseWheelPropogation );
 
@@ -4162,12 +4290,11 @@ var previousPointer = { x:0, y: 0 };
 function handlePanMoveEvent( evt ) {
   var $container = $( this );
   var stage = $container.data( 'stage' );
-  var scale = stage.getScale().x;
   var e = {
     clientX: evt.center && evt.center.x || evt.clientX,
     clientY: evt.center && evt.center.y || evt.clientY
   };
-  var plot = plotPointer( e, stage, scale );
+  var plot = plotPointer( e, stage );
 
   var deltaX = previousPointer.x - plot.x;
   var deltaY = previousPointer.y - plot.y;
@@ -4208,6 +4335,8 @@ function plotPointer( evt, stage, scale ) {
   var stagePos = stage.getPosition();
   var width = stage.getWidth();
   var height = stage.getHeight();
+
+  scale = scale || stage.getScale().x;
 
   // mouse pos relative to top left corner of element
   var mouseX = evt.clientX - rect.left;
