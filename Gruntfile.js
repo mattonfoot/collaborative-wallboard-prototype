@@ -40,15 +40,6 @@ module.exports = function( grunt ) {
     // local tasks
     grunt.loadTasks('tasks');
 
-
-
-
-    grunt.registerTask(
-          'serve'
-        , 'Starts a dev web server on the first available port starting from 8000 with the build folder as the root.'
-        , [ 'connect:dev' ]
-    );
-
     // clean
     // grunt.registerTask('clean'     , [ 'clean' ]);
 
@@ -65,6 +56,8 @@ module.exports = function( grunt ) {
 
     // docker containers
     grunt.registerTask('dock'         , [ 'dock:dev:build', 'dock:dev:start' ]);
+
+    // local dev servers
     grunt.registerTask('serve'        , [ 'nodemon:dev' ]);
     grunt.registerTask('serve:local'  , [ 'nodemon:local' ]);
 
