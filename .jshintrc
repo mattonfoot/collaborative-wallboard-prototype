@@ -1,6 +1,7 @@
 {
     "laxcomma" :      true,
     "multistr" :      true,
+    "esnext":         6,
 
     "camelcase":      true,
     "curly":          true,
@@ -11,7 +12,7 @@
     "quotmark":       "single",
     "maxdepth":       3,
     "maxstatements":  15,
-    "maxlen":         80,
+    "maxlen":         160,
     "eqnull":         true,
     "funcscope":      true,
     "node":           true
