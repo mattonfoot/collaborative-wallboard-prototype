@@ -24,7 +24,7 @@ const registerCustomGruntTasks = (grunt) => {
   grunt.registerTask('serve:local'  , [ 'build', 'nodemon:local' ]);
 
   // travis-ci
-  grunt.registerTask('ci'           , [ 'test:coverage', 'coveralls' ]);
+  grunt.registerTask('ci'           , [ 'test:coverage' ]);
 };
 
 // helper function to load task configs
