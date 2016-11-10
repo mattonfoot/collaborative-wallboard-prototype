@@ -1,6 +1,3 @@
-var RSVP = require('rsvp'),
-    Promise = RSVP.Promise;
-
 function FakeDB() {
   this.constructor = FakeDB;
 

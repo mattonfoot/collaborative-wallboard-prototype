@@ -1,5 +1,3 @@
-var RSVP = require('rsvp');
-var Promise = RSVP.Promise;
 var uuid = require('uuid');
 var hrtime = require('browser-process-hrtime');
 

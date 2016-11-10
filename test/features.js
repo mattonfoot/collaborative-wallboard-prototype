@@ -1,7 +1,5 @@
 var chai = require('chai')
   , should = chai.should()
-  , RSVP = require('rsvp')
-  , Promise = RSVP.Promise
   , ExecutionTimer = require('./executionTimer')
   , Application = require('../lib/application')
   , UI = require('./fakeUI')
