@@ -22,66 +22,59 @@ function Application( queue, ui, options ) {
 module.exports = Application;
 
 },{"./interface":2,"./repository":9,"./trackMovement":10,"./transformManager":11}],2:[function(require,module,exports){
-function addBoundListener( l, x ) {
-  return function( e, h ) { return l.addListener( e, h.bind( x ) ); };
-}
+const addBoundListener = ( l, x ) => ( e, h ) => l.addListener( e, h.bind( x ) );
+const addBoundSubcription = ( l, x ) => ( e, h ) => l.subscribe( e, h.bind( x ) );
 
-function addBoundSubcription( l, x ) {
-  return function( e, h ) { return l.subscribe( e, h.bind( x ) ); };
-}
+const attachInterfaceEvents = (iface)  => {
+  if ( !iface.ui ) {
+    return;
+  }
 
+  var addUIListener = addBoundListener( iface.ui, iface );
+  var addQueueSubscription = addBoundSubcription( iface.queue, iface );
 
+  addUIListener( 'wall.select',     Interface.prototype.displayWallSelector );
+  addUIListener( 'wall.create',     Interface.prototype.createWall );
+  addUIListener( 'wall.display',    Interface.prototype.displayWall );
+  addUIListener( 'wall.edit',       Interface.prototype.editWall );
+  addUIListener( 'wall.update',     Interface.prototype.updateWall );
+
+  addUIListener( 'view.new',        Interface.prototype.newView );
+  addUIListener( 'view.create',     Interface.prototype.createView );
+  addUIListener( 'view.display',    Interface.prototype.displayView );
+  addUIListener( 'view.edit',       Interface.prototype.editView );
+  addUIListener( 'view.update',     Interface.prototype.updateView );
+  addQueueSubscription( 'view.added',   Interface.prototype.postCreateView );
+
+  addUIListener( 'region.new',      Interface.prototype.newRegion );
+  addUIListener( 'region.create',   Interface.prototype.createRegion );
+  addUIListener( 'region.display',  Interface.prototype.displayRegion );
+  addUIListener( 'region.edit',     Interface.prototype.editRegion );
+  addUIListener( 'region.update',   Interface.prototype.updateRegion );
+  addQueueSubscription( 'region.added', Interface.prototype.postCreateRegion );
+
+  addUIListener( 'card.new',          Interface.prototype.newCard );
+  addUIListener( 'card.create',       Interface.prototype.createCard );
+  addUIListener( 'card.display',      Interface.prototype.displayCard );
+  addUIListener( 'card.edit',         Interface.prototype.editCard );
+  addUIListener( 'card.update',       Interface.prototype.updateCard );
+  addQueueSubscription( 'card.added',   Interface.prototype.postCreateCard );
+
+  addUIListener( 'transform.new',     Interface.prototype.newTransform );
+  addUIListener( 'transform.create',  Interface.prototype.createTransform );
+  addUIListener( 'transform.edit',    Interface.prototype.editTransform );
+  addUIListener( 'transform.update',  Interface.prototype.updateTransform );
+
+  addUIListener( 'login.auth',        Interface.prototype.authLogin );
+};
 
 function Interface( queue, repository, ui ) {
   this.queue = queue;
   this.repository = repository;
   this.ui = ui;
 
-  this.attachInterfaceEvents();
+  attachInterfaceEvents( this );
 }
-
-Interface.prototype.attachInterfaceEvents = function attachInterfaceEvents() {
-  if ( !this.ui ) {
-    return;
-  }
-
-  var addUIListener = addBoundListener( this.ui, this );
-  var addQueueSubscription = addBoundSubcription( this.queue, this );
-
-  addUIListener( 'wall.select',     this.displayWallSelector );
-  addUIListener( 'wall.create',     this.createWall );
-  addUIListener( 'wall.display',    this.displayWall );
-  addUIListener( 'wall.edit',       this.editWall );
-  addUIListener( 'wall.update',     this.updateWall );
-
-  addUIListener( 'view.new',        this.newView );
-  addUIListener( 'view.create',     this.createView );
-  addUIListener( 'view.display',    this.displayView );
-  addUIListener( 'view.edit',       this.editView );
-  addUIListener( 'view.update',     this.updateView );
-  addQueueSubscription( 'view.added',   this.postCreateView );
-
-  addUIListener( 'region.new',      this.newRegion );
-  addUIListener( 'region.create',   this.createRegion );
-  addUIListener( 'region.display',  this.displayRegion );
-  addUIListener( 'region.edit',     this.editRegion );
-  addUIListener( 'region.update',   this.updateRegion );
-  addQueueSubscription( 'region.added', this.postCreateRegion );
-
-  addUIListener( 'card.new',          this.newCard );
-  addUIListener( 'card.create',       this.createCard );
-  addUIListener( 'card.display',      this.displayCard );
-  addUIListener( 'card.edit',         this.editCard );
-  addUIListener( 'card.update',       this.updateCard );
-  addQueueSubscription( 'card.added',   this.postCreateCard );
-
-  addUIListener( 'transform.new',     this.newTransform );
-  addUIListener( 'transform.create',  this.createTransform );
-  addUIListener( 'transform.edit',    this.editTransform );
-  addUIListener( 'transform.update',  this.updateTransform );
-
-  addUIListener( 'login.auth',        this.authLogin );
-};
 
 Interface.prototype.newWall = function newWall() {
   var ui = this.ui;
@@ -756,25 +749,20 @@ module.exports = Interface;
 },{}],3:[function(require,module,exports){
 var uuid = require('uuid');
 
-function addBoundListener( l, x ) {
-return function( e, h ) { return l.addListener( e, h.bind( x ) ); };
-}
+const addBoundListener = ( l, x ) => ( e, h ) => l.addListener( e, h.bind( x ) );
+const addBoundSubcription = ( l, x ) => ( e, h ) => l.subscribe( e, h.bind( x ) );
 
-function addBoundSubcription( l, x ) {
-  return function( e, h ) { return l.subscribe( e, h.bind( x ) ); };
-}
-
-function attachCardEvents( card ) {
+const attachCardEvents = (card) => {
   var addQueueSubscription = addBoundSubcription( card.queue, card );
 
-  addBoundSubcription( 'card.moved', Card.prototype.moved );
-  addBoundSubcription( 'card.updated', Card.prototype.updated );
-  addBoundSubcription( 'card.transformed', Card.prototype.transformed );
-  addBoundSubcription( 'card.regionentered', Card.prototype.regionEntered );
-  addBoundSubcription( 'card.regionexited', Card.prototype.regionExited );
+  addQueueSubscription( 'card.moved', Card.prototype.moved );
+  addQueueSubscription( 'card.updated', Card.prototype.updated );
+  addQueueSubscription( 'card.transformed', Card.prototype.transformed );
+  addQueueSubscription( 'card.regionentered', Card.prototype.regionEntered );
+  addQueueSubscription( 'card.regionexited', Card.prototype.regionExited );
 
   return card;
-}
+};
 
 function Card( data, queue ) {
   if ( !data.wall || data.wall === '' ) {
@@ -789,6 +777,9 @@ function Card( data, queue ) {
   if ( data.title ) {
     this.title = data.title;
   }
+
+  this.width = data.width || 100;
+  this.height = data.height || 65;
 
   this.locations = {};
   this.regions = [];
@@ -1010,6 +1001,24 @@ Card.prototype.getPosition = function( view ) {
     view: view,
     x: pos && pos.x || 0,
     y: pos && pos.y || 0
+  };
+};
+
+Card.prototype.getSize = function() {
+  return {
+    width: this.width,
+    height: this.height
+  };
+};
+
+Card.prototype.getCentre = function( view ) {
+  var pos = this.locations[ view ];
+  var size = this.getSize();
+
+  return {
+    view: view,
+    x: pos && (pos.x + (size.width / 2)) || 0,
+    y: pos && (pos.y + (size.height / 2)) || 0
   };
 };
 
@@ -2232,9 +2241,28 @@ function sortByTicks( a, b ) {
 module.exports = Repository;
 
 },{"./models/card":3,"./models/region":4,"./models/transform":5,"./models/view":6,"./models/wall":7}],10:[function(require,module,exports){
-
 var cardHeight = 65;
 var cardWidth = 100;
+
+const cardIsInRegion = (card, region) => {
+  var pos = card.getPosition( region.getView() );
+
+  var cardX = (pos.x + (cardWidth / 2)),
+      cardY = (pos.y + (cardHeight / 2));
+
+/*
+  // this appears to not be working??
+  var centre = card.getCentre( region.getId() );
+
+  console.log( cardX, cardY, centre );
+*/
+  var inLeft = cardX > region.x,
+      inRight = cardX < (region.x + region.width),
+      inTop = cardY > region.y,
+      inBase = cardY < (region.y + region.height);
+
+  return ( inLeft && inRight && inTop && inBase );
+};
 
 function MovementTracker( queue, repository ) {
   var movementTracker = this;
@@ -2259,7 +2287,7 @@ MovementTracker.prototype.trackCardMovement = function( data ) {
   var repository = this.repository;
 
   var patch = { in: [], out: [] };
-  var card, board;
+  var card;
 
   // get the card for the location
   return repository.getCard( data.card )
@@ -2278,7 +2306,7 @@ MovementTracker.prototype.trackCardMovement = function( data ) {
 
       regions.forEach(function( region ) {
         var regionid = region.getId()
-          , isInRegion = cardIsInRegion( card.getPosition( region.getView() ), region )
+          , isInRegion = cardIsInRegion( card, region )
           , areLinked = ~card.getRegions().indexOf( regionid );
 
         if ( isInRegion ) {
@@ -2296,7 +2324,9 @@ MovementTracker.prototype.trackCardMovement = function( data ) {
         }
       });
 
-      if ( !patch.in.length && !patch.out.length ) return card;
+      if ( !patch.in.length && !patch.out.length ) {
+        return card;
+      }
 
       card.regions = update;
 
@@ -2332,13 +2362,13 @@ MovementTracker.prototype.trackRegionMovement = function( data ) {
     })
     .then(function( cards ) {
       cards.forEach(function( card ) {
-        if ( ~region.getCards().indexOf( card.getId() ) && !cardIsInRegion( card.getPosition( region.getView() ), region ) ) {
+        if ( ~region.getCards().indexOf( card.getId() ) && !cardIsInRegion( card, region ) ) {
           queue.publish( 'card.regionexited', { card: card.getId(), region: region.getId() } );
         }
       });
 
       cards.forEach(function( card ) {
-        if ( !~region.getCards().indexOf( card.getId() ) && cardIsInRegion( card.getPosition( region.getView() ), region ) ) {
+        if ( !~region.getCards().indexOf( card.getId() ) && cardIsInRegion( card, region ) ) {
           queue.publish( 'card.regionentered', { card: card.getId(), region: region.getId() } );
         }
       });
@@ -2348,32 +2378,30 @@ MovementTracker.prototype.trackRegionMovement = function( data ) {
     });
 };
 
-function cardIsInRegion( pos, region ) {
-  var cardX = (pos.x + (cardWidth / 2))
-    , cardY = (pos.y + (cardHeight / 2))
-    , inLeft = cardX > region.x
-    , inRight = cardX < (region.x + region.width)
-    , inTop = cardY > region.y
-    , inBase = cardY < (region.y + region.height);
-
-  return ( inLeft && inRight && inTop && inBase );
-}
-
 module.exports = MovementTracker;
 
 },{}],11:[function(require,module,exports){
 
+const filterMethods = {
+  'string': (region, filter) => {
+    return region.getId() === filter.selector.replace('#', '');
+  },
+  'object': (region, filter) => {
+    return region.getProperty( filter.selector.node ) === filter.selector.selector.replace('#', '');
+  },
+};
+
 function TransformManager( queue, repository ) {
-  var manager = this;
+  var transformManager = this;
   this.queue = queue;
   this.repository = repository;
 
   queue.subscribe( 'card.regionentered', function( data ) {
-    manager.applyTransforms( data );
+    transformManager.applyTransforms( data );
   });
 
   queue.subscribe( 'card.regionexited', function( data ) {
-    manager.undoTransforms( data );
+    transformManager.undoTransforms( data );
   });
 }
 
@@ -2462,25 +2490,12 @@ function processTransform( queue, op, transform, card, region ) {
 }
 
 function checkCanApplyTransform( region, when, filter ) {
-    if ( when.relationship === 'within' && when.filter === 'region' && filter.node === 'region' ) {
-        return filterMethods[typeof filter.selector]( region, filter );
-    }
+  if ( when.relationship === 'within' && when.filter === 'region' && filter.node === 'region' ) {
+    return filterMethods[ typeof filter.selector ]( region, filter );
+  }
 
-    return false;
+  return false;
 }
-
-var filterMethods = {
-    'string': function( region, filter ) {
-        var f = filter.selector;
-
-        return region.getId() === filter.selector.replace('#', '');
-    }
-  , 'object': function( region, filter ) {
-        var f = filter.selector;
-
-        return region.getProperty( f.node ) === f.selector.replace('#', '');
-    }
-};
 
 module.exports = TransformManager;
 

@@ -6,7 +6,6 @@ var region, card;
 
 function features() {
   beforeEach(function( done ) {
-    var wall;
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
         region = storage.region;
@@ -22,20 +21,6 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'card.regionentered', function( entered ) {
-      should.exist( entered );
-
-      entered.should.have.property( 'card', card.getId() );
-      entered.should.have.property( 'region', move.region );
-
-      card.getRegions().should.include( move.region );
-      region.getCards().should.include( card.getId() );
-
-      done();
-    })
-    .catch( done )
-    .once();
-
     var pos = card.getPosition( region.getView() );
 
     var move = {
@@ -43,6 +28,20 @@ function features() {
       x: pos.x - 10,
       y: pos.y - 10
     };
+
+    queue.subscribe( 'card.regionentered', function( entered ) {
+      should.exist( entered );
+
+      entered.should.have.property( 'card', card.getId() );
+      entered.should.have.property( 'region', move.region );
+
+      region.getCards().should.include( card.getId() );
+      card.getRegions().should.include( move.region );
+
+      done();
+    })
+    .catch( done )
+    .once();
 
     region.move( move );
   });

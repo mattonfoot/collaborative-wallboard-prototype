@@ -2,14 +2,12 @@ var chai = require('chai');
 var should = chai.should();
 var fixture = require('../fixtures/BasicWall.WithMultipleViews.FirstWithTwoRegions');
 
-var wall, view, card, region, origin;
+var card, region;
 
 function features() {
   beforeEach(function( done ) {
     fixture( this, 'Wall for moving a card on' )
       .then(function( storage ) {
-        wall = storage.wall;
-        view = storage.view;
         card = storage.card;
         region = storage.region;
 
@@ -23,19 +21,6 @@ function features() {
 
     queue.subscribe( '#.fail', done ).once();
 
-    queue.subscribe( 'card.transformed', function( transformed ) {
-      should.exist( transformed );
-
-      transformed.should.have.property( 'op', 'set' );
-      transformed.should.have.property( 'card', move.card );
-      transformed.should.have.property( 'property', 'color' );
-      transformed.should.have.property( 'value', region.getColor() );
-
-      done();
-    })
-    .catch( done )
-    .once();
-
     var pos = card.getPosition( region.getView() );
 
     var move = {
@@ -43,6 +28,19 @@ function features() {
       x: pos.x - 10,
       y: pos.y - 10
     };
+
+    queue.subscribe( 'card.transformed', function( transformed ) {
+      should.exist( transformed );
+
+      transformed.should.have.property( 'op', 'set' );
+      transformed.should.have.property( 'card', card.getId() );
+      transformed.should.have.property( 'property', 'color' );
+      transformed.should.have.property( 'value', region.getColor() );
+
+      done();
+    })
+    .catch( done )
+    .once();
 
     region.move( move );
 

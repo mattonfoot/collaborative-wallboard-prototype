@@ -4,27 +4,27 @@ const registerCustomGruntTasks = (grunt) => {
   // clean
   // grunt.registerTask('clean'     , [ 'clean' ]);
 
-  // test
-  grunt.registerTask('coverage'     , [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage' ]);
-  grunt.registerTask('test'         , [ /*'jshint', 'eslint',*/ 'mochaTest:test' ]);
-
   // build
   grunt.registerTask('build'        , [ 'browserify', 'copy:client' ]);
   grunt.registerTask('build:test'   , [ 'browserify:test' ]);
   grunt.registerTask('rebuild'      , [ 'clean', 'build' ]);
 
+  // test
+  grunt.registerTask('test:coverage', [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage' ]);
+  grunt.registerTask('test'         , [ 'build', /*'jshint', 'eslint',*/ 'mochaTest:test' ]);
+
   // auto build
   // grunt.registerTask('default'   , [ 'watch' ]);
 
   // docker containers
-  grunt.registerTask('dock'         , [ 'dock:dev:build', 'dock:dev:start' ]);
+  grunt.registerTask('dock'         , [ 'build', 'dock:dev:build', 'dock:dev:start' ]);
 
   // local dev servers
-  grunt.registerTask('serve'        , [ 'rebuild', 'nodemon:dev' ]);
-  grunt.registerTask('serve:local'  , [ 'rebuild', 'nodemon:local' ]);
+  grunt.registerTask('serve'        , [ 'build', 'nodemon:dev' ]);
+  grunt.registerTask('serve:local'  , [ 'build', 'nodemon:local' ]);
 
   // travis-ci
-  grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);
+  grunt.registerTask('ci'           , [ 'test:coverage', 'coveralls' ]);
 };
 
 // helper function to load task configs
