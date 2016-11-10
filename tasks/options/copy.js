@@ -1,12 +1,7 @@
 module.exports = function() {
 
     return {
-        coverage: {
-            src:    [ 'test/**/*.*' ],
-            dest:   'coverage/'
-        }
-
-      , client: {
+        client: {
             files: {
                 'dist/index.html': [ './lib/index.html' ]
             }

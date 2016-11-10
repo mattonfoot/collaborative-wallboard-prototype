@@ -10,7 +10,7 @@ const registerCustomGruntTasks = (grunt) => {
   grunt.registerTask('rebuild'      , [ 'clean', 'build' ]);
 
   // test
-  grunt.registerTask('test:coverage', [ 'clean:coverage', 'blanket', 'copy:coverage', 'mochaTest:instrumented', 'mochaTest:lcov', 'mochaTest:coverage' ]);
+  grunt.registerTask('test:coverage', [ 'clean:coverage', 'mocha_istanbul' ]);
   grunt.registerTask('test'         , [ 'build', /*'jshint', 'eslint',*/ 'mochaTest:test' ]);
 
   // auto build
@@ -50,6 +50,16 @@ module.exports = (grunt) => {
     grunt.util._.extend(config, loadConfig( './tasks/options/', config ));
 
     grunt.initConfig(config);
+
+    grunt.event.on('coverage', function(lcov, done){
+      require('coveralls').handleInput(lcov, function(err){
+        if (err) {
+          return done(err);
+        }
+
+        done();
+      });
+    });
 
     // load grunt tasks
     require('load-grunt-tasks')(grunt);
