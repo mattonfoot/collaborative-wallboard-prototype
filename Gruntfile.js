@@ -21,13 +21,9 @@ module.exports = function( grunt ) {
     // actual config
 
     var config = {
-
         pkg: grunt.file.readJSON('package.json')
-
       , env: process.env
-
       , __dirname: __dirname
-
     };
 
     grunt.util._.extend(config, loadConfig( './tasks/options/', config ));
@@ -50,6 +46,7 @@ module.exports = function( grunt ) {
     // build
     grunt.registerTask('build'        , [ 'browserify', 'copy:client' ]);
     grunt.registerTask('build:test'   , [ 'browserify:test' ]);
+    grunt.registerTask('rebuild'      , [ 'clean', 'build' ]);
 
     // auto build
     // grunt.registerTask('default'   , [ 'watch' ]);
@@ -58,8 +55,8 @@ module.exports = function( grunt ) {
     grunt.registerTask('dock'         , [ 'dock:dev:build', 'dock:dev:start' ]);
 
     // local dev servers
-    grunt.registerTask('serve'        , [ 'nodemon:dev' ]);
-    grunt.registerTask('serve:local'  , [ 'nodemon:local' ]);
+    grunt.registerTask('serve'        , [ 'rebuild', 'nodemon:dev' ]);
+    grunt.registerTask('serve:local'  , [ 'rebuild', 'nodemon:local' ]);
 
     // travis-ci
     grunt.registerTask('ci'           , [ 'coverage', 'coveralls' ]);
