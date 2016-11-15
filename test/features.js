@@ -1,15 +1,22 @@
-var chai = require('chai')
-  , should = chai.should()
-  , ExecutionTimer = require('./executionTimer')
-  , Application = require('../lib/application')
-  , UI = require('./fakeUI')
-  , DB = require('./fakeDB')
-  , Queue = require('../lib/queue');
+var chai = require('chai');
+var should = chai.should();
+var ExecutionTimer = require('./executionTimer');
+var Application = require('../lib/application');
+var UI = require('./fakeUI');
+var DB = require('./fakeDB');
+var Queue = require('../lib/queue');
 
 var debug = false;
 var queueDebug = false;
 
 var featureSet = {};
+
+var unitFeatures = [
+  /* unit tests */
+
+  require( './unit/model.wall.js' ),
+  require( './unit/model.card.js' ),
+];
 
 var serviceFeatures = [
   /* Service API */
@@ -73,6 +80,14 @@ var interfaceFeatures = [
 
 ];
 
+unitFeatures.forEach(function( feature ) {
+    featureSet[ feature.title ] = featureSet[ feature.title ] || [];
+
+    feature.type = 'unit';
+
+    featureSet[ feature.title ].push( feature );
+});
+
 serviceFeatures.forEach(function( feature ) {
     featureSet[ feature.title ] = featureSet[ feature.title ] || [];
 
@@ -105,7 +120,7 @@ Fixture('Application service API Features', function() {
   });
 
   for (var title in featureSet) {
-    Feature( title, generateCallList( featureSet[title] ) );
+    Feature( title, generateCallList( featureSet[ title ] ) );
   }
 });
 
@@ -153,7 +168,7 @@ function generateCallList( calls ) {
 
       feature();
     });
-  }
+  };
 }
 
 // helpers
